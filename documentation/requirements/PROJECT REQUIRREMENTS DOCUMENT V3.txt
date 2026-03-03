@@ -1,0 +1,619 @@
+# D&D Spell Analysis Web App  
+## Requirements Document (Version B → Designed to Evolve into C)
+
+---
+
+# 1. Project Overview
+
+A **production-grade Django + React web application** for managing and analyzing D&D 5e spell data.
+
+The system allows users to:
+
+- Import/export spell JSON collections
+- Create custom spells
+- Build spellbooks (prepared spell sets)
+- Compare spells mathematically
+- Analyze efficiency of upcasting vs alternative spells
+- Determine damage efficiency per spell level
+
+This version follows **Architecture B (Modular Production-Ready)** with clean boundaries and forward compatibility toward **Architecture C (Enterprise DDD + plugin engine)**.
+
+---
+
+# 2. Tech Stack
+
+## Backend
+- Python 3.12+
+- Django 5+
+- Django REST Framework
+- PostgreSQL
+- Celery (future-ready for heavy simulations)
+- Redis (broker/cache)
+- Pytest
+
+## Frontend
+- React 18+
+- TypeScript
+- Vite
+- Axios
+- Zustand or Redux Toolkit
+- TailwindCSS or MUI
+
+## DevOps
+- Docker + docker-compose
+- GitHub Actions CI/CD
+- Coverage reporting
+- Production-ready settings separation
+
+---
+
+# 3. Core Domain Concepts
+
+## Spell
+Represents a spell with dynamic schema support.
+
+## Spellbook
+User-defined collection of prepared spells.
+
+## Spell Analysis
+Mathematical engine for computing:
+
+- Average damage
+- Maximum damage
+- Crit-adjusted expected value
+- Single target vs AOE
+- Damage per spell slot
+- Upcast efficiency scaling
+- Hit probability modeling
+
+---
+
+# 4. Dynamic JSON Schema Handling
+
+### Requirements
+
+- Accept arbitrary spell JSON uploads
+- Validate minimally required fields
+- Store unknown fields in flexible JSON storage
+- Allow missing optional fields
+- Allow schema extension without migrations
+
+### Implementation Strategy
+
+Use:
+
+```python
+models.JSONField
+
+
+
+Schema strategy:
+
+Core fields normalized:
+
+name
+
+level
+
+school
+
+casting_time
+
+range
+
+duration
+
+concentration
+
+ritual
+
+All other fields stored in:
+
+raw_data: JSONField
+
+5. Mathematical Engine Requirements
+
+The application must model:
+
+5.1 Average Dice Damage
+
+For a die:
+
+𝐸
+(
+𝑑
+𝑛
+)
+=
+(
+𝑛
++
+1
+)
+/
+2
+E(d
+n
+	​
+
+)=(n+1)/2
+
+For NdX:
+
+𝐸
+(
+𝑁
+𝑑
+𝑋
+)
+=
+𝑁
+∗
+(
+𝑋
++
+1
+)
+/
+2
+E(NdX)=N∗(X+1)/2
+5.2 Spell Attack Hit Probability
+
+Let:
+
+A = attack bonus
+
+AC = target armor class
+
+Hit probability:
+
+𝑃
+(
+ℎ
+𝑖
+𝑡
+)
+=
+(
+21
+−
+(
+𝐴
+𝐶
+−
+𝐴
+)
+)
+/
+20
+P(hit)=(21−(AC−A))/20
+
+Clamped between 0.05 and 0.95.
+
+5.3 Crit Modeling
+
+If natural 20 crits:
+
+𝐸
+𝑡
+𝑜
+𝑡
+𝑎
+𝑙
+=
+𝑃
+(
+ℎ
+𝑖
+𝑡
+)
+∗
+𝐸
+(
+𝑑
+𝑎
+𝑚
+𝑎
+𝑔
+𝑒
+)
++
+𝑃
+(
+𝑐
+𝑟
+𝑖
+𝑡
+)
+∗
+𝐸
+(
+𝑒
+𝑥
+𝑡
+𝑟
+𝑎
+𝑑
+𝑖
+𝑐
+𝑒
+)
+E
+t
+	​
+
+otal=P(hit)∗E(damage)+P(crit)∗E(extradice)
+5.4 AOE Modeling
+
+Expected AOE damage:
+
+𝐸
+𝑡
+𝑜
+𝑡
+𝑎
+𝑙
+=
+𝑁
+𝑡
+𝑎
+𝑟
+𝑔
+𝑒
+𝑡
+𝑠
+∗
+𝐸
+(
+𝑠
+𝑖
+𝑛
+𝑔
+𝑙
+𝑒
+𝑡
+𝑎
+𝑟
+𝑔
+𝑒
+𝑡
+)
+E
+t
+	​
+
+otal=N
+t
+	​
+
+argets∗E(single
+t
+	​
+
+arget)
+
+Include:
+
+Save success probability
+
+Half damage mechanics
+
+Evasion toggle
+
+5.5 Upcast Efficiency
+
+For slot level L:
+
+𝐸
+𝑓
+𝑓
+𝑖
+𝑐
+𝑖
+𝑒
+𝑛
+𝑐
+𝑦
+(
+𝐿
+)
+=
+𝐸
+𝑡
+𝑜
+𝑡
+𝑎
+𝑙
+𝑑
+𝑎
+𝑚
+𝑎
+𝑔
+𝑒
+(
+𝐿
+)
+/
+𝐿
+Efficiency(L)=E
+t
+	​
+
+otal
+d
+	​
+
+amage(L)/L
+
+Graph-ready for future UI visualization.
+
+6. Feature Requirements
+6.1 Authentication
+
+JWT authentication
+
+User registration/login
+
+Password reset
+
+Role support (future-ready)
+
+6.2 Spell Management
+
+Upload JSON (single or bulk)
+
+Manual spell creation
+
+Edit/delete spells
+
+Version history (future)
+
+6.3 Spellbook Management
+
+Create spellbooks
+
+Add/remove spells
+
+Duplicate spellbooks
+
+Export spellbook JSON
+
+6.4 Spell Comparison Engine
+
+User inputs:
+
+Target AC
+
+Target save bonus
+
+Number of targets
+
+Advantage/disadvantage
+
+Crit rules toggle
+
+System outputs:
+
+Average damage
+
+Max damage
+
+Hit probability
+
+Crit-adjusted expected value
+
+Damage per slot
+
+Efficiency ranking
+
+6.5 Efficiency Analyzer
+
+Questions system must answer:
+
+When is upcasting better?
+
+Which spell is most efficient per level?
+
+At what AC threshold does Spell A outperform Spell B?
+
+AOE vs single-target breakpoints
+
+7. Backend Architecture (B-Level)
+Apps
+core/
+users/
+spells/
+spellbooks/
+analysis/
+Layering
+Models
+↓
+Repositories
+↓
+Services
+↓
+API (DRF)
+
+Business logic must NOT live in views.
+
+8. Future Evolution to Architecture C
+
+Planned evolution:
+
+Domain-driven design
+
+Event-driven simulation engine
+
+Plug-in rule engine (house rules)
+
+Monte Carlo simulation module
+
+Spell effect DSL parser
+
+Background job simulation cluster
+
+9. API Design
+REST Endpoints
+Auth
+
+POST /api/auth/register
+
+POST /api/auth/login
+
+Spells
+
+GET /api/spells/
+
+POST /api/spells/import
+
+POST /api/spells/
+
+GET /api/spells/{id}
+
+PUT /api/spells/{id}
+
+DELETE /api/spells/{id}
+
+Spellbooks
+
+GET /api/spellbooks/
+
+POST /api/spellbooks/
+
+POST /api/spellbooks/{id}/add-spell
+
+Analysis
+
+POST /api/analysis/compare
+
+POST /api/analysis/efficiency
+
+10. Database Requirements
+
+PostgreSQL
+
+Key tables:
+
+users
+
+spells
+
+spellbooks
+
+spellbook_spells (many-to-many)
+
+analysis_cache (optional future optimization)
+
+11. Testing Requirements
+
+Pytest required
+
+Minimum 80% coverage
+
+Unit tests:
+
+Dice math
+
+Probability math
+
+Upcast scaling
+
+Integration tests:
+
+Import JSON
+
+Spell comparison
+
+API tests
+
+Docker test pipeline
+
+12. Docker Requirements
+
+Containers:
+
+backend
+
+frontend
+
+postgres
+
+redis
+
+Environment separation:
+
+dev
+
+test
+
+prod
+
+13. CI/CD Requirements
+
+GitHub Actions:
+
+Lint (ruff/black)
+
+Run tests
+
+Build Docker image
+
+Push to registry
+
+Deploy (future)
+
+14. Non-Functional Requirements
+
+Production-grade logging
+
+Structured logging (JSON)
+
+Error handling middleware
+
+API rate limiting
+
+Pagination
+
+OpenAPI schema generation
+
+Typed frontend contracts
+
+15. Stretch Goals
+
+Monte Carlo simulation mode
+
+Visualization graphs (damage vs AC curve)
+
+Heatmaps (efficiency per level)
+
+House rule toggles
+
+Condition modeling (restrained, prone, etc.)
+
+16. Definition of Done
+
+Fully dockerized
+
+CI passing
+
+80%+ coverage
+
+Deployed staging environment
+
+Dynamic JSON import validated
+
+17. Notes for GitHub Copilot
+
+This project must:
+
+Follow clean architecture principles
+
+Avoid business logic in views
+
+Use services for math
+
+Treat dice math as reusable engine
+
+Be extendable for rule variants
+
+Prioritize correctness of probability modeling

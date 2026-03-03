@@ -1,0 +1,51 @@
+Generate a full-stack production-grade application with:
+
+Backend:
+
+Django REST Framework
+
+PostgreSQL
+
+JWT authentication
+
+Dockerized
+
+Service-layer architecture
+
+Spell analysis engine capable of:
+
+Dice average calculation
+
+Attack roll expected damage
+
+Saving throw expected damage
+
+Crit modeling
+
+Multi-target scaling
+
+Upcast scaling
+
+Spell efficiency ranking
+
+Break-even AC/save calculations
+
+Full test coverage
+
+CI with linting and type checking
+
+Frontend:
+
+React (TypeScript)
+
+Spell management UI
+
+Spell comparison interface
+
+Graph visualizations (AC vs damage, save bonus vs damage)
+
+Import/export JSON support
+
+Production-ready configuration
+
+Follow clean architecture without unnecessary enterprise overengineering.

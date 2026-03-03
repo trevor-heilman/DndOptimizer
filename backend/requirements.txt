@@ -1,0 +1,15 @@
+Django>=5.0
+psycopg2-binary
+djangorestframework
+django-environ
+djangorestframework-simplejwt
+django-filter
+django-cors-headers
+gunicorn
+pytest
+pytest-django
+pytest-cov
+black
+ruff
+mypy
+django-stubs

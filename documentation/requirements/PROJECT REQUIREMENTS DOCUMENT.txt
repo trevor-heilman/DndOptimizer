@@ -1,0 +1,308 @@
+1. Project Overview
+
+Build a production-grade Django web application using:
+
+Python 3.12+
+
+Django (latest LTS)
+
+PostgreSQL
+
+Docker + Docker Compose
+
+CI/CD via GitHub Actions
+
+Full test coverage
+
+Secure authentication system
+
+Environment-based configuration
+
+Production deployment readiness
+
+The application must follow clean architectural separation without unnecessary enterprise-level abstraction.
+
+2. Architectural Principles
+Required Design Approach
+
+Feature-based Django apps (modular structure)
+
+Separation of concerns:
+
+Models (data)
+
+Services (business logic)
+
+Views / API layer
+
+Serializers (if using DRF)
+
+Business logic must NOT live inside views
+
+No “fat models” — use service layer for complex logic
+
+Configuration must be environment-driven
+
+All secrets must be environment variables
+
+3. Project Structure
+
+The project must follow this structure:
+
+project_root/
+│
+├── app/
+│   ├── config/                # settings, asgi, wsgi, urls
+│   │   ├── settings/
+│   │   │   ├── base.py
+│   │   │   ├── development.py
+│   │   │   ├── production.py
+│   │   │   └── test.py
+│   │
+│   ├── users/                 # authentication app
+│   │   ├── models.py
+│   │   ├── services.py
+│   │   ├── selectors.py
+│   │   ├── views.py
+│   │   ├── tests/
+│   │
+│   ├── core/                  # shared utilities
+│   │   ├── permissions.py
+│   │   ├── exceptions.py
+│   │   ├── middleware.py
+│
+├── docker/
+│   ├── django/
+│   ├── postgres/
+│
+├── tests/                     # integration tests
+│
+├── .github/workflows/
+│
+├── Dockerfile
+├── docker-compose.yml
+├── pyproject.toml
+├── Makefile
+└── README.md
+4. Technology Stack Requirements
+Backend
+
+Django
+
+Django REST Framework (if API-based)
+
+PostgreSQL
+
+Gunicorn (production)
+
+Whitenoise (static files)
+
+Celery (optional, prepared for async tasks)
+
+Redis (optional for caching / Celery)
+
+Auth
+
+Custom User model required
+
+JWT authentication OR secure session-based auth
+
+Password validation rules enforced
+
+Email verification flow
+
+Rate limiting on login endpoints
+
+5. Environment & Configuration
+
+Must implement:
+
+.env file support
+
+Separate settings modules:
+
+base
+
+development
+
+production
+
+test
+
+Debug = False in production
+
+Secure headers enabled
+
+CSRF protection
+
+Secure cookies
+
+HTTPS-ready
+
+6. Database Requirements
+
+PostgreSQL only
+
+UUID primary keys
+
+Proper indexing on foreign keys
+
+Migrations required
+
+Data integrity constraints enforced
+
+7. Testing Requirements
+
+Testing is mandatory.
+
+Use:
+
+pytest
+
+pytest-django
+
+factory_boy
+
+coverage
+
+Requirements:
+
+Minimum 85% coverage
+
+Unit tests for services
+
+Integration tests for API endpoints
+
+Authentication tests
+
+Permission tests
+
+CI must fail if:
+
+Tests fail
+
+Coverage drops below threshold
+
+8. Docker Requirements
+
+Must include:
+
+Dockerfile
+
+Multi-stage build
+
+Slim Python base image
+
+Non-root user
+
+docker-compose.yml
+
+Django service
+
+PostgreSQL service
+
+Redis (if used)
+
+Environment variables injected properly
+
+Volumes for DB persistence
+
+9. CI/CD (GitHub Actions)
+
+On pull request:
+
+Install dependencies
+
+Run linting
+
+Run type checking
+
+Run tests
+
+Check coverage
+
+Must include:
+
+black
+
+isort
+
+ruff
+
+mypy
+
+Pipeline fails on any violation.
+
+10. Code Quality Standards
+
+Type hints required
+
+Docstrings for services
+
+No business logic in views
+
+No raw SQL unless justified
+
+Consistent naming conventions
+
+Structured logging
+
+Centralized exception handling
+
+11. Security Requirements
+
+Django security middleware enabled
+
+Secure HSTS in production
+
+CORS properly configured
+
+Rate limiting for sensitive endpoints
+
+Input validation everywhere
+
+No hardcoded secrets
+
+Production-ready SECRET_KEY handling
+
+12. Logging
+
+Structured JSON logging in production
+
+Console logging in development
+
+Log levels configurable via environment
+
+13. Documentation Requirements
+
+README must include:
+
+Setup instructions
+
+Local development guide
+
+Docker usage
+
+Running tests
+
+Running lint checks
+
+Deployment notes
+
+Environment variable documentation
+
+14. Future-Ready Considerations
+
+Prepare architecture for:
+
+Background jobs (Celery-ready)
+
+Horizontal scaling
+
+Caching
+
+API versioning
+
+Role-based permissions
+
+Multi-environment deployment

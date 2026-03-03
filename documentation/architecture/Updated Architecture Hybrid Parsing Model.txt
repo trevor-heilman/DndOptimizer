@@ -1,0 +1,295 @@
+Updated Architecture: Hybrid Parsing Model
+
+Your ingestion flow now becomes:
+
+Upload JSON
+    ↓
+Schema Detection
+    ↓
+Field Mapping
+    ↓
+Regex Damage Extraction
+    ↓
+Confidence Scoring
+    ↓
+If Low Confidence → Flag for Manual Review
+    ↓
+Store Canonical Spell + Raw JSON
+🧠 Core Principle
+
+Automation handles 80% of spells.
+User correction handles edge cases like:
+
+Melf's Acid Arrow (multi-phase damage)
+
+Scorching Ray (multiple attack rolls)
+
+Fireball (save-based AoE)
+
+Half damage on miss wording
+
+Delayed damage
+
+Conditional damage
+
+🏗 Backend Additions
+1️⃣ New Model: ParsingMetadata
+class SpellParsingMetadata(models.Model):
+    spell = OneToOneField(Spell)
+    parsing_confidence = FloatField()
+    requires_review = BooleanField(default=False)
+    parsing_notes = JSONField()
+    auto_extracted_components = JSONField()
+2️⃣ Updated DamageComponent Model
+class DamageComponent(models.Model):
+    spell = ForeignKey(Spell)
+    dice_count = IntegerField()
+    die_size = IntegerField()
+    damage_type = CharField()
+    timing = CharField()  # on_hit, on_fail, end_of_turn, etc.
+    on_crit_extra = BooleanField(default=False)
+    scales_with_slot = BooleanField(default=False)
+    is_verified = BooleanField(default=False)
+
+Key addition:
+
+is_verified — becomes true once user confirms correctness.
+
+🎲 Parsing Layer Design
+Step 1: Regex Dice Extraction
+
+Pattern:
+
+(\d+)d(\d+)
+
+Example:
+"4d4 acid damage immediately and 2d4 acid damage..."
+
+Extract:
+
+(4,4)
+
+(2,4)
+
+Step 2: Detect Context
+
+Look for keywords:
+
+Attack spell:
+
+"Make a ranged spell attack"
+
+"On a hit"
+
+"On a miss"
+
+Save spell:
+
+"Dexterity saving throw"
+
+"half as much damage on a success"
+
+Delayed damage:
+
+"at the end of its next turn"
+
+Upcast scaling:
+
+"for each slot level above"
+
+Step 3: Apply Dice Average Formula
+
+Used inside analysis engine:
+
+𝑎
+𝑣
+𝑒
+𝑟
+𝑎
+𝑔
+𝑒
+=
+𝑛
+∗
+(
+𝑑
++
+1
+)
+/
+2
+average=n∗(d+1)/2
+🧮 Expected Damage Handling
+
+For save spells:
+
+𝐸
+=
+𝑝
+𝑓
+𝑎
+𝑖
+𝑙
+∗
+𝑓
+𝑢
+𝑙
+𝑙
++
+𝑝
+𝑠
+𝑢
+𝑐
+𝑐
+𝑒
+𝑠
+𝑠
+∗
+(
+𝑓
+𝑢
+𝑙
+𝑙
+/
+2
+)
+E=p
+f
+	​
+
+ail∗full+p
+s
+	​
+
+uccess∗(full/2)
+
+For attack spells:
+
+Expected Damage =
+(hit_chance × average_damage)
+
+(crit_chance × extra_dice_damage)
+
+Multi-attack spells (e.g. Scorching Ray) multiply by number_of_attacks.
+
+🎛 Frontend: Manual Correction UI
+
+This is where hybrid shines.
+
+Add a new page:
+
+“Spell Parsing Review”
+
+When a spell is flagged:
+
+Show:
+
+Original raw description
+
+Extracted dice components
+
+Extracted attack/save type
+
+Extracted scaling
+
+Confidence score
+
+Allow user to:
+
+Edit dice counts
+
+Add/remove components
+
+Mark damage timing
+
+Mark save/attack type
+
+Toggle half damage on save
+
+Define upcast behavior
+
+Mark verified
+
+🎯 Confidence Scoring System
+
+Example:
+
+Found 1 dice expression: +0.2
+
+Found attack keyword: +0.2
+
+Found damage type: +0.2
+
+Found scaling phrase: +0.2
+
+Found save keyword: +0.2
+
+If confidence < 0.7 → requires_review = True
+
+🧱 Updated Requirements Addendum
+
+Add this to your master document:
+
+Dynamic JSON & Hybrid Parsing Requirements
+
+The application must:
+
+Accept heterogeneous JSON schemas
+
+Preserve original JSON in database
+
+Extract known fields into canonical model
+
+Automatically parse dice expressions from text
+
+Detect attack vs save spells
+
+Detect multi-phase damage
+
+Detect upcast scaling
+
+Assign parsing confidence score
+
+Flag low-confidence spells for manual review
+
+Provide frontend interface for correction
+
+Mark damage components as verified
+
+Allow reprocessing of raw JSON
+
+Unit tests must cover:
+
+Dice parsing
+
+Scaling detection
+
+Multi-phase damage detection
+
+Save spell expected damage
+
+Attack spell expected damage
+
+Edge case spells
+
+🚀 Architectural Impact
+
+You now have:
+
+Flexible ingestion system
+
+Parsing engine
+
+Canonical normalized spell model
+
+Verification workflow
+
+Probabilistic damage engine
+
+Comparative analysis engine
+
+Full-stack visualization
+
+This is no longer a CRUD app.
+
+It is a domain modeling + probabilistic analysis platform.

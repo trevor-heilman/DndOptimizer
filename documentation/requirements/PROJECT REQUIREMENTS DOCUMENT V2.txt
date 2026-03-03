@@ -1,0 +1,489 @@
+📘 PROJECT REQUIREMENTS DOCUMENT
+Arcane Spell Optimization Platform
+
+(Django + React Full Stack)
+
+1️⃣ Product Vision
+
+Build a production-grade web application that allows spellcasters in D&D 5e to
+
+Create and manage spellbooks
+
+Prepare spells
+
+Create custom spells
+
+Importexport spells and spellbooks as JSON
+
+Mathematically analyze spell efficiency
+
+Compare spells across levels
+
+Evaluate upcasting efficiency
+
+Determine optimal spell usage per slot level
+
+The application must include a robust analytical engine capable of computing expected damage under varying combat conditions.
+
+2️⃣ System Architecture
+Backend
+
+Python 3.12+
+
+Django (LTS)
+
+Django REST Framework
+
+PostgreSQL
+
+JWT Authentication
+
+Dockerized
+
+CICD via GitHub Actions
+
+pytest-based testing
+
+Structured logging
+
+Frontend
+
+React (TypeScript)
+
+Vite or Next.js (preferred Vite for simplicity)
+
+Tailwind or clean CSS architecture
+
+Axios or React Query for API interaction
+
+Fully separated frontend container
+
+3️⃣ High-Level Architecture
+[ React Frontend ]  ---  [ Django REST API ]  ---  [ PostgreSQL ]
+                                  
+                           [ Spell Analysis Engine ]
+
+Backend must expose a REST API consumed by React.
+
+No server-rendered Django templates.
+
+4️⃣ Backend Domain Model
+Core Models
+User (Custom)
+
+UUID primary key
+
+Email as username
+
+JWT-based authentication
+
+Spell
+
+Fields
+
+id (UUID)
+
+name
+
+level
+
+school
+
+damage_dice_count
+
+damage_die_size
+
+number_of_attacks
+
+damage_type
+
+is_attack_roll
+
+is_saving_throw
+
+save_type (DEX, CON, etc.)
+
+half_damage_on_save (bool)
+
+crit_enabled (bool)
+
+upcast_dice_increment
+
+upcast_die_size
+
+aoe_radius
+
+concentration
+
+duration
+
+description
+
+is_custom (bool)
+
+created_by (FK user)
+
+Spellbook
+
+id (UUID)
+
+name
+
+owner
+
+ManyToMany → Spell
+
+prepared_spells (through model)
+
+PreparedSpell
+
+spellbook
+
+spell
+
+prepared (bool)
+
+5️⃣ Spell Analysis Engine (Core Innovation)
+
+Must exist as a dedicated service layer
+
+SpellAnalysisService
+
+Responsibilities
+
+calculate_average_dice_damage()
+
+calculate_attack_roll_expected_damage()
+
+calculate_save_spell_expected_damage()
+
+calculate_crit_adjusted_damage()
+
+calculate_multi_target_damage()
+
+calculate_upcast_damage()
+
+calculate_efficiency_per_spell_slot()
+
+compare_spells()
+
+generate_spell_rankings()
+
+Business logic must NOT exist in views.
+
+6️⃣ Mathematical Engine Requirements
+🎲 Dice Average Formula
+𝑎
+𝑣
+𝑒
+𝑟
+𝑎
+𝑔
+𝑒
+=
+𝑛
+∗
+(
+𝑑
++
+1
+)
+
+2
+average=n∗(d+1)2
+
+Where
+
+n = number of dice
+
+d = die size
+
+🎯 Attack Roll Expected Damage
+
+Must compute
+
+Hit probability
+
+Crit probability (natural 20)
+
+Miss probability
+
+Expected value must account for
+
+Extra dice on crit
+
+Multiple attack instances (e.g. Scorching Ray)
+
+🛡 Saving Throw Spell Formula
+
+For spells like Fireball
+
+𝐸
+=
+𝑝
+𝑓
+𝑎
+𝑖
+𝑙
+∗
+𝑓
+𝑢
+𝑙
+𝑙
++
+𝑝
+𝑠
+𝑢
+𝑐
+𝑐
+𝑒
+𝑠
+𝑠
+∗
+(
+𝑓
+𝑢
+𝑙
+𝑙
+
+2
+)
+E=p
+f
+	​
+
+ail∗full+p
+s
+	​
+
+uccess∗(full2)
+
+Must allow
+
+Variable Save DC
+
+Variable enemy save bonus
+
+Configurable half damage behavior
+
+7️⃣ Required Comparison Features
+
+The system must support
+
+Spell vs Spell comparison
+
+Upcast vs Different Spell comparison
+
+Damage per slot level
+
+Single target vs AoE comparison
+
+Damage vs AC graph data generation
+
+Damage vs Save Bonus graph data generation
+
+Break-even AC calculation
+
+Break-even Save Bonus calculation
+
+Multi-target scaling
+
+8️⃣ API Endpoints
+Authentication
+
+apiauthregister
+
+apiauthlogin
+
+apiauthrefresh
+
+apiauthlogout
+
+Spells
+
+GET apispells
+
+POST apispells
+
+PUT apispells{id}
+
+DELETE apispells{id}
+
+Spellbooks
+
+CRUD endpoints
+
+Analysis
+
+POST apianalysiscompare
+
+POST apianalysissimulate
+
+POST apianalysisrank
+
+These endpoints must accept configurable parameters
+
+Enemy AC
+
+Save bonus
+
+Advantagedisadvantage
+
+Number of targets
+
+Spell slot level
+
+9️⃣ Frontend Requirements (React)
+Pages
+
+Dashboard
+
+Spell Library
+
+Spellbook Manager
+
+Spell Creator
+
+Spell Comparison Tool
+
+Efficiency Rankings
+
+ImportExport Interface
+
+Spell Comparison UI
+
+Must allow user to
+
+Select two spells
+
+Choose slot level
+
+Enter enemy AC
+
+Enter save bonus
+
+Toggle advantagedisadvantage
+
+Choose number of targets
+
+See
+
+Avg damage
+
+Max damage
+
+Crit-adjusted damage
+
+Efficiency score
+
+Break-even points
+
+Visualization
+
+Frontend must support
+
+Line charts (AC vs Damage)
+
+Line charts (Save Bonus vs Damage)
+
+Bar charts (Spell slot efficiency)
+
+Use a charting library (Recharts or similar).
+
+Backend must provide graph-ready data.
+
+🔟 JSON Import  Export
+
+Must support
+
+Export single spell
+
+Export spellbook
+
+Bulk import
+
+Validation of schema
+
+Versioned JSON format
+
+11️⃣ Docker Architecture
+
+docker-compose must include
+
+django
+
+postgres
+
+redis (optional for future Celery)
+
+frontend
+
+nginx (production)
+
+Separate Dockerfiles for frontend and backend.
+
+12️⃣ CICD Requirements
+
+On PR
+
+Backend
+
+ruff
+
+black
+
+isort
+
+mypy
+
+pytest
+
+coverage = 85%
+
+Frontend
+
+ESLint
+
+Type checking
+
+Build check
+
+Fail pipeline on violation.
+
+13️⃣ Security Requirements
+
+JWT authentication
+
+Secure cookies in production
+
+CORS configured
+
+Rate limiting on auth
+
+No secrets committed
+
+Production-ready SECRET_KEY handling
+
+14️⃣ Logging
+
+JSON structured logging in production
+
+Log analysis service inputs for debugging
+
+Error tracking ready (Sentry-compatible)
+
+15️⃣ Phase 2 (Advanced)
+
+Monte Carlo simulation engine
+
+Advantagedisadvantage modeling
+
+Damage variance analysis
+
+Concentration modeling
+
+Multi-round combat simulation
+
+Spell efficiency heatmaps
+
+AI-powered spell recommendations
