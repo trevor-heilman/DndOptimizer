@@ -48,31 +48,31 @@ start backend/htmlcov/index.html  # Windows
 
 ```bash
 # Run all tests
-docker-compose exec backend pytest
+podman compose exec backend pytest
 
 # Run with coverage
-docker-compose exec backend pytest --cov=. --cov-report=term-missing
+podman compose exec backend pytest --cov=. --cov-report=term-missing
 
 # Run specific test file
-docker-compose exec backend pytest tests/test_models.py
+podman compose exec backend pytest tests/test_models.py
 
 # Run specific test class
-docker-compose exec backend pytest tests/test_models.py::TestUserModel
+podman compose exec backend pytest tests/test_models.py::TestUserModel
 
 # Run specific test method
-docker-compose exec backend pytest tests/test_models.py::TestUserModel::test_create_user
+podman compose exec backend pytest tests/test_models.py::TestUserModel::test_create_user
 
 # Run tests matching a pattern
-docker-compose exec backend pytest -k "test_create"
+podman compose exec backend pytest -k "test_create"
 
 # Run with verbose output
-docker-compose exec backend pytest -v
+podman compose exec backend pytest -v
 
 # Stop on first failure
-docker-compose exec backend pytest -x
+podman compose exec backend pytest -x
 
 # Show local variables on failure
-docker-compose exec backend pytest -l
+podman compose exec backend pytest -l
 ```
 
 ## Test Categories
@@ -278,7 +278,7 @@ Load test spell data:
 ```bash
 make seed
 # or
-docker-compose exec backend python manage.py seed_spells --all
+podman compose exec backend python manage.py seed_spells --all
 ```
 
 ### Spell JSON Files
@@ -299,17 +299,17 @@ def test_something(self):
 
 ### Use `-s` flag to see print statements:
 ```bash
-docker-compose exec backend pytest -s
+podman compose exec backend pytest -s
 ```
 
 ### Use `--pdb` to drop into debugger on failure:
 ```bash
-docker-compose exec backend pytest --pdb
+podman compose exec backend pytest --pdb
 ```
 
 ### Use `--lf` to re-run only failed tests:
 ```bash
-docker-compose exec backend pytest --lf
+podman compose exec backend pytest --lf
 ```
 
 ## Performance Testing
@@ -323,7 +323,7 @@ def test_complex_analysis(self):
 
 Skip slow tests:
 ```bash
-docker-compose exec backend pytest -m "not slow"
+podman compose exec backend pytest -m "not slow"
 ```
 
 ## Future Enhancements
@@ -338,7 +338,7 @@ docker-compose exec backend pytest -m "not slow"
 
 ### Tests hang or timeout
 - Check database connection
-- Verify Docker services are running: `docker-compose ps`
+- Verify Podman services are running: `podman compose ps`
 
 ### Import errors
 - Ensure `DJANGO_SETTINGS_MODULE` is set: `export DJANGO_SETTINGS_MODULE=config.settings.test`
@@ -346,7 +346,7 @@ docker-compose exec backend pytest -m "not slow"
 
 ### Database errors
 - Run migrations: `make migrate`
-- Clear test database: `docker-compose exec postgres psql -U testuser -c "DROP DATABASE dndoptimizer_test; CREATE DATABASE dndoptimizer_test;"`
+- Clear test database: `podman compose exec postgres psql -U testuser -c "DROP DATABASE dndoptimizer_test; CREATE DATABASE dndoptimizer_test;"`
 
 ### Coverage not updating
 - Delete `.coverage` file: `rm backend/.coverage`

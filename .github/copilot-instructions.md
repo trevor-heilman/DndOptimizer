@@ -60,8 +60,8 @@
 - CI must fail if coverage drops below threshold.
 
 ## 8. DevOps & CI/CD
-- Use Docker and docker-compose for local and production environments.
-- Multi-stage Docker builds; use non-root user.
+- Use Podman and podman compose for local and production environments (originally planned with Docker, migrated to Podman).
+- Multi-stage container builds (Podman); use non-root user.
 - Separate containers for backend, frontend, db, and cache.
 - Use GitHub Actions for CI/CD: lint, type check, test, build, deploy.
 - Fail pipeline on any lint, type, or test error.

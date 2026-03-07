@@ -1,14 +1,34 @@
 /**
  * Spell Detail Page
  */
+import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useSpell } from '../hooks/useSpells';
+import { useAnalyzeSpell, useGetSpellEfficiency } from '../hooks/useAnalysis';
 import { DamageChart } from '../components/DamageChart';
+import { AnalysisContextForm } from '../components/AnalysisContextForm';
+import { EfficiencyChart } from '../components/EfficiencyChart';
+import type { AnalysisContext } from '../types/api';
 
 export function SpellDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: spell, isLoading, error } = useSpell(id!);
+  const analyzeSpell = useAnalyzeSpell();
+  const getEfficiency = useGetSpellEfficiency();
+  const [analysisContext, setAnalysisContext] = useState<AnalysisContext>({
+    target_ac: 15,
+    caster_attack_bonus: 5,
+    spell_save_dc: 15,
+    target_save_bonus: 0,
+    number_of_targets: 1,
+    advantage: false,
+    disadvantage: false,
+    spell_slot_level: 1,
+    crit_enabled: true,
+    half_damage_on_save: true,
+    evasion_enabled: false,
+  });
 
   if (isLoading) {
     return (
@@ -206,6 +226,89 @@ export function SpellDetailPage() {
           <DamageChart damageComponents={spell.damage_components} title="Damage Distribution" />
         </>
       )}
+
+      {/* Live Analysis */}
+      {(spell.is_attack_roll || spell.is_saving_throw) &&
+        spell.damage_components &&
+        spell.damage_components.length > 0 && (
+          <div className="bg-white rounded-lg shadow p-6 border border-gray-200 mb-6">
+            <h2 className="text-xl font-semibold text-gray-900 mb-4">Expected Damage Analysis</h2>
+            <AnalysisContextForm context={analysisContext} onChange={setAnalysisContext} />
+
+            <div className="mt-4 flex flex-wrap gap-3">
+              <button
+                onClick={() =>
+                  analyzeSpell.mutate({ spellId: spell.id, context: { ...analysisContext, spell_slot_level: analysisContext.spell_slot_level ?? (spell.level > 0 ? spell.level : 1) } })
+                }
+                disabled={analyzeSpell.isPending}
+                className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:bg-gray-400 text-sm font-medium"
+              >
+                {analyzeSpell.isPending ? 'Analyzing…' : 'Analyze'}
+              </button>
+              {spell.level > 0 && (
+                <button
+                  onClick={() =>
+                    getEfficiency.mutate({
+                      spellId: spell.id,
+                      context: analysisContext,
+                      minLevel: spell.level,
+                      maxLevel: 9,
+                    })
+                  }
+                  disabled={getEfficiency.isPending}
+                  className="px-4 py-2 bg-white border border-gray-300 text-gray-700 rounded-md hover:bg-gray-50 disabled:opacity-50 text-sm font-medium"
+                >
+                  {getEfficiency.isPending ? 'Loading…' : 'Show Upcast Efficiency'}
+                </button>
+              )}
+            </div>
+
+            {analyzeSpell.isError && (
+              <div className="mt-4 bg-red-50 border border-red-200 rounded-md p-3 text-sm text-red-700">
+                Analysis failed. This spell may have no parsed damage components yet.
+              </div>
+            )}
+
+            {analyzeSpell.data && (
+              <div className="mt-4 grid grid-cols-2 md:grid-cols-3 gap-4">
+                <div className="bg-gray-50 rounded-lg p-4 text-center">
+                  <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">Type</div>
+                  <div className="font-semibold text-gray-900 capitalize">
+                    {analyzeSpell.data.results.type.replace(/_/g, ' ')}
+                  </div>
+                </div>
+                <div className="bg-primary-50 rounded-lg p-4 text-center border border-primary-200">
+                  <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">Expected Damage</div>
+                  <div className="text-2xl font-bold text-primary-700">
+                    {analyzeSpell.data.results.expected_damage.toFixed(2)}
+                  </div>
+                </div>
+                <div className="bg-gray-50 rounded-lg p-4 text-center">
+                  <div className="text-xs text-gray-500 uppercase tracking-wide mb-1">Efficiency</div>
+                  <div className="text-xl font-bold text-gray-900">
+                    {analyzeSpell.data.results.efficiency.toFixed(2)}
+                  </div>
+                  <div className="text-xs text-gray-500">dmg / slot level</div>
+                </div>
+              </div>
+            )}
+
+            {getEfficiency.isError && (
+              <div className="mt-4 bg-red-50 border border-red-200 rounded-md p-3 text-sm text-red-700">
+                Could not load efficiency data for this spell.
+              </div>
+            )}
+
+            {getEfficiency.data && (
+              <div className="mt-6">
+                <EfficiencyChart
+                  data={getEfficiency.data.efficiency_by_slot}
+                  spellName={spell.name}
+                />
+              </div>
+            )}
+          </div>
+        )}
 
       {/* Parsing Metadata */}
       {spell.parsing_metadata && (

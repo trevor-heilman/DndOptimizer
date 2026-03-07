@@ -68,10 +68,10 @@ backend/
 ## Running Tests Locally
 
 ```bash
-# With Docker
+# With Podman
 make test
 
-# Without Docker
+# Without Podman (local)
 cd backend
 pytest --cov=. --cov-report=term-missing
 ```

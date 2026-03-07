@@ -20,10 +20,16 @@ export function ComparePage() {
   const [spell2Search, setSpell2Search] = useState('');
   const [context, setContext] = useState<AnalysisContext>({
     target_ac: 15,
-    caster_spell_attack_bonus: 5,
-    caster_spell_save_dc: 15,
-    num_targets: 1,
-    advantage_disadvantage: 'normal',
+    caster_attack_bonus: 5,
+    spell_save_dc: 15,
+    target_save_bonus: 0,
+    number_of_targets: 1,
+    advantage: false,
+    disadvantage: false,
+    spell_slot_level: 1,
+    crit_enabled: true,
+    half_damage_on_save: true,
+    evasion_enabled: false,
   });
 
   const { data: allSpellsResponse } = useSpells({ page: 1, page_size: 1000 });

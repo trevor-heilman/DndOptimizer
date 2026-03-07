@@ -1,6 +1,10 @@
 # D&D Spell Analysis Web App  
 ## Requirements Document (Version B → Designed to Evolve into C)
 
+NOTE: This document was written when Docker was the planned container runtime.
+The project has since migrated to Podman. All Docker/docker-compose references
+in this document reflect the original plan.
+
 ---
 
 # 1. Project Overview

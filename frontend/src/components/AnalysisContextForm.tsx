@@ -25,7 +25,7 @@ export function AnalysisContextForm({ context, onChange }: AnalysisContextFormPr
           <input
             type="number"
             id="target_ac"
-            value={context.target_ac || ''}
+            value={context.target_ac ?? ''}
             onChange={(e) => handleChange('target_ac', e.target.value ? parseInt(e.target.value) : undefined)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
             placeholder="15"
@@ -35,14 +35,14 @@ export function AnalysisContextForm({ context, onChange }: AnalysisContextFormPr
         </div>
 
         <div>
-          <label htmlFor="spell_attack_bonus" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="caster_attack_bonus" className="block text-sm font-medium text-gray-700 mb-1">
             Spell Attack Bonus
           </label>
           <input
             type="number"
-            id="spell_attack_bonus"
-            value={context.caster_spell_attack_bonus || ''}
-            onChange={(e) => handleChange('caster_spell_attack_bonus', e.target.value ? parseInt(e.target.value) : undefined)}
+            id="caster_attack_bonus"
+            value={context.caster_attack_bonus ?? ''}
+            onChange={(e) => handleChange('caster_attack_bonus', e.target.value ? parseInt(e.target.value) : undefined)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
             placeholder="+5"
           />
@@ -55,8 +55,8 @@ export function AnalysisContextForm({ context, onChange }: AnalysisContextFormPr
           <input
             type="number"
             id="spell_save_dc"
-            value={context.caster_spell_save_dc || ''}
-            onChange={(e) => handleChange('caster_spell_save_dc', e.target.value ? parseInt(e.target.value) : undefined)}
+            value={context.spell_save_dc ?? ''}
+            onChange={(e) => handleChange('spell_save_dc', e.target.value ? parseInt(e.target.value) : undefined)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
             placeholder="15"
             min="1"
@@ -65,30 +65,69 @@ export function AnalysisContextForm({ context, onChange }: AnalysisContextFormPr
         </div>
 
         <div>
-          <label htmlFor="num_targets" className="block text-sm font-medium text-gray-700 mb-1">
+          <label htmlFor="target_save_bonus" className="block text-sm font-medium text-gray-700 mb-1">
+            Target Save Bonus
+          </label>
+          <input
+            type="number"
+            id="target_save_bonus"
+            value={context.target_save_bonus ?? ''}
+            onChange={(e) => handleChange('target_save_bonus', e.target.value ? parseInt(e.target.value) : undefined)}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+            placeholder="0"
+            min="-5"
+            max="15"
+          />
+        </div>
+
+        <div>
+          <label htmlFor="number_of_targets" className="block text-sm font-medium text-gray-700 mb-1">
             Number of Targets
           </label>
           <input
             type="number"
-            id="num_targets"
-            value={context.num_targets || 1}
-            onChange={(e) => handleChange('num_targets', e.target.value ? parseInt(e.target.value) : 1)}
+            id="number_of_targets"
+            value={context.number_of_targets ?? 1}
+            onChange={(e) => handleChange('number_of_targets', e.target.value ? parseInt(e.target.value) : 1)}
             className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
             placeholder="1"
             min="1"
             max="20"
           />
         </div>
+
+        <div>
+          <label htmlFor="spell_slot_level" className="block text-sm font-medium text-gray-700 mb-1">
+            Spell Slot Level
+          </label>
+          <select
+            id="spell_slot_level"
+            value={context.spell_slot_level ?? 1}
+            onChange={(e) => handleChange('spell_slot_level', parseInt(e.target.value))}
+            className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
+          >
+            {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((l) => (
+              <option key={l} value={l}>Level {l}</option>
+            ))}
+          </select>
+        </div>
       </div>
 
       <div>
-        <label htmlFor="advantage_disadvantage" className="block text-sm font-medium text-gray-700 mb-1">
-          Advantage/Disadvantage
+        <label htmlFor="adv_disadv" className="block text-sm font-medium text-gray-700 mb-1">
+          Advantage / Disadvantage
         </label>
         <select
-          id="advantage_disadvantage"
-          value={context.advantage_disadvantage || 'normal'}
-          onChange={(e) => handleChange('advantage_disadvantage', e.target.value as 'normal' | 'advantage' | 'disadvantage')}
+          id="adv_disadv"
+          value={context.advantage ? 'advantage' : context.disadvantage ? 'disadvantage' : 'normal'}
+          onChange={(e) => {
+            const val = e.target.value;
+            onChange({
+              ...context,
+              advantage: val === 'advantage',
+              disadvantage: val === 'disadvantage',
+            });
+          }}
           className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500"
         >
           <option value="normal">Normal</option>
@@ -97,9 +136,36 @@ export function AnalysisContextForm({ context, onChange }: AnalysisContextFormPr
         </select>
       </div>
 
-      <div className="bg-blue-50 border border-blue-200 rounded-md p-3 text-sm text-blue-800">
-        <strong>Note:</strong> For saving throw spells, enter the target's save bonus (e.g., STR +2, DEX +5). 
-        Format: <code className="bg-blue-100 px-1 rounded">{`{"str": 2, "dex": 5, "con": 3}`}</code>
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={context.crit_enabled ?? true}
+            onChange={(e) => handleChange('crit_enabled', e.target.checked)}
+            className="w-4 h-4 text-primary-600 rounded"
+          />
+          <span className="text-sm font-medium text-gray-700">Crits enabled</span>
+        </label>
+
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={context.half_damage_on_save ?? true}
+            onChange={(e) => handleChange('half_damage_on_save', e.target.checked)}
+            className="w-4 h-4 text-primary-600 rounded"
+          />
+          <span className="text-sm font-medium text-gray-700">Half damage on successful save</span>
+        </label>
+
+        <label className="flex items-center gap-2 cursor-pointer">
+          <input
+            type="checkbox"
+            checked={context.evasion_enabled ?? false}
+            onChange={(e) => handleChange('evasion_enabled', e.target.checked)}
+            className="w-4 h-4 text-primary-600 rounded"
+          />
+          <span className="text-sm font-medium text-gray-700">Target has Evasion</span>
+        </label>
       </div>
     </div>
   );

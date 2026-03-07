@@ -4,6 +4,8 @@
 import { useState } from 'react';
 import { useSpells } from '../hooks/useSpells';
 import { SpellCard } from '../components/SpellCard';
+import { ImportSpellsModal } from '../components/ImportSpellsModal';
+import { CreateSpellModal } from '../components/CreateSpellModal';
 
 const SCHOOLS = [
   'abjuration',
@@ -21,6 +23,8 @@ export function SpellsPage() {
   const [school, setSchool] = useState<string | undefined>(undefined);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
+  const [showImport, setShowImport] = useState(false);
+  const [showCreate, setShowCreate] = useState(false);
 
   const { data, isLoading, error } = useSpells({
     level,
@@ -39,6 +43,20 @@ export function SpellsPage() {
     <div>
       <div className="flex justify-between items-center mb-6">
         <h1 className="text-3xl font-bold text-gray-900">Spells</h1>
+        <div className="flex gap-2">
+          <button
+            onClick={() => setShowImport(true)}
+            className="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+          >
+            Import JSON
+          </button>
+          <button
+            onClick={() => setShowCreate(true)}
+            className="px-4 py-2 bg-primary-600 text-white rounded-md text-sm font-medium hover:bg-primary-700"
+          >
+            + Create Spell
+          </button>
+        </div>
       </div>
 
       {/* Filters */}
@@ -197,6 +215,10 @@ export function SpellsPage() {
           )}
         </>
       )}
+
+      {/* Modals */}
+      <ImportSpellsModal isOpen={showImport} onClose={() => setShowImport(false)} />
+      <CreateSpellModal isOpen={showCreate} onClose={() => setShowCreate(false)} />
     </div>
   );
 }

@@ -3,6 +3,7 @@ from django.urls import path, include
 from rest_framework import permissions
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.response import Response
+from drf_spectacular.views import SpectacularAPIView, SpectacularSwaggerView, SpectacularRedocView
 
 @api_view(['GET'])
 @permission_classes([permissions.AllowAny])
@@ -15,6 +16,8 @@ def api_root(request):
         'version': '1.0.0',
         'endpoints': {
             'admin': '/admin/',
+            'docs': '/api/docs/',
+            'schema': '/api/schema/',
             'users': '/api/users/',
             'auth': {
                 'register': '/api/users/register/',
@@ -35,6 +38,9 @@ def api_root(request):
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', api_root, name='api-root'),
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),
+    path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'),
+    path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'),
     path('api/users/', include('users.urls')),
     path('api/spells/', include('spells.urls')),
     path('api/spellbooks/', include('spellbooks.urls')),

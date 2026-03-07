@@ -3,7 +3,7 @@
 help:
 	@echo "DndOptimizer - Make Commands"
 	@echo "----------------------------"
-	@echo "build        Build Docker containers"
+	@echo "build        Build Podman containers"
 	@echo "up           Start all services"
 	@echo "down         Stop all services"
 	@echo "migrate      Run Django migrations"
@@ -21,41 +21,41 @@ help:
 	@echo "seed         Seed database with spell data"
 
 build:
-	docker-compose build
+	podman compose build
 
 up:
-	docker-compose up -d
+	podman compose up -d
 
 down:
-	docker-compose down
+	podman compose down
 
 migrate:
-	docker-compose exec backend python manage.py migrate
+	podman compose exec backend python manage.py migrate
 
 makemigrations:
-	docker-compose exec backend python manage.py makemigrations
+	podman compose exec backend python manage.py makemigrations
 
 shell:
-	docker-compose exec backend python manage.py shell
+	podman compose exec backend python manage.py shell
 
 superuser:
-	docker-compose exec backend python manage.py createsuperuser
+	podman compose exec backend python manage.py createsuperuser
 
 test:
-	docker-compose exec backend pytest --cov=. --cov-report=term-missing --cov-fail-under=80
+	podman compose exec backend pytest --cov=. --cov-report=term-missing --cov-fail-under=80
 
 test-fast:
-	docker-compose exec backend pytest --no-cov
+	podman compose exec backend pytest --no-cov
 
 test-cov:
-	docker-compose exec backend pytest --cov=. --cov-report=html --cov-report=term-missing
+	podman compose exec backend pytest --cov=. --cov-report=html --cov-report=term-missing
 	@echo "Coverage report generated in backend/htmlcov/index.html"
 
 test-watch:
-	docker-compose exec backend ptw -- --testmon
+	podman compose exec backend ptw -- --testmon
 
 seed:
-	docker-compose exec backend python manage.py seed_spells --all
+	podman compose exec backend python manage.py seed_spells --all
 
 lint:
 	@echo "Running ruff..."
@@ -79,10 +79,10 @@ clean:
 	find . -type d -name ".mypy_cache" -exec rm -rf {} +
 
 logs:
-	docker-compose logs -f
+	podman compose logs -f
 
 restart:
-	docker-compose restart
+	podman compose restart
 
 ps:
-	docker-compose ps
+	podman compose ps

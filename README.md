@@ -26,7 +26,7 @@ A full-stack web application for managing D&D 5e spells, creating spellbooks, an
 - Django REST Framework
 - PostgreSQL
 - JWT Authentication
-- Docker & Docker Compose
+- Podman & Podman Compose
 
 ### Frontend (React + TypeScript)
 - React 18
@@ -37,7 +37,7 @@ A full-stack web application for managing D&D 5e spells, creating spellbooks, an
 - React Query (TanStack)
 - Axios
 - Recharts
-- Docker (multi-stage build with nginx)
+- Podman (multi-stage build with nginx)
 
 ## Project Structure
 
@@ -62,7 +62,7 @@ DndOptimizer/
 │   └── public/          # Static assets
 ├── documentation/       # Requirements & architecture docs
 ├── .github/            # GitHub config & copilot instructions
-├── docker-compose.yml  # Docker orchestration
+├── compose.yml         # Podman Compose orchestration
 └── README.md
 ```
 
@@ -70,9 +70,9 @@ DndOptimizer/
 
 ### Prerequisites
 
-- Docker and Docker Compose
+- Podman and Podman Compose
 - Python 3.12+ (for local development)
-- PostgreSQL 16+ (if not using Docker)
+- PostgreSQL 16+ (if not using Podman)
 
 ### Installation
 
@@ -88,19 +88,19 @@ DndOptimizer/
    # Edit .env with your configuration
    ```
 
-3. **Start with Docker** (Recommended)
+3. **Start with Podman**
    ```bash
-   docker-compose up --build
+   podman compose up --build
    ```
 
 4. **Run migrations**
    ```bash
-   docker-compose exec backend python manage.py migrate
+   podman compose exec backend python manage.py migrate
    ```
 
 5. **Create superuser**
    ```bash
-   docker-compose exec backend python manage.py createsuperuser
+   podman compose exec backend python manage.py createsuperuser
    ```
 
 6. **Access the application**
@@ -120,7 +120,7 @@ npm run dev
 
 Frontend will be available at http://localhost:5173 with HMR enabled.
 
-### Local Development (Without Docker)
+### Local Development (Without Podman)
 
 1. **Create virtual environment**
    ```bash
@@ -139,16 +139,7 @@ Frontend will be available at http://localhost:5173 with HMR enabled.
    createdb dndoptimizer
    ```
 
-4.Backend tests with Docker
-docker-compose exec backend pytest
-
-# Backend tests locally
-cd backend
-pytest
-
-# Frontend tests (when implemented)
-cd frontend
-npm  **Run development server**
+4. **Run development server**
    ```bash
    python manage.py runserver
    ```
@@ -156,12 +147,16 @@ npm  **Run development server**
 ## Running Tests
 
 ```bash
-# With Docker
-docker-compose exec backend pytest
+# With Podman
+podman compose exec backend pytest
 
 # Local
 cd backend
 pytest
+
+# Frontend tests
+cd frontend
+npm test
 ```
 
 ## Code Quality
@@ -198,7 +193,7 @@ See the [documentation/](documentation/) folder for requirements and architectur
 ✅ Management command for seed data  
 ✅ Comprehensive test suite (models, API, services)  
 ✅ Test coverage reporting (80% minimum)  
-✅ Docker and docker-compose configuration  
+✅ Podman compose configuration  
 ✅ CI/CD pipeline with GitHub Actions  
 ✅ Testing framework with pytest  
 ✅ Code quality tools (black, ruff, mypy)
@@ -218,7 +213,7 @@ See the [documentation/](documentation/) folder for requirements and architectur
 ✅ Data visualization with Recharts (damage charts)  
 ✅ 33 frontend source files  
 ✅ 0 TypeScript errors  
-✅ Production Docker build with nginx
+✅ Production container build with nginx (Podman)
 
 ### Next Steps
 - [ ] Write frontend tests (React Testing Library)

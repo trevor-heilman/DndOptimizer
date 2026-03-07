@@ -125,11 +125,16 @@ export interface SpellbookUpdate {
 // Analysis types
 export interface AnalysisContext {
   target_ac?: number;
-  target_saves?: Record<string, number>;
-  caster_spell_attack_bonus?: number;
-  caster_spell_save_dc?: number;
-  advantage_disadvantage?: 'normal' | 'advantage' | 'disadvantage';
-  num_targets?: number;
+  target_save_bonus?: number;
+  spell_save_dc?: number;
+  caster_attack_bonus?: number;
+  number_of_targets?: number;
+  advantage?: boolean;
+  disadvantage?: boolean;
+  spell_slot_level?: number;
+  crit_enabled?: boolean;
+  half_damage_on_save?: boolean;
+  evasion_enabled?: boolean;
 }
 
 export interface SpellAnalysisResult {
@@ -141,6 +146,29 @@ export interface SpellAnalysisResult {
   expected_damage: number;
   hit_probability?: number;
   save_failure_probability?: number;
+}
+
+/** Shape returned by POST /api/analysis/analyze/ */
+export interface SpellAnalysisApiResult {
+  spell: { id: string; name: string; level: number };
+  results: {
+    type: 'attack_roll' | 'saving_throw' | 'non_damage';
+    expected_damage: number;
+    efficiency: number;
+  };
+}
+
+/** Single row in efficiency_by_slot array */
+export interface EfficiencyDataPoint {
+  slot_level: number;
+  expected_damage: number;
+  efficiency: number;
+}
+
+/** Shape returned by POST /api/analysis/efficiency/ */
+export interface SpellEfficiencyResponse {
+  spell: { id: string; name: string; level: number };
+  efficiency_by_slot: EfficiencyDataPoint[];
 }
 
 export interface CompareSpellsRequest extends AnalysisContext {

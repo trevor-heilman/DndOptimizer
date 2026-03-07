@@ -1,7 +1,7 @@
 # Quick Start Guide - Testing the API
 
 ## Prerequisites
-- Docker and Docker Compose installed
+- Podman and Podman Compose installed
 - Terminal access
 - API client (Postman, curl, or similar)
 
@@ -12,13 +12,13 @@
 cd DndOptimizer
 
 # Build and start containers
-docker-compose up --build
+podman compose up --build
 
 # In a new terminal, run migrations
-docker-compose exec backend python manage.py migrate
+podman compose exec backend python manage.py migrate
 
 # Create superuser
-docker-compose exec backend python manage.py createsuperuser
+podman compose exec backend python manage.py createsuperuser
 ```
 
 ## Step 2: Access the API
@@ -211,29 +211,29 @@ GET /api/spells/spells/?page=2
 
 ### Check Logs
 ```bash
-docker-compose logs -f backend
+podman compose logs -f backend
 ```
 
 ### Access Django Shell
 ```bash
-docker-compose exec backend python manage.py shell
+podman compose exec backend python manage.py shell
 ```
 
 ### Run Tests
 ```bash
-docker-compose exec backend pytest
+podman compose exec backend pytest
 ```
 
 ### Check Database
 ```bash
-docker-compose exec db psql -U dnduser -d dndoptimizer
+podman compose exec db psql -U dnduser -d dndoptimizer
 ```
 
 ## Troubleshooting
 
 ### Migrations Not Applied
 ```bash
-docker-compose exec backend python manage.py migrate
+podman compose exec backend python manage.py migrate
 ```
 
 ### Token Expired
@@ -249,8 +249,8 @@ Ensure you're including the Authorization header with a valid token.
 
 ### Container Not Starting
 ```bash
-docker-compose down
-docker-compose up --build
+podman compose down
+podman compose up --build
 ```
 
 ## Next Steps

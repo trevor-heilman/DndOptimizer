@@ -60,7 +60,7 @@ yarn-error.log*
 Thumbs.db
 *.bak
 
-# Docker
+# Container / Podman
 *.env.docker
 
 # Project specific

@@ -1,3 +1,5 @@
+> **Note:** This document was written when Docker was the planned container runtime. The project has since migrated to **Podman**. All `docker-compose` commands should be read as `podman compose`.
+
 # Phase 3 Complete: Spell Parsing & Comprehensive Testing
 
 **Date**: March 2, 2026  

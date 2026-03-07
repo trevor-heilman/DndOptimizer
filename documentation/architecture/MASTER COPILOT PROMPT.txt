@@ -1,3 +1,6 @@
+NOTE: This document was written when Docker was the planned container runtime.
+The project has since migrated to Podman. All Docker references reflect the original plan.
+
 Generate a full-stack production-grade application with:
 
 Backend:

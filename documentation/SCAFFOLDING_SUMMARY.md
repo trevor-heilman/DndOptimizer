@@ -1,3 +1,5 @@
+> **Note:** This document was written when Docker was the planned container runtime. The project has since migrated to **Podman**. All `docker-compose` commands should be read as `podman compose`, and `compose.yml` replaces `docker-compose.yml`.
+
 # Project Scaffolding Complete
 
 ## Summary

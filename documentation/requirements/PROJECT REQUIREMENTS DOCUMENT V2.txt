@@ -1,3 +1,7 @@
+NOTE: This document was written when Docker was the planned container runtime.
+The project has since migrated to Podman. All Docker/docker-compose references
+in this document reflect the original plan.
+
 📘 PROJECT REQUIREMENTS DOCUMENT
 Arcane Spell Optimization Platform
 

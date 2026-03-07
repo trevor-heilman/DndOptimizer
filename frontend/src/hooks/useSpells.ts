@@ -1,9 +1,9 @@
 /**
  * Custom hook for fetching spells
  */
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import spellService from '../services/spells';
-import type { SpellListParams } from '../types/api';
+import type { Spell, SpellListParams } from '../types/api';
 
 export function useSpells(params?: SpellListParams) {
   return useQuery({
@@ -17,5 +17,35 @@ export function useSpell(id: string) {
     queryKey: ['spell', id],
     queryFn: () => spellService.getSpell(id),
     enabled: !!id,
+  });
+}
+
+export function useCreateSpell() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (data: Partial<Spell>) => spellService.createSpell(data),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['spells'] });
+    },
+  });
+}
+
+export function useImportSpells() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (spells: any[]) => spellService.importSpells(spells),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['spells'] });
+    },
+  });
+}
+
+export function useDeleteSpell() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => spellService.deleteSpell(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['spells'] });
+    },
   });
 }
