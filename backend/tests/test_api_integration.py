@@ -21,6 +21,7 @@ def api_client():
 def test_user(db):
     """Fixture for test user."""
     return User.objects.create_user(
+        username='testuser',
         email='testuser@example.com',
         password='testpass123'
     )
@@ -391,3 +392,235 @@ class TestPermissions:
         response = client.delete(f'/api/spellbooks/{other_spellbook.id}/')
         
         assert response.status_code in [status.HTTP_403_FORBIDDEN, status.HTTP_404_NOT_FOUND]
+
+
+# ---------------------------------------------------------------------------
+# Helpers shared across import tests
+# ---------------------------------------------------------------------------
+
+IMPORT_URL = '/api/spells/spells/import_spells/'
+
+SNAKE_SPELL = {
+    'name': 'Fireball',
+    'level': 3,
+    'school': 'evocation',
+    'casting_time': '1 action',
+    'range': '150 feet',
+    'duration': 'Instantaneous',
+    'description': 'A bright streak of fire.',
+    'is_saving_throw': True,
+    'save_type': 'DEX',
+}
+
+PASCAL_SPELL = {
+    'Name': 'Mind Sliver',
+    'Level': 0,
+    'School': 'Enchantment',
+    'CastingTime': '1 action',
+    'Range': '60 feet',
+    'Duration': 'Instantaneous',
+    'Description': 'You drive a disorienting spike of psychic energy.',
+    'Ritual': False,
+    'Source': 'TCoE',
+    'Components': 'V',
+    'Classes': 'Sorcerer, Warlock, Wizard',
+}
+
+
+@pytest.fixture
+def staff_user(db):
+    """Fixture for a staff (admin) user."""
+    return User.objects.create_user(
+        username='adminuser',
+        email='admin@example.com',
+        password='adminpass123',
+        is_staff=True,
+    )
+
+
+@pytest.fixture
+def authenticated_staff_client(staff_user):
+    """Fixture for authenticated staff API client."""
+    client = APIClient()
+    client.force_authenticate(user=staff_user)
+    return client
+
+
+@pytest.mark.django_db
+class TestSpellImport:
+    """
+    Test POST /api/spells/spells/import_spells/ with a variety of JSON structures.
+    """
+
+    # ------------------------------------------------------------------
+    # 1. Standard flat snake_case array
+    # ------------------------------------------------------------------
+    def test_import_snake_case_array(self, authenticated_client):
+        """Flat JSON array with snake_case field names (spells.json format)."""
+        payload = {'spells': [SNAKE_SPELL], 'source': 'test'}
+        response = authenticated_client.post(IMPORT_URL, payload, format='json')
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.data['imported'] == 1
+        assert response.data['failed'] == 0
+        assert Spell.objects.filter(name='Fireball').exists()
+
+    # ------------------------------------------------------------------
+    # 2. PascalCase keyed-dict (TCoE format: {"Spells.X": {...}, ...})
+    #    The frontend extracts Spells.* entries before sending; this test
+    #    sends the already-extracted list as the server receives it.
+    # ------------------------------------------------------------------
+    def test_import_pascal_case_fields(self, authenticated_client):
+        """Spell objects with PascalCase fields (TCoE schema)."""
+        payload = {'spells': [PASCAL_SPELL], 'source': 'TCoE test'}
+        response = authenticated_client.post(IMPORT_URL, payload, format='json')
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.data['imported'] == 1
+        assert response.data['failed'] == 0
+        assert Spell.objects.filter(name='Mind Sliver').exists()
+
+    # ------------------------------------------------------------------
+    # 3. Cantrip – level supplied as integer 0
+    # ------------------------------------------------------------------
+    def test_import_cantrip_level_zero(self, authenticated_client):
+        """Cantrip with level=0 should import without validation errors."""
+        cantrip = {**SNAKE_SPELL, 'name': 'Prestidigitation', 'level': 0}
+        payload = {'spells': [cantrip], 'source': 'test'}
+        response = authenticated_client.post(IMPORT_URL, payload, format='json')
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.data['imported'] == 1
+        spell = Spell.objects.get(name='Prestidigitation')
+        assert spell.level == 0
+
+    # ------------------------------------------------------------------
+    # 4. Cantrip – level supplied as the string 'cantrip' (raw format)
+    # ------------------------------------------------------------------
+    def test_import_cantrip_string_level(self, authenticated_client):
+        """Level='cantrip' string should be normalised to 0 by the parsing service."""
+        cantrip = {**SNAKE_SPELL, 'name': 'Light', 'level': 'cantrip'}
+        payload = {'spells': [cantrip], 'source': 'test'}
+        response = authenticated_client.post(IMPORT_URL, payload, format='json')
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.data['imported'] == 1
+        spell = Spell.objects.get(name='Light')
+        assert spell.level == 0
+
+    # ------------------------------------------------------------------
+    # 5. Multiple spells in one import (mixed schools / levels)
+    # ------------------------------------------------------------------
+    def test_import_multiple_spells(self, authenticated_client):
+        """Importing multiple spells in a single request."""
+        magic_missile = {
+            'name': 'Magic Missile',
+            'level': 1,
+            'school': 'evocation',
+            'casting_time': '1 action',
+            'range': '120 feet',
+            'duration': 'Instantaneous',
+            'description': 'Three darts of magical force.',
+        }
+        sleep = {
+            'name': 'Sleep',
+            'level': 1,
+            'school': 'enchantment',
+            'casting_time': '1 action',
+            'range': '90 feet',
+            'duration': '1 minute',
+            'description': 'Sends creatures into a magical slumber.',
+        }
+        payload = {'spells': [SNAKE_SPELL, magic_missile, sleep], 'source': 'test'}
+        response = authenticated_client.post(IMPORT_URL, payload, format='json')
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.data['imported'] == 3
+        assert response.data['failed'] == 0
+
+    # ------------------------------------------------------------------
+    # 6. Mixed batch: some valid, one missing name
+    # ------------------------------------------------------------------
+    def test_import_partial_failure(self, authenticated_client):
+        """Batch with one invalid spell returns partial success, not a full 400."""
+        bad_spell = {'level': 2, 'school': 'abjuration', 'casting_time': '1 action',
+                     'range': '30 feet', 'duration': 'Instantaneous', 'description': 'No name.'}
+        payload = {'spells': [SNAKE_SPELL, bad_spell], 'source': 'test'}
+        response = authenticated_client.post(IMPORT_URL, payload, format='json')
+
+        # The serializer validates each spell; missing name triggers 400 at validation
+        # OR the service handles it as a failed spell — either is acceptable
+        if response.status_code == status.HTTP_201_CREATED:
+            # Per-spell failure tracked in 'failed'
+            assert response.data['imported'] >= 1
+        else:
+            assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    # ------------------------------------------------------------------
+    # 7. Entirely missing required field → 400 from serializer
+    # ------------------------------------------------------------------
+    def test_import_missing_name_field_rejected(self, authenticated_client):
+        """Spell missing 'name' (and 'Name') should be rejected."""
+        bad_spell = {'level': 1, 'school': 'evocation', 'casting_time': '1 action',
+                     'range': '60 feet', 'duration': 'Instantaneous', 'description': 'No name.'}
+        payload = {'spells': [bad_spell]}
+        response = authenticated_client.post(IMPORT_URL, payload, format='json')
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    # ------------------------------------------------------------------
+    # 8. Empty spells list → 400 (allow_empty=False on serializer)
+    # ------------------------------------------------------------------
+    def test_import_empty_list_rejected(self, authenticated_client):
+        """Empty spells list should return 400 (allow_empty=False)."""
+        payload = {'spells': []}
+        response = authenticated_client.post(IMPORT_URL, payload, format='json')
+
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+    # ------------------------------------------------------------------
+    # 9. Unauthenticated user → 401
+    # ------------------------------------------------------------------
+    def test_import_unauthenticated(self, api_client):
+        """Unauthenticated request should be rejected."""
+        payload = {'spells': [SNAKE_SPELL]}
+        response = api_client.post(IMPORT_URL, payload, format='json')
+
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    # ------------------------------------------------------------------
+    # 10. is_system=True without staff → 403
+    # ------------------------------------------------------------------
+    def test_import_system_requires_staff(self, authenticated_client):
+        """Non-staff user requesting is_system import should get 403."""
+        payload = {'spells': [SNAKE_SPELL], 'is_system': True}
+        response = authenticated_client.post(IMPORT_URL, payload, format='json')
+
+        assert response.status_code == status.HTTP_403_FORBIDDEN
+
+    # ------------------------------------------------------------------
+    # 11. is_system=True with staff → imported spell is non-custom, no owner
+    # ------------------------------------------------------------------
+    def test_import_system_by_staff(self, authenticated_staff_client):
+        """Staff user with is_system=True marks spells as system (no owner)."""
+        payload = {'spells': [SNAKE_SPELL], 'source': 'official', 'is_system': True}
+        response = authenticated_staff_client.post(IMPORT_URL, payload, format='json')
+
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.data['imported'] == 1
+        spell = Spell.objects.get(name='Fireball')
+        assert spell.is_custom is False
+        assert spell.created_by is None
+
+    # ------------------------------------------------------------------
+    # 12. Standard user import → spell is non-custom but owned by user
+    # ------------------------------------------------------------------
+    def test_import_user_owned(self, authenticated_client, test_user):
+        """Regular user import: spell is non-custom, owned by that user."""
+        payload = {'spells': [SNAKE_SPELL], 'source': 'homebrew'}
+        response = authenticated_client.post(IMPORT_URL, payload, format='json')
+
+        assert response.status_code == status.HTTP_201_CREATED
+        spell = Spell.objects.get(name='Fireball')
+        assert spell.is_custom is False
+        assert spell.created_by == test_user

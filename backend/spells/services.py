@@ -165,20 +165,67 @@ class ConfidenceScoringService:
 class SpellParsingService:
     """
     Main service for parsing spell data from various JSON schemas.
+    Supports:
+      - snake_case array schema (spells.json)
+      - PascalCase keyed-dict schema (TCoE / D&D Beyond export)
+      - Open5e / SRD schema (desc field, nested school object)
     """
-    
+
+    # Maps PascalCase TCoE/D&DBeyond field names to our internal snake_case names
+    _PASCAL_FIELD_MAP = {
+        'Name': 'name',
+        'Level': 'level',
+        'School': 'school',
+        'CastingTime': 'casting_time',
+        'Range': 'range',
+        'Duration': 'duration',
+        'Ritual': 'ritual',
+        'Description': 'description',
+        'Source': 'source',
+        'Components': 'components_raw',
+        'Classes': 'classes',
+        'HigherLevel': 'higher_level',
+        'AtHigherLevels': 'higher_level',
+    }
+
+    @classmethod
+    def _normalize_raw(cls, raw_data: Dict[str, Any]) -> Dict[str, Any]:
+        """
+        Normalize a raw spell dict from any known schema into a consistent
+        internal snake_case representation before further parsing.
+        """
+        # Detect PascalCase schema by presence of 'Name' (capital N)
+        if 'Name' in raw_data and 'name' not in raw_data:
+            normalized: Dict[str, Any] = {}
+            for pascal, snake in cls._PASCAL_FIELD_MAP.items():
+                if pascal in raw_data:
+                    normalized[snake] = raw_data[pascal]
+            # Carry over any fields already in snake_case (future-proofing)
+            for k, v in raw_data.items():
+                if k not in cls._PASCAL_FIELD_MAP and k == k.lower():
+                    normalized.setdefault(k, v)
+            return normalized
+
+        # Already snake_case — return as-is
+        return raw_data
+
     @classmethod
     def parse_spell_data(cls, raw_data: Dict[str, Any]) -> Dict[str, Any]:
         """
         Parse spell data from raw JSON and extract normalized fields.
         Returns a dictionary with normalized spell data and confidence score.
+        Handles snake_case, PascalCase, and Open5e schemas automatically.
         """
-        # Extract text for parsing
-        description = raw_data.get('desc', '')
+        # Normalize field names across different source schemas
+        raw_data = cls._normalize_raw(raw_data)
+
+        # Extract description — try multiple field names used by different schemas
+        description = raw_data.get('description') or raw_data.get('desc', '')
         if isinstance(description, list):
             description = ' '.join(description)
-        
-        higher_level = raw_data.get('higher_level', '')
+
+        # Extract higher-level text — multiple field names
+        higher_level = raw_data.get('higher_level') or raw_data.get('higher_levels', '')
         if isinstance(higher_level, list):
             higher_level = ' '.join(higher_level)
         
@@ -217,15 +264,23 @@ class SpellParsingService:
         confidence = ConfidenceScoringService.calculate_confidence(parsing_data)
         
         # Build normalized spell data
+        raw_level = raw_data.get('level', 0)
+        if isinstance(raw_level, str):
+            raw_level = 0 if raw_level.lower() == 'cantrip' else int(raw_level)
+
+        # casting_time: accept both 'casting_time' and 'castingTime'
+        casting_time = raw_data.get('casting_time') or raw_data.get('castingTime', '')
+
         normalized_data = {
             'name': raw_data.get('name', 'Unnamed Spell'),
-            'level': raw_data.get('level', 0),
+            'level': raw_level,
             'school': cls._extract_school(raw_data),
-            'casting_time': raw_data.get('casting_time', ''),
+            'casting_time': casting_time,
             'range': raw_data.get('range', ''),
             'duration': raw_data.get('duration', ''),
             'concentration': cls._detect_concentration(raw_data),
             'ritual': raw_data.get('ritual', False),
+            'source': raw_data.get('source', ''),
             'is_attack_roll': is_attack_roll,
             'is_saving_throw': is_saving_throw,
             'save_type': save_type,

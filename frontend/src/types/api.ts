@@ -6,6 +6,7 @@
 export interface User {
   id: string;
   email: string;
+  is_staff?: boolean;
   created_at: string;
 }
 

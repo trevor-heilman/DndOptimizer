@@ -2,7 +2,7 @@ from rest_framework import viewsets, status, permissions, filters
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
-from django.db import models
+from django.db import models, transaction
 from .models import Spell, DamageComponent
 from .serializers import (
     SpellListSerializer,
@@ -12,6 +12,7 @@ from .serializers import (
     SpellExportSerializer,
     DamageComponentSerializer
 )
+from .services import SpellParsingService
 
 
 class SpellViewSet(viewsets.ModelViewSet):
@@ -55,41 +56,68 @@ class SpellViewSet(viewsets.ModelViewSet):
         """Set created_by to current user."""
         serializer.save(created_by=self.request.user, is_custom=True)
 
+    @action(detail=False, methods=['get'])
+    def spell_counts(self, request):
+        """
+        Return spell counts per delete category for the current user.
+        GET /api/spells/spells/spell_counts/
+        """
+        if not request.user.is_authenticated:
+            return Response(
+                {'system': 0, 'imported': 0, 'custom': 0},
+                status=status.HTTP_200_OK
+            )
+        system = Spell.objects.filter(is_custom=False, created_by__isnull=True).count()
+        imported = Spell.objects.filter(is_custom=False, created_by=request.user).count()
+        custom = Spell.objects.filter(is_custom=True, created_by=request.user).count()
+        return Response({'system': system, 'imported': imported, 'custom': custom})
+
     @action(detail=False, methods=['post'])
     def import_spells(self, request):
         """
         Bulk import spells from JSON.
         POST /api/spells/import_spells/
+        Body fields:
+          spells      – list of spell objects (required)
+          source      – source label string
+          auto_parse  – bool
+          is_system   – bool, staff only; marks spells as non-custom with no owner
         """
         serializer = SpellImportSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        
+
         spells_data = serializer.validated_data['spells']
         source = serializer.validated_data['source']
         auto_parse = serializer.validated_data['auto_parse']
-        
+        is_system = bool(request.data.get('is_system', False))
+
+        if is_system and not request.user.is_staff:
+            return Response(
+                {'error': 'Staff access required to import system spells'},
+                status=status.HTTP_403_FORBIDDEN
+            )
+
         imported_spells = []
         failed_spells = []
-        
+
         for spell_data in spells_data:
             try:
-                # Create spell with raw data
-                spell = Spell.objects.create(
-                    name=spell_data.get('name'),
-                    level=spell_data.get('level', 0),
-                    school=spell_data.get('school', 'evocation'),
-                    source=source,
-                    raw_data=spell_data,
-                    created_by=request.user if request.user.is_authenticated else None
-                )
-                
-                # TODO: If auto_parse, trigger parsing service
-                # This will be implemented in the parsing service
-                
-                imported_spells.append(spell)
+                with transaction.atomic():
+                    parsed = SpellParsingService.parse_spell_data(dict(spell_data))
+                    # Override source with what the user provided
+                    parsed['normalized_data']['source'] = source
+                    spell = SpellParsingService.create_spell_from_parsed_data(
+                        parsed,
+                        created_by=None if is_system else (request.user if request.user.is_authenticated else None)
+                    )
+                    if not is_system:
+                        # Mark user-imported spells as non-custom (visible to all) but owned
+                        spell.is_custom = False
+                        spell.save(update_fields=['is_custom'])
+                    imported_spells.append(spell)
             except Exception as e:
                 failed_spells.append({
-                    'name': spell_data.get('name', 'Unknown'),
+                    'name': spell_data.get('name') or spell_data.get('Name', 'Unknown'),
                     'error': str(e)
                 })
         
@@ -109,6 +137,57 @@ class SpellViewSet(viewsets.ModelViewSet):
         spell = self.get_object()
         serializer = SpellExportSerializer(spell)
         return Response(serializer.data)
+
+    @action(detail=False, methods=['post'])
+    def bulk_delete(self, request):
+        """
+        Bulk delete spells by category.
+        POST /api/spells/spells/bulk_delete/
+        Body: { "categories": ["system", "imported", "custom"] }
+          - system:   non-custom spells seeded by admin (staff only)
+          - imported: non-custom spells imported by the current user
+          - custom:   custom spells created by the current user
+        """
+        if not request.user.is_authenticated:
+            return Response(
+                {'error': 'Authentication required'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+
+        categories = request.data.get('categories', [])
+        valid = {'system', 'imported', 'custom'}
+        invalid = set(categories) - valid
+        if invalid:
+            return Response(
+                {'error': f'Invalid categories: {list(invalid)}. Valid: system, imported, custom'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+        if not categories:
+            return Response(
+                {'error': 'Provide at least one category'},
+                status=status.HTTP_400_BAD_REQUEST
+            )
+
+        deleted = 0
+
+        if 'system' in categories:
+            if not request.user.is_staff:
+                return Response(
+                    {'error': 'Staff access required to delete system spells'},
+                    status=status.HTTP_403_FORBIDDEN
+                )
+            count, _ = Spell.objects.filter(is_custom=False, created_by__isnull=True).delete()
+            deleted += count
+
+        if 'imported' in categories:
+            count, _ = Spell.objects.filter(is_custom=False, created_by=request.user).delete()
+            deleted += count
+
+        if 'custom' in categories:
+            count, _ = Spell.objects.filter(is_custom=True, created_by=request.user).delete()
+            deleted += count
+
+        return Response({'deleted': deleted}, status=status.HTTP_200_OK)
 
     @action(detail=False, methods=['post'])
     def export_multiple(self, request):
