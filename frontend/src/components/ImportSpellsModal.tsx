@@ -3,6 +3,7 @@
  */
 import { useState, useRef } from 'react';
 import { useImportSpells } from '../hooks/useSpells';
+import { useAuth } from '../contexts/AuthContext';
 
 interface ImportSpellsModalProps {
   isOpen: boolean;
@@ -15,19 +16,27 @@ function parseSpellsFromJson(raw: unknown): any[] {
   if (Array.isArray(raw)) return raw;
   if (raw && typeof raw === 'object') {
     const obj = raw as Record<string, unknown>;
+    // Keyed-dict export: { "Spells.xxx": {...}, "Creatures.xxx": {...} }
+    const spellEntries = Object.entries(obj).filter(([k]) => k.startsWith('Spells.'));
+    if (spellEntries.length > 0) return spellEntries.map(([, v]) => v);
+    // Standard wrappers
     if (Array.isArray(obj['spells'])) return obj['spells'] as any[];
-    // Single spell object
-    return [raw];
+    if (Array.isArray(obj['spell'])) return obj['spell'] as any[];
+    // Single spell object — only treat as a spell if it looks like one
+    if ('name' in obj || 'Name' in obj) return [raw];
   }
   return [];
 }
 
 export function ImportSpellsModal({ isOpen, onClose }: ImportSpellsModalProps) {
+  const { user } = useAuth();
+  const isStaff = user?.is_staff ?? false;
   const [mode, setMode] = useState<ImportMode>('file');
   const [pasteText, setPasteText] = useState('');
   const [parseError, setParseError] = useState<string | null>(null);
   const [parsedCount, setParsedCount] = useState<number | null>(null);
   const [parsedSpells, setParsedSpells] = useState<any[]>([]);
+  const [isSystem, setIsSystem] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const importSpells = useImportSpells();
 
@@ -38,33 +47,58 @@ export function ImportSpellsModal({ isOpen, onClose }: ImportSpellsModalProps) {
     setParseError(null);
     setParsedCount(null);
     setParsedSpells([]);
+    setIsSystem(false);
     importSpells.reset();
     onClose();
   };
 
+  const handleImportAnother = () => {
+    importSpells.reset();
+    setParsedSpells([]);
+    setParsedCount(null);
+    setParseError(null);
+    if (fileInputRef.current) fileInputRef.current.value = '';
+  };
+
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file) return;
+    const files = Array.from(e.target.files ?? []);
+    if (files.length === 0) return;
     setParseError(null);
     setParsedCount(null);
     setParsedSpells([]);
+    importSpells.reset();
 
-    const reader = new FileReader();
-    reader.onload = (ev) => {
-      try {
-        const parsed = JSON.parse(ev.target?.result as string);
-        const spells = parseSpellsFromJson(parsed);
-        if (spells.length === 0) {
-          setParseError('No spells found. Expected a JSON array, an object with a "spells" key, or a single spell object.');
-          return;
-        }
-        setParsedSpells(spells);
-        setParsedCount(spells.length);
-      } catch {
-        setParseError('Invalid JSON. Please check the file and try again.');
+    const readFile = (file: File): Promise<{ spells: any[]; error?: string }> =>
+      new Promise((resolve) => {
+        const reader = new FileReader();
+        reader.onload = (ev) => {
+          try {
+            const parsed = JSON.parse(ev.target?.result as string);
+            resolve({ spells: parseSpellsFromJson(parsed) });
+          } catch {
+            resolve({ spells: [], error: file.name });
+          }
+        };
+        reader.readAsText(file);
+      });
+
+    Promise.all(files.map(readFile)).then((results) => {
+      const badFiles = results.filter((r) => r.error).map((r) => r.error!);
+      const allSpells = results.flatMap((r) => r.spells);
+      if (allSpells.length === 0) {
+        setParseError(
+          badFiles.length > 0
+            ? `Invalid JSON in: ${badFiles.join(', ')}`
+            : 'No spells found. Expected a JSON array, an object with a "spells" key, or a single spell object.'
+        );
+        return;
       }
-    };
-    reader.readAsText(file);
+      if (badFiles.length > 0) {
+        setParseError(`Could not parse: ${badFiles.join(', ')}. Loaded ${allSpells.length} spell(s) from the other file(s).`);
+      }
+      setParsedSpells(allSpells);
+      setParsedCount(allSpells.length);
+    });
   };
 
   const handleParsePaste = () => {
@@ -87,7 +121,7 @@ export function ImportSpellsModal({ isOpen, onClose }: ImportSpellsModalProps) {
 
   const handleImport = async () => {
     if (parsedSpells.length === 0) return;
-    await importSpells.mutateAsync(parsedSpells);
+    await importSpells.mutateAsync({ spells: parsedSpells, isSystem });
   };
 
   const importResult = importSpells.data;
@@ -142,11 +176,12 @@ export function ImportSpellsModal({ isOpen, onClose }: ImportSpellsModalProps) {
                 ref={fileInputRef}
                 type="file"
                 accept=".json,application/json"
+                multiple
                 onChange={handleFileChange}
                 className="block w-full text-sm text-gray-700 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-medium file:bg-primary-50 file:text-primary-700 hover:file:bg-primary-100"
               />
               <p className="mt-2 text-xs text-gray-500">
-                Accepts: JSON array of spells, <code>{`{ "spells": [...] }`}</code>, or a single spell object.
+                Accepts one or more files: JSON array, <code>{`{ "spells": [...] }`}</code>, keyed dict, or single spell.
               </p>
             </div>
           )}
@@ -185,9 +220,33 @@ export function ImportSpellsModal({ isOpen, onClose }: ImportSpellsModalProps) {
           {parsedCount !== null && parsedCount > 0 && !importSpells.isSuccess && (
             <div className="bg-green-50 border border-green-200 rounded-md p-3 text-sm text-green-800">
               <strong>{parsedCount} spell{parsedCount !== 1 ? 's' : ''}</strong> found and ready to import.
-              Preview: {parsedSpells.slice(0, 5).map((s) => s.name ?? '(unnamed)').join(', ')}
+              Preview: {parsedSpells.slice(0, 5).map((s) => s.name ?? s.Name ?? '(unnamed)').join(', ')}
               {parsedCount > 5 ? ` …and ${parsedCount - 5} more.` : ''}
             </div>
+          )}
+
+          {/* Admin: System Spells toggle */}
+          {isStaff && !importSpells.isSuccess && (
+            <label className={[
+              'flex items-start gap-3 p-3 rounded-lg border cursor-pointer select-none transition-colors',
+              isSystem ? 'border-amber-300 bg-amber-50' : 'border-gray-200 hover:border-gray-300 bg-white',
+            ].join(' ')}>
+              <input
+                type="checkbox"
+                checked={isSystem}
+                onChange={(e) => setIsSystem(e.target.checked)}
+                className="mt-0.5 h-4 w-4 text-amber-600 rounded border-gray-300"
+              />
+              <div>
+                <span className="block text-sm font-medium text-gray-900">
+                  Mark as System Spells
+                  <span className="ml-2 text-xs font-normal text-amber-600">Admin only</span>
+                </span>
+                <span className="block text-xs text-gray-500 mt-0.5">
+                  Spells will be visible to all users and deletable only by admins.
+                </span>
+              </div>
+            </label>
           )}
 
           {/* Import Error */}
@@ -226,6 +285,14 @@ export function ImportSpellsModal({ isOpen, onClose }: ImportSpellsModalProps) {
           >
             {importSpells.isSuccess ? 'Close' : 'Cancel'}
           </button>
+          {importSpells.isSuccess && (
+            <button
+              onClick={handleImportAnother}
+              className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
+            >
+              Import Another
+            </button>
+          )}
           {!importSpells.isSuccess && (
             <button
               onClick={handleImport}

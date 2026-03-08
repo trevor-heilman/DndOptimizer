@@ -44,9 +44,8 @@ class Command(BaseCommand):
         if options['file']:
             files_to_import.append(options['file'])
         elif options['all']:
-            # Default spell files in documentation/data/
-            base_dir = settings.BASE_DIR.parent
-            data_dir = os.path.join(base_dir, 'documentation', 'data')
+            # Default spell files bundled with the backend at <BASE_DIR>/data/
+            data_dir = os.path.join(settings.BASE_DIR, 'data')
             
             default_files = ['spells.json', 'TCoE_spells.json']
             for filename in default_files:
@@ -108,13 +107,16 @@ class Command(BaseCommand):
         if isinstance(data, list):
             spells = data
         elif isinstance(data, dict):
-            # Check for common keys that contain spell arrays
-            if 'spells' in data:
+            # Keyed-dict export (e.g. TCoE: {"Spells.xxx": {...}, "Creatures.xxx": {...}})
+            if any(k.startswith('Spells.') for k in data):
+                spells = [v for k, v in data.items() if k.startswith('Spells.')]
+            # Standard wrapper objects
+            elif 'spells' in data:
                 spells = data['spells']
             elif 'spell' in data:
                 spells = data['spell']
             else:
-                # Assume the dict itself is a single spell
+                # Single spell object
                 spells = [data]
         
         for raw_spell in spells:
@@ -142,7 +144,7 @@ class Command(BaseCommand):
             
             except Exception as e:
                 errors += 1
-                spell_name = raw_spell.get('name', 'Unknown')
+                spell_name = raw_spell.get('name') or raw_spell.get('Name', 'Unknown')
                 self.stdout.write(
                     self.style.ERROR(
                         f'  Failed to import {spell_name}: {str(e)}'

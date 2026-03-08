@@ -6,6 +6,7 @@ import { useSpells } from '../hooks/useSpells';
 import { SpellCard } from '../components/SpellCard';
 import { ImportSpellsModal } from '../components/ImportSpellsModal';
 import { CreateSpellModal } from '../components/CreateSpellModal';
+import { ClearSpellsModal } from '../components/ClearSpellsModal';
 
 const SCHOOLS = [
   'abjuration',
@@ -25,6 +26,7 @@ export function SpellsPage() {
   const [page, setPage] = useState(1);
   const [showImport, setShowImport] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
+  const [showClear, setShowClear] = useState(false);
 
   const { data, isLoading, error } = useSpells({
     level,
@@ -49,6 +51,12 @@ export function SpellsPage() {
             className="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
           >
             Import JSON
+          </button>
+          <button
+            onClick={() => setShowClear(true)}
+            className="px-4 py-2 bg-white border border-red-300 rounded-md text-sm font-medium text-red-600 hover:bg-red-50"
+          >
+            Delete
           </button>
           <button
             onClick={() => setShowCreate(true)}
@@ -219,6 +227,7 @@ export function SpellsPage() {
       {/* Modals */}
       <ImportSpellsModal isOpen={showImport} onClose={() => setShowImport(false)} />
       <CreateSpellModal isOpen={showCreate} onClose={() => setShowCreate(false)} />
+      <ClearSpellsModal isOpen={showClear} onClose={() => setShowClear(false)} />
     </div>
   );
 }

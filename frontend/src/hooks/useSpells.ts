@@ -33,9 +33,11 @@ export function useCreateSpell() {
 export function useImportSpells() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: (spells: any[]) => spellService.importSpells(spells),
+    mutationFn: ({ spells, isSystem }: { spells: any[]; isSystem?: boolean }) =>
+      spellService.importSpells(spells, isSystem),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['spells'] });
+      queryClient.invalidateQueries({ queryKey: ['spellCounts'] });
     },
   });
 }
@@ -47,5 +49,23 @@ export function useDeleteSpell() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['spells'] });
     },
+  });
+}
+
+export function useBulkDeleteSpells() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (categories: string[]) => spellService.bulkDeleteSpells(categories),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['spells'] });
+      queryClient.invalidateQueries({ queryKey: ['spellCounts'] });
+    },
+  });
+}
+
+export function useSpellCounts() {
+  return useQuery({
+    queryKey: ['spellCounts'],
+    queryFn: () => spellService.getSpellCounts(),
   });
 }

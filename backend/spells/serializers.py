@@ -132,16 +132,18 @@ class SpellImportSerializer(serializers.Serializer):
     auto_parse = serializers.BooleanField(default=True)
 
     def validate_spells(self, value):
-        """Validate that each spell has required fields."""
-        required_fields = ['name', 'level']
-        
+        """Validate that each spell has required fields (handles PascalCase schemas)."""
         for idx, spell_data in enumerate(value):
-            for field in required_fields:
-                if field not in spell_data:
-                    raise serializers.ValidationError(
-                        f"Spell at index {idx} is missing required field: {field}"
-                    )
-        
+            has_name = 'name' in spell_data or 'Name' in spell_data
+            has_level = 'level' in spell_data or 'Level' in spell_data
+            if not has_name:
+                raise serializers.ValidationError(
+                    f"Spell at index {idx} is missing required field: name"
+                )
+            if not has_level:
+                raise serializers.ValidationError(
+                    f"Spell at index {idx} is missing required field: level"
+                )
         return value
 
 

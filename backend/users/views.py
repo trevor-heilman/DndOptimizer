@@ -41,10 +41,8 @@ class UserViewSet(viewsets.ModelViewSet):
         
         return Response({
             'user': UserSerializer(user).data,
-            'tokens': {
-                'refresh': str(refresh),
-                'access': str(refresh.access_token),
-            }
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
         }, status=status.HTTP_201_CREATED)
 
     @action(detail=False, methods=['post'], permission_classes=[permissions.AllowAny])
@@ -72,10 +70,8 @@ class UserViewSet(viewsets.ModelViewSet):
         
         return Response({
             'user': UserSerializer(user).data,
-            'tokens': {
-                'refresh': str(refresh),
-                'access': str(refresh.access_token),
-            }
+            'access': str(refresh.access_token),
+            'refresh': str(refresh),
         })
 
     @action(detail=False, methods=['get'])

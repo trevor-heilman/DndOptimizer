@@ -6,14 +6,15 @@ import type {
   Spellbook,
   SpellbookCreate,
   SpellbookUpdate,
+  PaginatedResponse,
 } from '../types/api';
 
 /**
  * Get list of spellbooks
  */
 export async function getSpellbooks(): Promise<Spellbook[]> {
-  const response = await apiClient.get<Spellbook[]>('/spellbooks/');
-  return response.data;
+  const response = await apiClient.get<PaginatedResponse<Spellbook>>('/spellbooks/');
+  return response.data.results;
 }
 
 /**

@@ -53,8 +53,24 @@ export const spellService = {
   /**
    * Import spells from JSON
    */
-  async importSpells(spells: any[]): Promise<{ imported: number; errors: any[] }> {
-    const response = await apiClient.post('/spells/spells/import_spells/', { spells });
+  async importSpells(spells: any[], isSystem = false): Promise<{ imported: number; errors: any[] }> {
+    const response = await apiClient.post('/spells/spells/import_spells/', { spells, is_system: isSystem });
+    return response.data;
+  },
+
+  /**
+   * Bulk delete spells by category
+   */
+  async bulkDeleteSpells(categories: string[]): Promise<{ deleted: number }> {
+    const response = await apiClient.post<{ deleted: number }>('/spells/spells/bulk_delete/', { categories });
+    return response.data;
+  },
+
+  /**
+   * Get spell counts per delete category for the current user
+   */
+  async getSpellCounts(): Promise<{ system: number; imported: number; custom: number }> {
+    const response = await apiClient.get<{ system: number; imported: number; custom: number }>('/spells/spells/spell_counts/');
     return response.data;
   },
 
