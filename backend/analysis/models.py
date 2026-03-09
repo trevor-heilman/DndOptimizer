@@ -45,6 +45,28 @@ class AnalysisContext(models.Model):
     def __str__(self):
         return f"Analysis (AC:{self.target_ac}, Save DC:{self.spell_save_dc}, Targets:{self.number_of_targets})"
 
+    # Context field names shared by all create helpers
+    _CONTEXT_FIELDS = (
+        'target_ac', 'target_save_bonus', 'spell_save_dc', 'caster_attack_bonus',
+        'number_of_targets', 'advantage', 'disadvantage', 'spell_slot_level',
+        'crit_enabled', 'half_damage_on_save', 'evasion_enabled',
+    )
+
+    @classmethod
+    def create_from_data(cls, data: dict, user=None) -> 'AnalysisContext':
+        """Create and persist an AnalysisContext from validated serializer data."""
+        return cls.objects.create(
+            **{k: data[k] for k in cls._CONTEXT_FIELDS},
+            created_by=user,
+        )
+
+    @classmethod
+    def from_data(cls, data: dict, slot_override: int | None = None) -> 'AnalysisContext':
+        """Build an unsaved AnalysisContext for in-memory use (e.g. efficiency loop)."""
+        fields = {k: data[k] for k in cls._CONTEXT_FIELDS if k != 'spell_slot_level'}
+        fields['spell_slot_level'] = slot_override if slot_override is not None else data.get('spell_slot_level', 1)
+        return cls(**fields)
+
 
 class SpellComparison(models.Model):
     """

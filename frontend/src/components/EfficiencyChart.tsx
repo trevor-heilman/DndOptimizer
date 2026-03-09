@@ -16,6 +16,7 @@ import {
   ResponsiveContainer,
 } from 'recharts';
 import type { EfficiencyDataPoint } from '../types/api';
+import { ChartCard } from './ui';
 
 interface EfficiencyChartProps {
   data: EfficiencyDataPoint[];
@@ -29,8 +30,8 @@ function formatSlotLabel(level: number) {
 export function EfficiencyChart({ data, spellName }: EfficiencyChartProps) {
   if (data.length === 0) {
     return (
-      <div className="bg-gray-50 rounded-lg p-8 text-center">
-        <p className="text-gray-600">No efficiency data available.</p>
+      <div className="dnd-card p-8 text-center">
+        <p className="font-body text-parchment-500">No efficiency data available.</p>
       </div>
     );
   }
@@ -43,56 +44,69 @@ export function EfficiencyChart({ data, spellName }: EfficiencyChartProps) {
   }));
 
   return (
-    <div className="bg-white rounded-lg shadow p-6 border border-gray-200">
-      <h3 className="text-lg font-semibold text-gray-900 mb-1">
-        Upcast Efficiency — {spellName}
-      </h3>
-      <p className="text-sm text-gray-500 mb-4">
-        Bars = expected damage at each slot level · Line = expected damage ÷ slot level (efficiency score)
-      </p>
-
+    <ChartCard
+      title={`Upcast Efficiency — ${spellName}`}
+      subtitle="Bars = expected damage at each slot level · Line = expected damage ÷ slot level (efficiency score)"
+      footer={
+        data.length > 0 ? (() => {
+          const best = data.reduce((prev, cur) => cur.efficiency > prev.efficiency ? cur : prev);
+          return (
+            <p className="font-body text-sm text-parchment-400 text-center">
+              Best efficiency at{' '}
+              <span className="font-display font-semibold text-gold-400">
+                Level {best.slot_level}
+              </span>{' '}
+              — {best.efficiency.toFixed(2)} damage per slot level
+            </p>
+          );
+        })() : undefined
+      }
+    >
       <ResponsiveContainer width="100%" height={320}>
         <ComposedChart data={chartData} margin={{ top: 10, right: 30, left: 20, bottom: 5 }}>
-          <CartesianGrid strokeDasharray="3 3" />
+          <CartesianGrid strokeDasharray="3 3" stroke="#3a3a4a" />
           <XAxis
             dataKey="slot"
-            label={{ value: 'Slot Level', position: 'insideBottom', offset: -2 }}
+            label={{ value: 'Slot Level', position: 'insideBottom', offset: -2, fill: '#c4a882' }}
             height={40}
+            tick={{ fill: '#c4a882', fontSize: 12 }}
           />
           {/* Left Y-axis: expected damage */}
           <YAxis
             yAxisId="damage"
             orientation="left"
-            label={{ value: 'Expected Damage', angle: -90, position: 'insideLeft', offset: -5 }}
+            label={{ value: 'Expected Damage', angle: -90, position: 'insideLeft', offset: -5, fill: '#c4a882' }}
+            tick={{ fill: '#c4a882', fontSize: 12 }}
           />
           {/* Right Y-axis: efficiency */}
           <YAxis
             yAxisId="efficiency"
             orientation="right"
-            label={{ value: 'Efficiency', angle: 90, position: 'insideRight', offset: 10 }}
+            label={{ value: 'Efficiency', angle: 90, position: 'insideRight', offset: 10, fill: '#c4a882' }}
+            tick={{ fill: '#c4a882', fontSize: 12 }}
           />
           <Tooltip
             content={({ active, payload, label }) => {
               if (!active || !payload || payload.length === 0) return null;
               const row = chartData.find((d) => d.slot === label);
               return (
-                <div className="bg-white border border-gray-300 rounded-lg p-3 shadow-lg text-sm">
-                  <p className="font-semibold text-gray-900 mb-1">Slot Level {row?.slot_level}</p>
+                <div style={{ background: '#1e1e2e', border: '1px solid #7c3aed', borderRadius: 8, padding: '10px 14px', fontSize: 13 }}>
+                  <p style={{ color: '#d4af37', fontFamily: 'Cinzel, serif', fontWeight: 700, marginBottom: 4 }}>Slot Level {row?.slot_level}</p>
                   {payload.map((p) => (
-                    <p key={p.name} style={{ color: p.color }}>
-                      {p.name}: <span className="font-medium">{Number(p.value).toFixed(2)}</span>
+                    <p key={p.name} style={{ color: p.color as string }}>
+                      {p.name}: <span style={{ fontWeight: 600 }}>{Number(p.value).toFixed(2)}</span>
                     </p>
                   ))}
                 </div>
               );
             }}
           />
-          <Legend verticalAlign="top" />
+          <Legend verticalAlign="top" wrapperStyle={{ color: '#c4a882', fontFamily: 'Cinzel, serif', fontSize: 13 }} />
           <Bar
             yAxisId="damage"
             dataKey="expected_damage"
             name="Expected Damage"
-            fill="#3b82f6"
+            fill="#7c3aed"
             radius={[4, 4, 0, 0]}
           />
           <Line
@@ -100,27 +114,13 @@ export function EfficiencyChart({ data, spellName }: EfficiencyChartProps) {
             type="monotone"
             dataKey="efficiency"
             name="Efficiency Score"
-            stroke="#f59e0b"
+            stroke="#d4af37"
             strokeWidth={2}
-            dot={{ fill: '#f59e0b', r: 4 }}
+            dot={{ fill: '#d4af37', r: 4 }}
           />
         </ComposedChart>
       </ResponsiveContainer>
-
-      {/* Best efficiency call-out */}
-      {data.length > 0 && (() => {
-        const best = data.reduce((prev, cur) => cur.efficiency > prev.efficiency ? cur : prev);
-        return (
-          <p className="text-sm text-gray-600 mt-3 text-center">
-            Best efficiency at{' '}
-            <span className="font-semibold text-primary-700">
-              Level {best.slot_level}
-            </span>{' '}
-            — {best.efficiency.toFixed(2)} damage per slot level
-          </p>
-        );
-      })()}
-    </div>
+    </ChartCard>
   );
 }
 

@@ -11,38 +11,41 @@ interface SpellbookCardProps {
 }
 
 export function SpellbookCard({ spellbook, onDelete, onDuplicate }: SpellbookCardProps) {
-  const preparedCount = spellbook.prepared_spells?.length || 0;
-  const totalSpells = spellbook.spells?.length || 0;
+  const preparedCount = spellbook.prepared_spell_count ?? spellbook.prepared_spells?.length ?? 0;
+  const totalSpells = spellbook.spell_count ?? 0;
 
   return (
-    <div className="bg-white rounded-lg shadow-md p-6 border border-gray-200 hover:shadow-lg transition-shadow">
+    <div className="dnd-card border-t-2 border-gold-800 p-6 hover:shadow-xl hover:shadow-black/30
+                    hover:-translate-y-0.5 transition-all duration-200">
       <Link to={`/spellbooks/${spellbook.id}`} className="block mb-3">
-        <h3 className="text-xl font-semibold text-gray-900 hover:text-primary-600 transition-colors">
+        <h3 className="font-display text-xl font-semibold text-gold-300 hover:text-gold-200 transition-colors flex items-center gap-2">
+          <span aria-hidden="true">📚</span>
           {spellbook.name}
         </h3>
       </Link>
-      
+
       {spellbook.description && (
-        <p className="text-gray-600 text-sm mb-4 line-clamp-2">{spellbook.description}</p>
+        <p className="font-body text-parchment-400 text-sm mb-4 line-clamp-2 leading-relaxed italic">
+          {spellbook.description}
+        </p>
       )}
 
-      <div className="flex items-center justify-between text-sm text-gray-600 mb-4">
-        <div className="flex items-center gap-4">
-          <span>
-            <span className="font-semibold text-gray-900">{totalSpells}</span> spells
+      <div className="flex items-center gap-3 text-sm mb-4">
+        <span className="font-body text-parchment-300">
+          <span className="font-display font-semibold text-parchment-100">{totalSpells}</span> spells
+        </span>
+        {preparedCount > 0 && (
+          <span className="font-display text-xs px-2 py-0.5 rounded"
+                style={{ background: '#14200a', color: '#86efac', border: '1px solid #166534' }}>
+            {preparedCount} prepared
           </span>
-          {preparedCount > 0 && (
-            <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs">
-              {preparedCount} prepared
-            </span>
-          )}
-        </div>
+        )}
       </div>
 
       <div className="flex gap-2">
         <Link
           to={`/spellbooks/${spellbook.id}`}
-          className="flex-1 text-center px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 transition-colors text-sm font-medium"
+          className="btn-gold flex-1 text-center text-sm py-1.5 px-3"
         >
           View Details
         </Link>
@@ -52,7 +55,7 @@ export function SpellbookCard({ spellbook, onDelete, onDuplicate }: SpellbookCar
               e.preventDefault();
               onDuplicate(spellbook.id);
             }}
-            className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 transition-colors text-sm font-medium"
+            className="btn-secondary text-sm py-1.5 px-3"
             title="Duplicate Spellbook"
           >
             Copy
@@ -66,7 +69,7 @@ export function SpellbookCard({ spellbook, onDelete, onDuplicate }: SpellbookCar
                 onDelete(spellbook.id);
               }
             }}
-            className="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition-colors text-sm font-medium"
+            className="btn-primary text-sm py-1.5 px-3"
             title="Delete Spellbook"
           >
             Delete
@@ -75,7 +78,7 @@ export function SpellbookCard({ spellbook, onDelete, onDuplicate }: SpellbookCar
       </div>
 
       {spellbook.updated_at && (
-        <div className="mt-3 text-xs text-gray-500">
+        <div className="mt-3 font-body text-xs text-smoke-500 italic">
           Updated {new Date(spellbook.updated_at).toLocaleDateString()}
         </div>
       )}

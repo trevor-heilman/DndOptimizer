@@ -7,9 +7,27 @@ class Spellbook(models.Model):
     """
     User-defined collection of prepared spells.
     """
+    CLASS_CHOICES = [
+        ('artificer', 'Artificer'),
+        ('bard', 'Bard'),
+        ('cleric', 'Cleric'),
+        ('druid', 'Druid'),
+        ('paladin', 'Paladin'),
+        ('ranger', 'Ranger'),
+        ('sorcerer', 'Sorcerer'),
+        ('warlock', 'Warlock'),
+        ('wizard', 'Wizard'),
+    ]
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     name = models.CharField(max_length=255)
     description = models.TextField(blank=True)
+    character_class = models.CharField(
+        max_length=50,
+        choices=CLASS_CHOICES,
+        blank=True,
+        help_text="Primary class — used to filter the Add Spells picker by default."
+    )
     
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,

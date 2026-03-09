@@ -3,6 +3,7 @@ from rest_framework.decorators import action
 from rest_framework.response import Response
 from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
+from core.throttles import LoginRateThrottle, RegisterRateThrottle, PasswordChangeRateThrottle
 from .models import User
 from .serializers import (
     UserSerializer,
@@ -26,7 +27,8 @@ class UserViewSet(viewsets.ModelViewSet):
             return User.objects.all()
         return User.objects.filter(id=self.request.user.id)
 
-    @action(detail=False, methods=['post'], permission_classes=[permissions.AllowAny])
+    @action(detail=False, methods=['post'], permission_classes=[permissions.AllowAny],
+            throttle_classes=[RegisterRateThrottle])
     def register(self, request):
         """
         Register a new user.
@@ -45,7 +47,8 @@ class UserViewSet(viewsets.ModelViewSet):
             'refresh': str(refresh),
         }, status=status.HTTP_201_CREATED)
 
-    @action(detail=False, methods=['post'], permission_classes=[permissions.AllowAny])
+    @action(detail=False, methods=['post'], permission_classes=[permissions.AllowAny],
+            throttle_classes=[LoginRateThrottle])
     def login(self, request):
         """
         Login user and return tokens.
@@ -83,7 +86,7 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = UserSerializer(request.user)
         return Response(serializer.data)
 
-    @action(detail=False, methods=['post'])
+    @action(detail=False, methods=['post'], throttle_classes=[PasswordChangeRateThrottle])
     def change_password(self, request):
         """
         Change user password.

@@ -1,7 +1,7 @@
 /**
  * Main App Layout Component
  */
-import { Link, Outlet, useNavigate } from 'react-router-dom';
+import { Link, NavLink, Outlet, useNavigate } from 'react-router-dom';
 import { useAuth } from '../contexts/AuthContext';
 
 export function Layout() {
@@ -13,44 +13,55 @@ export function Layout() {
     navigate('/login');
   };
 
+  const navLinkClass = ({ isActive }: { isActive: boolean }) =>
+    `inline-flex items-center gap-1.5 px-3 py-1.5 text-sm font-display font-medium rounded
+     border transition-all duration-200
+     ${isActive
+       ? 'text-gold-300 border-gold-700 bg-gold-950/40'
+       : 'text-parchment-300 border-transparent hover:text-gold-300 hover:border-gold-800 hover:bg-smoke-800'
+     }`;
+
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="min-h-screen bg-smoke-950">
       {/* Navigation */}
-      <nav className="bg-white shadow-sm border-b border-gray-200">
+      <nav className="bg-smoke-900 border-b border-gold-900/40 shadow-lg shadow-black/40">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
-            <div className="flex">
-              <Link to="/" className="flex items-center px-2 text-xl font-bold text-primary-600">
-                DndOptimizer
+            {/* Logo + Nav Links */}
+            <div className="flex items-center gap-6">
+              <Link
+                to="/"
+                className="flex items-center gap-2.5 group"
+              >
+                <span className="text-gold-400 text-xl" aria-hidden="true">⚔️</span>
+                <span className="font-display font-bold text-lg text-gold-300 group-hover:text-gold-200 transition-colors tracking-wide">
+                  DndOptimizer
+                </span>
               </Link>
-              <div className="hidden sm:ml-6 sm:flex sm:space-x-8">
-                <Link
-                  to="/spells"
-                  className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900 hover:text-primary-600"
-                >
-                  Spells
-                </Link>
-                <Link
-                  to="/spellbooks"
-                  className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900 hover:text-primary-600"
-                >
-                  Spellbooks
-                </Link>
-                <Link
-                  to="/compare"
-                  className="inline-flex items-center px-1 pt-1 text-sm font-medium text-gray-900 hover:text-primary-600"
-                >
-                  Compare
-                </Link>
+
+              <div className="hidden sm:flex sm:items-center sm:gap-1">
+                <NavLink to="/spells" className={navLinkClass}>
+                  <span aria-hidden="true">📖</span> Spells
+                </NavLink>
+                <NavLink to="/spellbooks" className={navLinkClass}>
+                  <span aria-hidden="true">📚</span> Spellbooks
+                </NavLink>
+                <NavLink to="/compare" className={navLinkClass}>
+                  <span aria-hidden="true">⚖️</span> Compare
+                </NavLink>
               </div>
             </div>
-            <div className="flex items-center">
+
+            {/* User Area */}
+            <div className="flex items-center gap-3">
               {user && (
                 <>
-                  <span className="text-sm text-gray-700 mr-4">{user.email}</span>
+                  <span className="hidden sm:block text-sm text-smoke-400 font-body italic">
+                    {user.email}
+                  </span>
                   <button
                     onClick={handleLogout}
-                    className="inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md text-white bg-primary-600 hover:bg-primary-700"
+                    className="btn-secondary text-sm px-3 py-1.5"
                   >
                     Logout
                   </button>

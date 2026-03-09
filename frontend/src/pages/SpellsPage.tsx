@@ -7,6 +7,7 @@ import { SpellCard } from '../components/SpellCard';
 import { ImportSpellsModal } from '../components/ImportSpellsModal';
 import { CreateSpellModal } from '../components/CreateSpellModal';
 import { ClearSpellsModal } from '../components/ClearSpellsModal';
+import { LoadingSpinner, AlertMessage, EmptyState } from '../components/ui';
 
 const SCHOOLS = [
   'abjuration',
@@ -43,24 +44,28 @@ export function SpellsPage() {
 
   return (
     <div>
+      {/* Page Header */}
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Spells</h1>
+        <h1 className="font-display text-3xl font-bold text-gold-300 flex items-center gap-2">
+          <span aria-hidden="true">📖</span> Spell Library
+        </h1>
         <div className="flex gap-2">
           <button
             onClick={() => setShowImport(true)}
-            className="px-4 py-2 bg-white border border-gray-300 rounded-md text-sm font-medium text-gray-700 hover:bg-gray-50"
+            className="btn-secondary text-sm"
           >
             Import JSON
           </button>
           <button
             onClick={() => setShowClear(true)}
-            className="px-4 py-2 bg-white border border-red-300 rounded-md text-sm font-medium text-red-600 hover:bg-red-50"
+            className="text-sm px-3 py-1.5 rounded-md border border-crimson-800 text-crimson-400
+                       hover:bg-crimson-950 hover:border-crimson-700 transition-colors font-display"
           >
             Delete
           </button>
           <button
             onClick={() => setShowCreate(true)}
-            className="px-4 py-2 bg-primary-600 text-white rounded-md text-sm font-medium hover:bg-primary-700"
+            className="btn-primary text-sm"
           >
             + Create Spell
           </button>
@@ -68,11 +73,10 @@ export function SpellsPage() {
       </div>
 
       {/* Filters */}
-      <div className="bg-white rounded-lg shadow p-4 mb-6">
+      <div className="dnd-card p-5 mb-6 border-l-4 border-arcane-700">
         <form onSubmit={handleSearchSubmit} className="space-y-4">
-          {/* Search */}
           <div>
-            <label htmlFor="search" className="block text-sm font-medium text-gray-700 mb-1">
+            <label htmlFor="search" className="block text-sm font-display font-medium text-parchment-300 mb-1">
               Search
             </label>
             <input
@@ -80,15 +84,14 @@ export function SpellsPage() {
               id="search"
               value={search}
               onChange={(e) => setSearch(e.target.value)}
-              className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
-              placeholder="Search spells by name..."
+              className="dnd-input font-body"
+              placeholder="Search by spell name…"
             />
           </div>
 
-          {/* Level and School Filters */}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
-              <label htmlFor="level" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="level" className="block text-sm font-display font-medium text-parchment-300 mb-1">
                 Level
               </label>
               <select
@@ -98,7 +101,7 @@ export function SpellsPage() {
                   setLevel(e.target.value ? Number(e.target.value) : undefined);
                   setPage(1);
                 }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                className="dnd-input font-body"
               >
                 <option value="">All Levels</option>
                 <option value="0">Cantrip</option>
@@ -111,7 +114,7 @@ export function SpellsPage() {
             </div>
 
             <div>
-              <label htmlFor="school" className="block text-sm font-medium text-gray-700 mb-1">
+              <label htmlFor="school" className="block text-sm font-display font-medium text-parchment-300 mb-1">
                 School
               </label>
               <select
@@ -121,7 +124,7 @@ export function SpellsPage() {
                   setSchool(e.target.value || undefined);
                   setPage(1);
                 }}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-primary-500 focus:border-primary-500"
+                className="dnd-input font-body"
               >
                 <option value="">All Schools</option>
                 {SCHOOLS.map((s) => (
@@ -134,10 +137,7 @@ export function SpellsPage() {
           </div>
 
           <div className="flex gap-2">
-            <button
-              type="submit"
-              className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 focus:outline-none focus:ring-2 focus:ring-primary-500"
-            >
+            <button type="submit" className="btn-gold text-sm">
               Apply Filters
             </button>
             <button
@@ -148,7 +148,7 @@ export function SpellsPage() {
                 setSchool(undefined);
                 setPage(1);
               }}
-              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300 focus:outline-none focus:ring-2 focus:ring-gray-500"
+              className="btn-secondary text-sm"
             >
               Clear
             </button>
@@ -157,23 +157,15 @@ export function SpellsPage() {
       </div>
 
       {/* Loading State */}
-      {isLoading && (
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-        </div>
-      )}
+      {isLoading && <LoadingSpinner />}
 
       {/* Error State */}
-      {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <p className="text-red-800">Error loading spells. Please try again.</p>
-        </div>
-      )}
+      {error && <AlertMessage variant="error" message="Error loading spells. Please try again." />}
 
       {/* Spells Grid */}
       {data && (
         <>
-          <div className="mb-4 text-sm text-gray-600">
+          <div className="mb-4 font-body text-sm text-smoke-400">
             Showing {data.results.length} of {data.count} spells
           </div>
 
@@ -185,41 +177,36 @@ export function SpellsPage() {
 
           {/* Pagination */}
           {data.count > 20 && (
-            <div className="flex justify-center gap-2">
+            <div className="flex justify-center items-center gap-3">
               <button
                 onClick={() => setPage((p) => Math.max(1, p - 1))}
                 disabled={!data.previous}
-                className="px-4 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="btn-secondary text-sm disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                Previous
+                ← Previous
               </button>
-              <span className="px-4 py-2 text-gray-700">Page {page}</span>
+              <span className="font-display text-sm text-parchment-300 px-3 py-1.5
+                               bg-smoke-800 border border-smoke-600 rounded">
+                Page {page}
+              </span>
               <button
                 onClick={() => setPage((p) => p + 1)}
                 disabled={!data.next}
-                className="px-4 py-2 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="btn-secondary text-sm disabled:opacity-40 disabled:cursor-not-allowed"
               >
-                Next
+                Next →
               </button>
             </div>
           )}
 
           {/* Empty State */}
           {data.results.length === 0 && (
-            <div className="text-center py-12">
-              <p className="text-gray-600 text-lg">No spells found matching your criteria.</p>
-              <button
-                onClick={() => {
-                  setSearch('');
-                  setLevel(undefined);
-                  setSchool(undefined);
-                  setPage(1);
-                }}
-                className="mt-4 text-primary-600 hover:text-primary-700"
-              >
-                Clear filters
-              </button>
-            </div>
+            <EmptyState
+              icon="🔮"
+              title="No Spells Found"
+              description="No spells match your current filters."
+              action={{ label: 'Clear Filters', onClick: () => { setSearch(''); setLevel(undefined); setSchool(undefined); setPage(1); } }}
+            />
           )}
         </>
       )}

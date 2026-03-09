@@ -58,11 +58,31 @@ class Spell(models.Model):
     upcast_dice_increment = models.IntegerField(null=True, blank=True)
     upcast_die_size = models.IntegerField(null=True, blank=True)
     
+    # Spell components
+    components_v = models.BooleanField(default=False, help_text='Verbal component required.')
+    components_s = models.BooleanField(default=False, help_text='Somatic component required.')
+    components_m = models.BooleanField(default=False, help_text='Material component required.')
+    material = models.CharField(max_length=500, blank=True, help_text='Material component description.')
+
     # Metadata
     source = models.CharField(max_length=255, blank=True)
     is_custom = models.BooleanField(default=False)
     description = models.TextField(blank=True)
     higher_level = models.TextField(blank=True)
+
+    # Class associations — list of class names (e.g. ["wizard", "sorcerer"])
+    classes = models.JSONField(
+        default=list,
+        blank=True,
+        help_text='List of class names that can learn this spell.'
+    )
+
+    # Gameplay tags — e.g. ["damage", "aoe", "utility", "crowd_control"]
+    tags = models.JSONField(
+        default=list,
+        blank=True,
+        help_text='Gameplay category tags for filtering and analysis.'
+    )
     
     # Flexible storage
     raw_data = models.JSONField(default=dict, blank=True)

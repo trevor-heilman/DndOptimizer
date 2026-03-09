@@ -5,6 +5,7 @@ import { useState } from 'react';
 import { useSpellbooks, useCreateSpellbook, useDeleteSpellbook, useDuplicateSpellbook } from '../hooks/useSpellbooks';
 import { SpellbookCard } from '../components/SpellbookCard';
 import { CreateSpellbookModal } from '../components/CreateSpellbookModal';
+import { LoadingSpinner, AlertMessage, EmptyState } from '../components/ui';
 
 export function SpellbooksPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -28,41 +29,34 @@ export function SpellbooksPage() {
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">My Spellbooks</h1>
+        <h1 className="font-display text-3xl font-bold text-gold-300 flex items-center gap-2">
+          <span aria-hidden="true">📚</span> My Spellbooks
+        </h1>
         <button
           onClick={() => setIsCreateModalOpen(true)}
-          className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 font-medium"
+          className="btn-primary"
         >
-          + Create Spellbook
+          + New Spellbook
         </button>
       </div>
 
-      {isLoading && (
-        <div className="flex justify-center items-center h-64">
-          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-primary-600"></div>
-        </div>
-      )}
+      {isLoading && <LoadingSpinner />}
 
       {error && (
-        <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-          <h2 className="text-xl font-semibold text-red-800 mb-2">Error Loading Spellbooks</h2>
-          <p className="text-red-700">Failed to load your spellbooks. Please try again.</p>
-        </div>
+        <AlertMessage
+          variant="error"
+          title="Error Loading Spellbooks"
+          message="Failed to load your spellbooks. Please try again."
+        />
       )}
 
       {!isLoading && !error && spellbooks && spellbooks.length === 0 && (
-        <div className="bg-white rounded-lg shadow-md p-8 text-center">
-          <h2 className="text-xl font-semibold text-gray-900 mb-2">No Spellbooks Yet</h2>
-          <p className="text-gray-600 mb-4">
-            Create your first spellbook to start organizing your spells.
-          </p>
-          <button
-            onClick={() => setIsCreateModalOpen(true)}
-            className="px-6 py-3 bg-primary-600 text-white rounded-md hover:bg-primary-700 font-medium"
-          >
-            Create Your First Spellbook
-          </button>
-        </div>
+        <EmptyState
+          icon="📭"
+          title="No Spellbooks Yet"
+          description="Create your first spellbook to start organizing your spells."
+          action={{ label: 'Create Your First Spellbook', onClick: () => setIsCreateModalOpen(true) }}
+        />
       )}
 
       {!isLoading && !error && spellbooks && spellbooks.length > 0 && (

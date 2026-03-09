@@ -1,9 +1,119 @@
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;500;600;700;900&family=Crimson+Text:ital,wght@0,400;0,600;1,400;1,600&display=swap');
+
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
 
 @layer base {
   body {
-    @apply bg-gray-50 text-gray-900 min-h-screen;
+    @apply bg-smoke-950 text-parchment-100 min-h-screen;
+    font-family: 'Crimson Text', Georgia, serif;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Cinzel', Georgia, serif;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #14141c;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #5e5e6c;
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #d97706;
+  }
+
+  /* Focus ring */
+  *:focus-visible {
+    outline: 2px solid #fbbf24;
+    outline-offset: 2px;
+  }
+
+  input, select, textarea {
+    @apply bg-smoke-900 border border-smoke-600 text-parchment-100 rounded-md;
+  }
+
+  input::placeholder, textarea::placeholder {
+    @apply text-smoke-400;
+  }
+
+  input[type="number"]::-webkit-inner-spin-button,
+  input[type="number"]::-webkit-outer-spin-button {
+    opacity: 0.4;
+  }
+
+  option {
+    background: #2a2a35;
+    color: #faf0dc;
+  }
+}
+
+@layer components {
+  /* Arcane divider line */
+  .arcane-divider {
+    @apply relative flex items-center my-4;
+  }
+  .arcane-divider::before,
+  .arcane-divider::after {
+    content: '';
+    @apply flex-1 h-px bg-gradient-to-r from-transparent to-gold-700/40;
+  }
+  .arcane-divider::after {
+    @apply bg-gradient-to-l from-transparent to-gold-700/40;
+  }
+  .arcane-divider span {
+    @apply px-3 text-gold-600 text-xs;
+  }
+
+  /* Card base */
+  .dnd-card {
+    @apply bg-smoke-900 border border-smoke-700 rounded-lg shadow-lg;
+  }
+
+  /* Primary button */
+  .btn-primary {
+    @apply bg-crimson-800 hover:bg-crimson-700 active:bg-crimson-900
+           border border-crimson-600 hover:border-crimson-500
+           text-parchment-100 font-display font-medium
+           px-4 py-2 rounded-md transition-all duration-200
+           shadow-md hover:shadow-crimson-900/30;
+  }
+
+  /* Secondary button */
+  .btn-secondary {
+    @apply bg-smoke-800 hover:bg-smoke-700 active:bg-smoke-900
+           border border-smoke-600 hover:border-gold-700
+           text-parchment-200 font-display font-medium
+           px-4 py-2 rounded-md transition-all duration-200;
+  }
+
+  /* Gold accent button */
+  .btn-gold {
+    @apply bg-gold-800 hover:bg-gold-700 active:bg-gold-900
+           border border-gold-600 hover:border-gold-400
+           text-parchment-50 font-display font-medium
+           px-4 py-2 rounded-md transition-all duration-200
+           shadow-md;
+  }
+
+  /* Arcane input */
+  .dnd-input {
+    @apply w-full px-3 py-2
+           bg-smoke-900 border border-smoke-600 rounded-md
+           text-parchment-100 placeholder-smoke-400
+           focus:outline-none focus:ring-2 focus:ring-gold-600 focus:border-gold-600
+           transition-colors duration-200;
+  }
+
+  /* Section header */
+  .dnd-section-title {
+    @apply font-display text-gold-400 tracking-wide;
   }
 }

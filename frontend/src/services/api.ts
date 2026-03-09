@@ -15,6 +15,7 @@ class APIClient {
   constructor() {
     this.client = axios.create({
       baseURL: config.apiBaseUrl,
+      timeout: 15000, // 15 seconds — prevents auth check from hanging forever
       headers: {
         'Content-Type': 'application/json',
       },

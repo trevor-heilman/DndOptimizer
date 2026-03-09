@@ -17,6 +17,7 @@ class TestUserModel:
     def test_create_user(self):
         """Test creating a user with email."""
         user = User.objects.create_user(
+            username='testuser',
             email='test@example.com',
             password='testpass123'
         )
@@ -29,6 +30,7 @@ class TestUserModel:
     def test_create_superuser(self):
         """Test creating a superuser."""
         admin = User.objects.create_superuser(
+            username='adminuser',
             email='admin@example.com',
             password='adminpass123'
         )
@@ -39,6 +41,7 @@ class TestUserModel:
     def test_user_str(self):
         """Test user string representation."""
         user = User.objects.create_user(
+            username='testuser',
             email='test@example.com',
             password='testpass123'
         )
@@ -115,7 +118,7 @@ class TestSpellModel:
             duration='Instantaneous',
             description='A bright streak flashes.'
         )
-        assert str(spell) == 'Fireball'
+        assert str(spell) == 'Fireball (Level 3)'
 
 
 @pytest.mark.django_db
@@ -230,11 +233,11 @@ class TestSpellParsingMetadata:
         
         assert metadata.parsing_confidence == 0.85
         assert not metadata.requires_review
-        assert not metadata.is_reviewed
     
     def test_review_workflow(self):
         """Test spell review workflow."""
         user = User.objects.create_user(
+            username='reviewer',
             email='reviewer@example.com',
             password='pass123'
         )
@@ -255,12 +258,12 @@ class TestSpellParsingMetadata:
             requires_review=True
         )
         
+        from django.utils import timezone
         # Mark as reviewed
-        metadata.is_reviewed = True
         metadata.reviewed_by = user
+        metadata.reviewed_at = timezone.now()
         metadata.save()
-        
-        assert metadata.is_reviewed
+
         assert metadata.reviewed_by == user
         assert metadata.reviewed_at is not None
 
@@ -272,10 +275,11 @@ class TestSpellbookModel:
     def test_create_spellbook(self):
         """Test creating a spellbook."""
         user = User.objects.create_user(
+            username='player',
             email='player@example.com',
             password='pass123'
         )
-        
+
         spellbook = Spellbook.objects.create(
             owner=user,
             name='My Wizard Spells',
@@ -289,6 +293,7 @@ class TestSpellbookModel:
     def test_add_spell_to_spellbook(self):
         """Test adding spells to a spellbook."""
         user = User.objects.create_user(
+            username='player',
             email='player@example.com',
             password='pass123'
         )
@@ -322,32 +327,32 @@ class TestSpellbookModel:
         PreparedSpell.objects.create(
             spellbook=spellbook,
             spell=spell1,
-            is_prepared=True,
+            prepared=True,
             notes='My favorite damage spell'
         )
-        
+
         PreparedSpell.objects.create(
             spellbook=spellbook,
             spell=spell2,
-            is_prepared=False
         )
-        
+
         assert spellbook.spells.count() == 2
-        assert spellbook.prepared_spells.filter(is_prepared=True).count() == 1
+        assert spellbook.prepared_spells.filter(prepared=True).count() == 1
     
     def test_spellbook_str(self):
         """Test spellbook string representation."""
         user = User.objects.create_user(
+            username='player',
             email='player@example.com',
             password='pass123'
         )
-        
+
         spellbook = Spellbook.objects.create(
             owner=user,
             name='Wizard Spells'
         )
-        
-        assert str(spellbook) == 'Wizard Spells (player@example.com)'
+
+        assert str(spellbook) == 'Wizard Spells (player)'
 
 
 @pytest.mark.django_db
@@ -358,16 +363,14 @@ class TestAnalysisModels:
         """Test creating an analysis context."""
         context = AnalysisContext.objects.create(
             target_ac=15,
-            target_saves={'DEX': 12, 'WIS': 10},
-            caster_spell_attack_bonus=5,
-            caster_spell_save_dc=13,
-            advantage_disadvantage='normal',
-            num_targets=1
+            caster_attack_bonus=5,
+            spell_save_dc=13,
+            number_of_targets=1,
         )
-        
+
         assert context.target_ac == 15
-        assert context.caster_spell_attack_bonus == 5
-        assert context.advantage_disadvantage == 'normal'
+        assert context.caster_attack_bonus == 5
+        assert context.number_of_targets == 1
     
     def test_create_spell_comparison(self):
         """Test creating a spell comparison."""
@@ -393,7 +396,7 @@ class TestAnalysisModels:
         
         context = AnalysisContext.objects.create(
             target_ac=15,
-            caster_spell_save_dc=13
+            spell_save_dc=13
         )
         
         comparison = SpellComparison.objects.create(

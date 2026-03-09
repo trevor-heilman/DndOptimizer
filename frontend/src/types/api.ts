@@ -68,6 +68,10 @@ export interface Spell {
   is_saving_throw: boolean;
   save_type?: string;
   half_damage_on_save: boolean;
+  components_v?: boolean;
+  components_s?: boolean;
+  components_m?: boolean;
+  material?: string;
   description: string;
   higher_level?: string;
   upcast_dice_increment?: number;
@@ -78,6 +82,13 @@ export interface Spell {
   created_by?: string;
   created_at: string;
   updated_at: string;
+  source?: string;
+  is_custom?: boolean;
+  aoe_radius?: number;
+  /** Class names that can learn this spell, e.g. ["wizard", "sorcerer"] */
+  classes?: string[];
+  /** Gameplay tags, e.g. ["damage", "aoe", "ritual"] */
+  tags?: string[];
 }
 
 export interface SpellListParams {
@@ -86,14 +97,18 @@ export interface SpellListParams {
   level?: number;
   school?: string;
   search?: string;
+  class_name?: string;
 }
 
 // Spellbook types
 export interface PreparedSpell {
   id: string;
   spell: Spell;
-  is_prepared: boolean;
+  /** Field name from API is `prepared` (not is_prepared) */
+  prepared: boolean;
   notes?: string;
+  added_at: string;
+  updated_at: string;
 }
 
 export interface Spellbook {
@@ -101,8 +116,14 @@ export interface Spellbook {
   owner: string;
   name: string;
   description?: string;
-  spells: Spell[];
+  character_class?: string;
+  /**
+   * Only present on detail endpoint (SpellbookDetailSerializer).
+   * Use prepared_spells[n].spell to access spell data.
+   */
   prepared_spells?: PreparedSpell[];
+  spell_count: number;
+  prepared_spell_count: number;
   created_at: string;
   updated_at: string;
 }
@@ -116,11 +137,13 @@ export interface AddSpellToSpellbookRequest {
 export interface SpellbookCreate {
   name: string;
   description?: string;
+  character_class?: string;
 }
 
 export interface SpellbookUpdate {
   name?: string;
   description?: string;
+  character_class?: string;
 }
 
 // Analysis types

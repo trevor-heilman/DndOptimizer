@@ -35,13 +35,19 @@ class SpellParsingMetadataSerializer(serializers.ModelSerializer):
 class SpellListSerializer(serializers.ModelSerializer):
     """
     Lightweight serializer for spell lists.
+    Includes enough data for the spellbook UI (save type, classes, tags, damage info).
     """
+    damage_components = DamageComponentSerializer(many=True, read_only=True)
+
     class Meta:
         model = Spell
         fields = [
             'id', 'name', 'level', 'school', 'casting_time', 'range',
             'duration', 'concentration', 'ritual', 'is_attack_roll',
-            'is_saving_throw', 'source', 'is_custom', 'created_by'
+            'is_saving_throw', 'save_type', 'half_damage_on_save',
+            'components_v', 'components_s', 'components_m', 'material',
+            'description', 'source', 'is_custom', 'created_by',
+            'classes', 'tags', 'aoe_radius', 'damage_components',
         ]
         read_only_fields = ['id', 'created_by']
 
@@ -63,9 +69,11 @@ class SpellDetailSerializer(serializers.ModelSerializer):
             'id', 'name', 'level', 'school', 'casting_time', 'range',
             'duration', 'concentration', 'ritual', 'is_attack_roll',
             'is_saving_throw', 'save_type', 'half_damage_on_save',
+            'components_v', 'components_s', 'components_m', 'material',
             'number_of_attacks', 'crit_enabled', 'aoe_radius', 'damage_type',
             'upcast_base_level', 'upcast_dice_increment', 'upcast_die_size',
             'source', 'is_custom', 'description', 'higher_level', 'raw_data',
+            'classes', 'tags',
             'damage_components', 'parsing_metadata', 'created_by',
             'created_by_username', 'created_at', 'updated_at'
         ]
@@ -84,9 +92,11 @@ class SpellCreateUpdateSerializer(serializers.ModelSerializer):
             'name', 'level', 'school', 'casting_time', 'range',
             'duration', 'concentration', 'ritual', 'is_attack_roll',
             'is_saving_throw', 'save_type', 'half_damage_on_save',
+            'components_v', 'components_s', 'components_m', 'material',
             'number_of_attacks', 'crit_enabled', 'aoe_radius', 'damage_type',
             'upcast_base_level', 'upcast_dice_increment', 'upcast_die_size',
             'source', 'is_custom', 'description', 'higher_level', 'raw_data',
+            'classes', 'tags',
             'damage_components'
         ]
 
