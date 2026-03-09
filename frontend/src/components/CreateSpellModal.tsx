@@ -3,6 +3,7 @@
  */
 import { useState } from 'react';
 import { useCreateSpell } from '../hooks/useSpells';
+import { ModalShell, AlertMessage } from './ui';
 
 interface CreateSpellModalProps {
   isOpen: boolean;
@@ -16,19 +17,63 @@ const SCHOOLS = [
 
 const SAVE_TYPES = ['STR', 'DEX', 'CON', 'INT', 'WIS', 'CHA'] as const;
 
+const CLASS_CHOICES = [
+  'artificer', 'bard', 'cleric', 'druid', 'paladin',
+  'ranger', 'sorcerer', 'warlock', 'wizard',
+] as const;
+
+const CASTING_TIME_OPTIONS = [
+  '1 action',
+  '1 bonus action',
+  '1 reaction',
+  '1 minute',
+  '10 minutes',
+  '1 hour',
+  '8 hours',
+  '12 hours',
+  '24 hours',
+  'Other',
+] as const;
+
+const RANGE_OPTIONS = [
+  'Self',
+  'Touch',
+  '5 feet',
+  '10 feet',
+  '30 feet',
+  '60 feet',
+  '90 feet',
+  '120 feet',
+  '150 feet',
+  '300 feet',
+  '500 feet',
+  '1 mile',
+  'Sight',
+  'Unlimited',
+  'Special',
+  'Other',
+] as const;
+
 interface SpellFormState {
   name: string;
   level: number;
   school: string;
   casting_time: string;
+  casting_time_custom: string;
   range: string;
+  range_custom: string;
   duration: string;
   concentration: boolean;
   ritual: boolean;
+  components_v: boolean;
+  components_s: boolean;
+  components_m: boolean;
+  material: string;
   is_attack_roll: boolean;
   is_saving_throw: boolean;
   save_type: string;
   half_damage_on_save: boolean;
+  classes: string[];
   description: string;
   higher_level: string;
 }
@@ -38,14 +83,21 @@ const defaultForm: SpellFormState = {
   level: 1,
   school: 'evocation',
   casting_time: '1 action',
+  casting_time_custom: '',
   range: '30 feet',
+  range_custom: '',
   duration: 'Instantaneous',
   concentration: false,
   ritual: false,
+  components_v: false,
+  components_s: false,
+  components_m: false,
+  material: '',
   is_attack_roll: false,
   is_saving_throw: false,
   save_type: '',
   half_damage_on_save: false,
+  classes: [],
   description: '',
   higher_level: '',
 };
@@ -69,6 +121,15 @@ export function CreateSpellModal({ isOpen, onClose }: CreateSpellModalProps) {
     setErrors((prev) => { const next = { ...prev }; delete next[field]; return next; });
   };
 
+  const toggleClass = (cls: string) => {
+    setForm((prev) => ({
+      ...prev,
+      classes: prev.classes.includes(cls)
+        ? prev.classes.filter((c) => c !== cls)
+        : [...prev.classes, cls],
+    }));
+  };
+
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
     if (!form.name.trim()) newErrors.name = 'Name is required.';
@@ -76,6 +137,9 @@ export function CreateSpellModal({ isOpen, onClose }: CreateSpellModalProps) {
     if (!form.school) newErrors.school = 'School is required.';
     if (!form.description.trim()) newErrors.description = 'Description is required.';
     if (form.is_saving_throw && !form.save_type) newErrors.save_type = 'Save type is required for saving throw spells.';
+    if (form.casting_time === 'Other' && !form.casting_time_custom.trim()) newErrors.casting_time = 'Casting time is required.';
+    if (form.range === 'Other' && !form.range_custom.trim()) newErrors.range = 'Range is required.';
+    if (form.components_m && !form.material.trim()) newErrors.material = 'Material component description is required.';
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -86,25 +150,20 @@ export function CreateSpellModal({ isOpen, onClose }: CreateSpellModalProps) {
 
     await createSpell.mutateAsync({
       ...form,
+      casting_time: form.casting_time === 'Other' ? form.casting_time_custom.trim() : form.casting_time,
+      range: form.range === 'Other' ? form.range_custom.trim() : form.range,
       save_type: form.is_saving_throw ? form.save_type : undefined,
+      material: form.components_m ? form.material.trim() : '',
     } as any);
   };
 
-  const labelCls = 'block text-sm font-medium text-gray-700 mb-1';
-  const inputCls = 'w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-primary-500 text-sm';
-  const errCls = 'text-xs text-red-600 mt-1';
+  const labelCls = 'block font-display text-sm font-medium text-parchment-300 mb-1';
+  const inputCls = 'dnd-input font-body text-sm';
+  const errCls = 'font-body text-xs text-crimson-400 mt-1';
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl max-h-[90vh] flex flex-col">
-        {/* Header */}
-        <div className="flex justify-between items-center p-6 border-b border-gray-200">
-          <h2 className="text-xl font-bold text-gray-900">Create Custom Spell</h2>
-          <button onClick={handleClose} className="text-gray-400 hover:text-gray-600 text-2xl leading-none">×</button>
-        </div>
-
-        {/* Form */}
-        <form onSubmit={handleSubmit} className="p-6 overflow-y-auto flex-1 space-y-5">
+    <ModalShell accent="arcane" maxWidth="max-w-2xl" title="✦ Create Custom Spell" onClose={handleClose} disabled={createSpell.isPending}>
+      <form onSubmit={handleSubmit} className="space-y-5">
           {/* Name */}
           <div>
             <label className={labelCls}>Name *</label>
@@ -151,11 +210,45 @@ export function CreateSpellModal({ isOpen, onClose }: CreateSpellModalProps) {
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className={labelCls}>Casting Time</label>
-              <input value={form.casting_time} onChange={(e) => set('casting_time', e.target.value)} className={inputCls} placeholder="1 action" />
+              <select
+                value={form.casting_time}
+                onChange={(e) => set('casting_time', e.target.value)}
+                className={inputCls}
+              >
+                {CASTING_TIME_OPTIONS.map((o) => (
+                  <option key={o} value={o}>{o}</option>
+                ))}
+              </select>
+              {form.casting_time === 'Other' && (
+                <input
+                  value={form.casting_time_custom}
+                  onChange={(e) => set('casting_time_custom', e.target.value)}
+                  className={`${inputCls} mt-2`}
+                  placeholder="e.g. 1 reaction, which you take when…"
+                />
+              )}
+              {errors.casting_time && <p className={errCls}>{errors.casting_time}</p>}
             </div>
             <div>
               <label className={labelCls}>Range</label>
-              <input value={form.range} onChange={(e) => set('range', e.target.value)} className={inputCls} placeholder="30 feet" />
+              <select
+                value={form.range}
+                onChange={(e) => set('range', e.target.value)}
+                className={inputCls}
+              >
+                {RANGE_OPTIONS.map((o) => (
+                  <option key={o} value={o}>{o}</option>
+                ))}
+              </select>
+              {form.range === 'Other' && (
+                <input
+                  value={form.range_custom}
+                  onChange={(e) => set('range_custom', e.target.value)}
+                  className={`${inputCls} mt-2`}
+                  placeholder="e.g. 60-foot cone"
+                />
+              )}
+              {errors.range && <p className={errCls}>{errors.range}</p>}
             </div>
           </div>
 
@@ -165,14 +258,47 @@ export function CreateSpellModal({ isOpen, onClose }: CreateSpellModalProps) {
             <input value={form.duration} onChange={(e) => set('duration', e.target.value)} className={inputCls} placeholder="Instantaneous" />
           </div>
 
+          {/* Components */}
+          <div>
+            <p className={labelCls}>Components</p>
+            <div className="flex flex-wrap gap-5 mb-2">
+              {(['V', 'S', 'M'] as const).map((comp) => {
+                const field = `components_${comp.toLowerCase()}` as 'components_v' | 'components_s' | 'components_m';
+                return (
+                  <label key={comp} className="flex items-center gap-2 cursor-pointer font-body text-sm text-parchment-300">
+                    <input
+                      type="checkbox"
+                      checked={form[field]}
+                      onChange={(e) => set(field, e.target.checked)}
+                      className="w-4 h-4 accent-gold-500"
+                    />
+                    {comp} ({comp === 'V' ? 'Verbal' : comp === 'S' ? 'Somatic' : 'Material'})
+                  </label>
+                );
+              })}
+            </div>
+            {form.components_m && (
+              <div className="pl-4 border-l-2 border-gold-800">
+                <label className={labelCls}>Material Description *</label>
+                <input
+                  value={form.material}
+                  onChange={(e) => set('material', e.target.value)}
+                  className={inputCls}
+                  placeholder="e.g. a pinch of sulfur and bat guano"
+                />
+                {errors.material && <p className={errCls}>{errors.material}</p>}
+              </div>
+            )}
+          </div>
+
           {/* Flags Row 1 */}
           <div className="flex flex-wrap gap-5">
-            <label className="flex items-center gap-2 cursor-pointer text-sm">
-              <input type="checkbox" checked={form.concentration} onChange={(e) => set('concentration', e.target.checked)} className="w-4 h-4" />
+            <label className="flex items-center gap-2 cursor-pointer font-body text-sm text-parchment-300">
+              <input type="checkbox" checked={form.concentration} onChange={(e) => set('concentration', e.target.checked)} className="w-4 h-4 accent-gold-500" />
               Concentration
             </label>
-            <label className="flex items-center gap-2 cursor-pointer text-sm">
-              <input type="checkbox" checked={form.ritual} onChange={(e) => set('ritual', e.target.checked)} className="w-4 h-4" />
+            <label className="flex items-center gap-2 cursor-pointer font-body text-sm text-parchment-300">
+              <input type="checkbox" checked={form.ritual} onChange={(e) => set('ritual', e.target.checked)} className="w-4 h-4 accent-gold-500" />
               Ritual
             </label>
           </div>
@@ -181,21 +307,21 @@ export function CreateSpellModal({ isOpen, onClose }: CreateSpellModalProps) {
           <div>
             <p className={labelCls}>Spell Type</p>
             <div className="flex flex-wrap gap-5">
-              <label className="flex items-center gap-2 cursor-pointer text-sm">
+              <label className="flex items-center gap-2 cursor-pointer font-body text-sm text-parchment-300">
                 <input
                   type="checkbox"
                   checked={form.is_attack_roll}
                   onChange={(e) => set('is_attack_roll', e.target.checked)}
-                  className="w-4 h-4"
+                  className="w-4 h-4 accent-gold-500"
                 />
                 Attack Roll
               </label>
-              <label className="flex items-center gap-2 cursor-pointer text-sm">
+              <label className="flex items-center gap-2 cursor-pointer font-body text-sm text-parchment-300">
                 <input
                   type="checkbox"
                   checked={form.is_saving_throw}
                   onChange={(e) => set('is_saving_throw', e.target.checked)}
-                  className="w-4 h-4"
+                  className="w-4 h-4 accent-gold-500"
                 />
                 Saving Throw
               </label>
@@ -204,7 +330,7 @@ export function CreateSpellModal({ isOpen, onClose }: CreateSpellModalProps) {
 
           {/* Saving Throw Options */}
           {form.is_saving_throw && (
-            <div className="pl-4 border-l-2 border-orange-300 space-y-3">
+            <div className="pl-4 border-l-2 border-arcane-600 space-y-3">
               <div>
                 <label className={labelCls}>Save Ability *</label>
                 <select
@@ -217,17 +343,35 @@ export function CreateSpellModal({ isOpen, onClose }: CreateSpellModalProps) {
                 </select>
                 {errors.save_type && <p className={errCls}>{errors.save_type}</p>}
               </div>
-              <label className="flex items-center gap-2 cursor-pointer text-sm">
+              <label className="flex items-center gap-2 cursor-pointer font-body text-sm text-parchment-300">
                 <input
                   type="checkbox"
                   checked={form.half_damage_on_save}
                   onChange={(e) => set('half_damage_on_save', e.target.checked)}
-                  className="w-4 h-4"
+                  className="w-4 h-4 accent-gold-500"
                 />
                 Half damage on successful save
               </label>
             </div>
           )}
+
+          {/* Classes */}
+          <div>
+            <p className={labelCls}>Classes</p>
+            <div className="flex flex-wrap gap-x-5 gap-y-2">
+              {CLASS_CHOICES.map((cls) => (
+                <label key={cls} className="flex items-center gap-2 cursor-pointer font-body text-sm text-parchment-300">
+                  <input
+                    type="checkbox"
+                    checked={form.classes.includes(cls)}
+                    onChange={() => toggleClass(cls)}
+                    className="w-4 h-4 accent-gold-500"
+                  />
+                  {cls.charAt(0).toUpperCase() + cls.slice(1)}
+                </label>
+              ))}
+            </div>
+          </div>
 
           {/* Description */}
           <div>
@@ -256,16 +400,12 @@ export function CreateSpellModal({ isOpen, onClose }: CreateSpellModalProps) {
 
           {/* API Error */}
           {createSpell.isError && (
-            <div className="bg-red-50 border border-red-200 rounded-md p-3 text-sm text-red-700">
-              Failed to create spell. Please check your inputs and try again.
-            </div>
+            <AlertMessage variant="error" message="Failed to create spell. Please check your inputs and try again." />
           )}
 
           {/* Success */}
           {createSpell.isSuccess && (
-            <div className="bg-green-50 border border-green-200 rounded-md p-3 text-sm text-green-800 font-medium">
-              ✓ Spell created successfully!
-            </div>
+            <AlertMessage variant="success" message="✓ Spell inscribed in the archives!" />
           )}
 
           {/* Footer buttons inside form so Enter submits */}
@@ -273,7 +413,7 @@ export function CreateSpellModal({ isOpen, onClose }: CreateSpellModalProps) {
             <button
               type="button"
               onClick={handleClose}
-              className="px-4 py-2 bg-gray-200 text-gray-700 rounded-md hover:bg-gray-300"
+              className="btn-secondary"
             >
               {createSpell.isSuccess ? 'Close' : 'Cancel'}
             </button>
@@ -281,15 +421,14 @@ export function CreateSpellModal({ isOpen, onClose }: CreateSpellModalProps) {
               <button
                 type="submit"
                 disabled={createSpell.isPending}
-                className="px-4 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700 disabled:bg-gray-400 disabled:cursor-not-allowed"
+                className="btn-gold disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {createSpell.isPending ? 'Creating…' : 'Create Spell'}
+                {createSpell.isPending ? 'Inscribing…' : 'Create Spell'}
               </button>
             )}
           </div>
         </form>
-      </div>
-    </div>
+      </ModalShell>
   );
 }
 

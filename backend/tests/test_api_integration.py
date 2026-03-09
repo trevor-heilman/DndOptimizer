@@ -69,6 +69,7 @@ class TestUserAuthentication:
     def test_user_registration(self, api_client):
         """Test user can register."""
         data = {
+            'username': 'newuser',
             'email': 'newuser@example.com',
             'password': 'newpass123',
             'password_confirm': 'newpass123'
@@ -244,16 +245,16 @@ class TestSpellbookAPI:
         
         data = {
             'spell_id': str(test_spell.id),
-            'is_prepared': True,
+            'prepared': True,
             'notes': 'Great damage spell'
         }
-        
+
         response = authenticated_client.post(
             f'/api/spellbooks/{spellbook.id}/add_spell/',
             data
         )
-        
-        assert response.status_code == status.HTTP_200_OK
+
+        assert response.status_code == status.HTTP_201_CREATED
         assert spellbook.spells.count() == 1
     
     def test_remove_spell_from_spellbook(self, authenticated_client, test_user, test_spell):
@@ -263,15 +264,12 @@ class TestSpellbookAPI:
             name='My Spells'
         )
         spellbook.spells.add(test_spell)
-        
-        data = {'spell_id': str(test_spell.id)}
-        
-        response = authenticated_client.post(
-            f'/api/spellbooks/{spellbook.id}/remove_spell/',
-            data
+
+        response = authenticated_client.delete(
+            f'/api/spellbooks/{spellbook.id}/remove_spell/?spell_id={test_spell.id}'
         )
-        
-        assert response.status_code == status.HTTP_200_OK
+
+        assert response.status_code == status.HTTP_204_NO_CONTENT
         assert spellbook.spells.count() == 0
     
     def test_duplicate_spellbook(self, authenticated_client, test_user, test_spell):
@@ -281,16 +279,14 @@ class TestSpellbookAPI:
             name='Original Spellbook'
         )
         spellbook.spells.add(test_spell)
-        
-        data = {'new_name': 'Copied Spellbook'}
-        
+
         response = authenticated_client.post(
             f'/api/spellbooks/{spellbook.id}/duplicate/',
-            data
+            {}
         )
-        
+
         assert response.status_code == status.HTTP_201_CREATED
-        assert response.data['name'] == 'Copied Spellbook'
+        assert response.data['name'] == 'Original Spellbook (Copy)'
         assert Spellbook.objects.count() == 2
 
 
@@ -303,16 +299,17 @@ class TestAnalysisAPI:
         data = {
             'spell_id': str(test_spell.id),
             'target_ac': 15,
-            'target_saves': {'DEX': 12},
-            'caster_spell_save_dc': 13,
-            'num_targets': 1
+            'target_save_bonus': 2,
+            'spell_save_dc': 13,
+            'caster_attack_bonus': 5,
+            'number_of_targets': 1,
         }
-        
-        response = authenticated_client.post('/api/analysis/analyze/', data)
-        
+
+        response = authenticated_client.post('/api/analysis/analyze/', data, format='json')
+
         assert response.status_code == status.HTTP_200_OK
-        assert 'average_damage' in response.data
-        assert 'maximum_damage' in response.data
+        assert 'results' in response.data
+        assert 'expected_damage' in response.data['results']
     
     def test_compare_spells(self, authenticated_client, test_spell):
         """Test comparing two spells."""
@@ -341,32 +338,207 @@ class TestAnalysisAPI:
             'spell_a_id': str(test_spell.id),
             'spell_b_id': str(spell2.id),
             'target_ac': 15,
-            'target_saves': {'DEX': 12},
-            'caster_spell_save_dc': 13,
-            'num_targets': 1
+            'target_save_bonus': 2,
+            'spell_save_dc': 13,
+            'caster_attack_bonus': 5,
+            'number_of_targets': 1,
         }
-        
-        response = authenticated_client.post('/api/analysis/compare/', data)
-        
+
+        response = authenticated_client.post('/api/analysis/compare/', data, format='json')
+
         assert response.status_code == status.HTTP_200_OK
         assert 'spell_a' in response.data
         assert 'spell_b' in response.data
-        assert 'winner' in response.data
+        assert 'results' in response.data
     
     def test_efficiency_analysis(self, authenticated_client, test_spell):
         """Test spell efficiency across slot levels."""
         data = {
             'spell_id': str(test_spell.id),
             'target_ac': 15,
-            'target_saves': {'DEX': 12},
-            'caster_spell_save_dc': 13,
-            'num_targets': 1
+            'target_save_bonus': 2,
+            'spell_save_dc': 13,
+            'caster_attack_bonus': 5,
         }
-        
-        response = authenticated_client.post('/api/analysis/efficiency/', data)
-        
+
+        response = authenticated_client.post('/api/analysis/efficiency/', data, format='json')
+
         assert response.status_code == status.HTTP_200_OK
-        assert 'efficiency_data' in response.data
+        assert 'efficiency_by_slot' in response.data
+
+    def test_breakeven_analysis(self, authenticated_client, test_spell):
+        """Test break-even analysis endpoint returns correct structure."""
+        spell_b = Spell.objects.create(
+            name='Scorching Ray',
+            level=2,
+            school='evocation',
+            casting_time='1 action',
+            range='120 feet',
+            duration='Instantaneous',
+            description='Fire',
+            is_attack_roll=True,
+            number_of_attacks=3,
+        )
+        DamageComponent.objects.create(
+            spell=spell_b, dice_count=2, die_size=6, damage_type='fire', timing='on_hit'
+        )
+
+        data = {
+            'spell_a_id': str(test_spell.id),
+            'spell_b_id': str(spell_b.id),
+            'target_ac': 15,
+            'target_save_bonus': 0,
+            'spell_save_dc': 15,
+            'caster_attack_bonus': 5,
+            'number_of_targets': 1,
+            'spell_slot_level': 3,
+        }
+        response = authenticated_client.post('/api/analysis/breakeven/', data, format='json')
+
+        assert response.status_code == status.HTTP_200_OK
+        assert 'spell_a' in response.data
+        assert 'spell_b' in response.data
+        assert 'breakeven_ac' in response.data
+        assert 'breakeven_save_bonus' in response.data
+        assert 'ac_profile' in response.data
+        assert 'save_profile' in response.data
+        # AC profile covers 1-30 (30 entries)
+        assert len(response.data['ac_profile']) == 30
+        # Each entry has the three expected keys
+        entry = response.data['ac_profile'][0]
+        assert 'target_ac' in entry
+        assert 'spell_a_damage' in entry
+        assert 'spell_b_damage' in entry
+        # Save profile covers -5 to +15 (21 entries)
+        assert len(response.data['save_profile']) == 21
+
+    def test_breakeven_same_spell_rejected(self, authenticated_client, test_spell):
+        """Break-even endpoint should reject identical spell IDs."""
+        data = {
+            'spell_a_id': str(test_spell.id),
+            'spell_b_id': str(test_spell.id),
+            'spell_slot_level': 1,
+        }
+        response = authenticated_client.post('/api/analysis/breakeven/', data, format='json')
+        assert response.status_code == status.HTTP_400_BAD_REQUEST
+
+
+@pytest.mark.django_db
+class TestCaching:
+    """Verify cache hit/miss behaviour for spell detail, spell counts, and analysis."""
+
+    def test_spell_detail_cached_on_second_request(self, authenticated_client, test_spell):
+        """Second GET of the same spell detail is served from the cache."""
+        from django.core.cache import cache
+        from core.cache_utils import spell_detail_key
+
+        cache.clear()
+        url = f'/api/spells/spells/{test_spell.id}/'
+
+        response1 = authenticated_client.get(url)
+        assert response1.status_code == status.HTTP_200_OK
+        ck = spell_detail_key(test_spell.id, test_spell.updated_at)
+        assert cache.get(ck) is not None, "Spell detail was not written to cache after first request"
+
+        response2 = authenticated_client.get(url)
+        assert response2.status_code == status.HTTP_200_OK
+        assert response2.data['id'] == str(test_spell.id)
+        cache.clear()
+
+    def test_spell_counts_cached_on_second_request(self, authenticated_client, test_user):
+        """Second GET of spell_counts is served from the cache."""
+        from django.core.cache import cache
+        from core.cache_utils import spell_counts_key
+
+        cache.clear()
+        url = '/api/spells/spells/spell_counts/'
+        authenticated_client.get(url)
+        ck = spell_counts_key(test_user.id)
+        assert cache.get(ck) is not None, "Spell counts were not written to cache after first request"
+        cache.clear()
+
+    def test_spell_counts_invalidated_after_delete(self, authenticated_client, test_user):
+        """Deleting a spell clears the spell_counts cache for that user."""
+        from django.core.cache import cache
+        from core.cache_utils import spell_counts_key
+
+        cache.clear()
+        # Seed the cache
+        authenticated_client.get('/api/spells/spells/spell_counts/')
+        ck = spell_counts_key(test_user.id)
+        assert cache.get(ck) is not None
+
+        # Create and immediately delete a custom spell to trigger invalidation
+        custom_spell = Spell.objects.create(
+            name='Temp Spell',
+            level=1, school='evocation',
+            casting_time='1 action', range='60 feet',
+            duration='Instantaneous', description='Temporary',
+            is_custom=True, created_by=test_user,
+        )
+        authenticated_client.delete(f'/api/spells/spells/{custom_spell.id}/')
+        assert cache.get(ck) is None, "Spell counts cache should be cleared after delete"
+        cache.clear()
+
+    def test_analysis_result_cached_on_second_request(self, authenticated_client, test_spell):
+        """The second call to /analyze/ with identical params returns identical results (cache hit)."""
+        from django.core.cache import cache
+        from unittest.mock import patch
+
+        cache.clear()
+        data = {
+            'spell_id': str(test_spell.id),
+            'target_ac': 14, 'target_save_bonus': 2,
+            'spell_save_dc': 15, 'caster_attack_bonus': 5,
+            'number_of_targets': 1, 'spell_slot_level': 3,
+        }
+        # patch cache.set to capture whether it's called
+        set_calls = []
+        original_set = cache.set
+
+        def recording_set(key, value, *args, **kwargs):
+            set_calls.append(key)
+            return original_set(key, value, *args, **kwargs)
+
+        with patch.object(cache, 'set', side_effect=recording_set):
+            r1 = authenticated_client.post('/api/analysis/analyze/', data, format='json')
+
+        assert r1.status_code == status.HTTP_200_OK
+        assert any('analysis:analyze:' in k for k in set_calls), \
+            f"cache.set not called for analysis:analyze — calls: {set_calls}"
+
+        # Second call should return same expected_damage
+        r2 = authenticated_client.post('/api/analysis/analyze/', data, format='json')
+        assert r2.status_code == status.HTTP_200_OK
+        assert r2.data['results']['expected_damage'] == r1.data['results']['expected_damage']
+        cache.clear()
+
+    def test_efficiency_result_cached(self, authenticated_client, test_spell):
+        """Efficiency endpoint writes a cache entry on first call."""
+        from django.core.cache import cache
+        from unittest.mock import patch
+
+        cache.clear()
+        data = {
+            'spell_id': str(test_spell.id),
+            'target_ac': 14, 'target_save_bonus': 2,
+            'spell_save_dc': 15, 'caster_attack_bonus': 5,
+            'min_slot_level': 1, 'max_slot_level': 5,
+        }
+        set_calls = []
+        original_set = cache.set
+
+        def recording_set(key, value, *args, **kwargs):
+            set_calls.append(key)
+            return original_set(key, value, *args, **kwargs)
+
+        with patch.object(cache, 'set', side_effect=recording_set):
+            r1 = authenticated_client.post('/api/analysis/efficiency/', data, format='json')
+
+        assert r1.status_code == status.HTTP_200_OK
+        assert any('analysis:efficiency:' in k for k in set_calls), \
+            f"cache.set not called for analysis:efficiency — calls: {set_calls}"
+        cache.clear()
 
 
 @pytest.mark.django_db
@@ -377,6 +549,7 @@ class TestPermissions:
         """Test user cannot delete another user's spellbook."""
         # Create another user and their spellbook
         other_user = User.objects.create_user(
+            username='other',
             email='other@example.com',
             password='pass123'
         )

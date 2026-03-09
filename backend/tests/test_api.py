@@ -31,9 +31,8 @@ class TestAPIRoot:
     
     def test_api_root(self, api_client):
         """Test that API root is accessible."""
-        url = reverse('api-root')
-        response = api_client.get(url)
-        
+        response = api_client.get('/api/')
+
         assert response.status_code == status.HTTP_200_OK
         assert 'message' in response.data
         assert 'endpoints' in response.data
@@ -56,7 +55,8 @@ class TestUserAuthentication:
         
         assert response.status_code == status.HTTP_201_CREATED
         assert 'user' in response.data
-        assert 'tokens' in response.data
+        assert 'access' in response.data
+        assert 'refresh' in response.data
         assert response.data['user']['email'] == 'newuser@example.com'
     
     def test_user_login(self, api_client, test_user):
@@ -69,9 +69,9 @@ class TestUserAuthentication:
         response = api_client.post(url, data, format='json')
         
         assert response.status_code == status.HTTP_200_OK
-        assert 'tokens' in response.data
-        assert 'access' in response.data['tokens']
-        assert 'refresh' in response.data['tokens']
+        assert 'user' in response.data
+        assert 'access' in response.data
+        assert 'refresh' in response.data
     
     def test_get_current_user(self, api_client, test_user):
         """Test getting current user profile."""
@@ -173,4 +173,107 @@ class TestSavingThrowCalculator:
         assert prob == 0.05
 
 
-# Add more tests as needed
+@pytest.mark.django_db
+class TestRateLimiting:
+    """
+    Verify throttle classes are applied to sensitive endpoints.
+    Patches SimpleRateThrottle.THROTTLE_RATES directly because the class attribute
+    is set at import time and override_settings won't update it retroactively.
+    """
+
+    TINY_RATES = {
+        'login': '3/min',
+        'register': '3/min',
+        'password_change': '3/min',
+        'analysis': '3/min',
+        'spell_import': '3/min',
+    }
+
+    def test_login_rate_limit_enforced(self, api_client, db):
+        """After 3 login attempts from the same IP the endpoint returns 429."""
+        from unittest.mock import patch
+        from django.core.cache import cache
+        from rest_framework.throttling import SimpleRateThrottle
+
+        cache.clear()
+        url = '/api/users/login/'
+        payload = {'email': 'noexist@example.com', 'password': 'wrong'}
+
+        with patch.object(SimpleRateThrottle, 'THROTTLE_RATES', self.TINY_RATES):
+            for _ in range(3):
+                api_client.post(url, payload, format='json')
+            response = api_client.post(url, payload, format='json')
+
+        assert response.status_code == status.HTTP_429_TOO_MANY_REQUESTS
+        cache.clear()
+
+    def test_register_rate_limit_enforced(self, api_client, db):
+        """After 3 registration attempts the endpoint returns 429."""
+        from unittest.mock import patch
+        from django.core.cache import cache
+        from rest_framework.throttling import SimpleRateThrottle
+
+        cache.clear()
+        url = '/api/users/register/'
+        base_payload = {
+            'password': 'SecurePass123!',
+            'password_confirm': 'SecurePass123!',
+        }
+
+        with patch.object(SimpleRateThrottle, 'THROTTLE_RATES', self.TINY_RATES):
+            for i in range(3):
+                api_client.post(
+                    url,
+                    {**base_payload, 'username': f'u{i}', 'email': f'u{i}@example.com'},
+                    format='json',
+                )
+            response = api_client.post(
+                url,
+                {**base_payload, 'username': 'u99', 'email': 'u99@example.com'},
+                format='json',
+            )
+
+        assert response.status_code == status.HTTP_429_TOO_MANY_REQUESTS
+        cache.clear()
+
+    def test_unauthenticated_analysis_blocked(self, api_client, db):
+        """Analysis endpoint rejects unauthenticated requests with 401."""
+        response = api_client.post('/api/analysis/analyze/', {}, format='json')
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    def test_throttle_headers_present_on_429(self, api_client, db):
+        """A 429 response from the throttled login endpoint includes Retry-After."""
+        from unittest.mock import patch
+        from django.core.cache import cache
+        from rest_framework.throttling import SimpleRateThrottle
+
+        cache.clear()
+        url = '/api/users/login/'
+        payload = {'email': 'x@example.com', 'password': 'wrong'}
+
+        with patch.object(SimpleRateThrottle, 'THROTTLE_RATES', self.TINY_RATES):
+            for _ in range(3):
+                api_client.post(url, payload, format='json')
+            response = api_client.post(url, payload, format='json')
+
+        assert response.status_code == status.HTTP_429_TOO_MANY_REQUESTS
+        assert 'Retry-After' in response
+        cache.clear()
+
+    def test_throttle_classes_registered_on_login(self):
+        """LoginRateThrottle is applied to the login view action."""
+        from users.views import UserViewSet
+        from core.throttles import LoginRateThrottle
+
+        throttle_classes = getattr(UserViewSet.login, 'kwargs', {}).get('throttle_classes')
+        assert throttle_classes is not None
+        assert LoginRateThrottle in throttle_classes
+
+    def test_throttle_classes_registered_on_register(self):
+        """RegisterRateThrottle is applied to the register view action."""
+        from users.views import UserViewSet
+        from core.throttles import RegisterRateThrottle
+
+        throttle_classes = getattr(UserViewSet.register, 'kwargs', {}).get('throttle_classes')
+        assert throttle_classes is not None
+        assert RegisterRateThrottle in throttle_classes

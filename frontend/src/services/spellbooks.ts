@@ -61,26 +61,29 @@ export async function addSpell(spellbookId: string, spellId: string): Promise<Sp
 
 /**
  * Remove spell from spellbook
+ * Backend: DELETE /spellbooks/{id}/remove_spell/?spell_id=...
  */
-export async function removeSpell(spellbookId: string, spellId: string): Promise<Spellbook> {
-  const response = await apiClient.post<Spellbook>(
+export async function removeSpell(spellbookId: string, spellId: string): Promise<void> {
+  await apiClient.delete(
     `/spellbooks/${spellbookId}/remove_spell/`,
-    { spell_id: spellId }
+    { params: { spell_id: spellId } }
   );
-  return response.data;
 }
 
 /**
- * Update prepared spell
+ * Update prepared spell status
+ * Backend: PATCH /spellbooks/{id}/update_prepared_spell/?spell_id=...
+ * Body field is `prepared` (not is_prepared).
  */
 export async function updatePreparedSpell(
   spellbookId: string,
   spellId: string,
-  isPrepared: boolean
+  prepared: boolean
 ): Promise<Spellbook> {
-  const response = await apiClient.post<Spellbook>(
+  const response = await apiClient.patch<Spellbook>(
     `/spellbooks/${spellbookId}/update_prepared_spell/`,
-    { spell_id: spellId, is_prepared: isPrepared }
+    { prepared },
+    { params: { spell_id: spellId } }
   );
   return response.data;
 }

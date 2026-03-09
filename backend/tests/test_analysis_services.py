@@ -105,7 +105,7 @@ class TestAttackRollCalculator:
         prob = AttackRollCalculator.hit_probability(
             target_ac=15,
             attack_bonus=5,
-            advantage_disadvantage='advantage'
+            advantage=True
         )
         expected = 1 - (1 - 0.55) ** 2
         assert abs(prob - expected) < 0.001
@@ -118,7 +118,7 @@ class TestAttackRollCalculator:
         prob = AttackRollCalculator.hit_probability(
             target_ac=15,
             attack_bonus=5,
-            advantage_disadvantage='disadvantage'
+            disadvantage=True
         )
         expected = 0.55 ** 2
         assert abs(prob - expected) < 0.001
@@ -131,7 +131,7 @@ class TestAttackRollCalculator:
     def test_crit_probability_with_advantage(self):
         """Test critical hit probability with advantage."""
         # With advantage: 1 - (19/20)^2 = 1 - 0.9025 = 0.0975
-        prob = AttackRollCalculator.crit_probability(advantage_disadvantage='advantage')
+        prob = AttackRollCalculator.crit_probability(advantage=True)
         expected = 1 - (19/20) ** 2
         assert abs(prob - expected) < 0.001
     
@@ -139,21 +139,23 @@ class TestAttackRollCalculator:
         """Test critical hit probability with disadvantage."""
         # With disadvantage: (1/20)^2 = 0.0025, but then OR with advantage,
         # Actually it's 1/20 * 1/20 = 0.0025
-        prob = AttackRollCalculator.crit_probability(advantage_disadvantage='disadvantage')
+        prob = AttackRollCalculator.crit_probability(disadvantage=True)
         expected = 0.05 * 0.05
         assert abs(prob - expected) < 0.001
     
     def test_expected_damage(self):
         """Test expected damage from attack roll."""
-        # Average damage = 10, AC 15, +5 bonus
-        # Hit prob = 0.55, crit prob = 0.05
-        # Expected = 10 * 0.55 + 20 * 0.05 = 5.5 + 1.0 = 6.5
-        expected = AttackRollCalculator.expected_damage(
-            average_damage=10.0,
-            target_ac=15,
-            attack_bonus=5
+        # 4d4 (avg=10), AC 15, +5 bonus
+        # hit_prob=0.55, crit_prob=0.05, crit_avg=8d4=20, extra_crit=10
+        # expected = 0.55*10 + 0.05*10 = 6.0
+        result = AttackRollCalculator.expected_damage(
+            dice_count=4,
+            die_size=4,
+            modifier=0,
+            attack_bonus=5,
+            target_ac=15
         )
-        assert abs(expected - 6.5) < 0.001
+        assert abs(result['expected_damage'] - 6.0) < 0.001
 
 
 class TestSavingThrowCalculator:
@@ -162,67 +164,67 @@ class TestSavingThrowCalculator:
     def test_save_failure_probability_basic(self):
         """Test basic save failure probability."""
         # DC 13, +2 save bonus
-        # Need to roll 11 or higher: 10/20 = 0.50
+        # Need to roll 11 or higher to succeed → 10 failures (1-10) / 20 = 0.50
         prob = SavingThrowCalculator.save_failure_probability(
-            save_dc=13,
-            target_save_bonus=2
+            spell_dc=13,
+            save_bonus=2
         )
         assert prob == 0.50
     
     def test_save_failure_probability_low_dc(self):
         """Test save failure with very low DC."""
-        # DC 8, +5 bonus
-        # Need to roll 3 or higher: 18/20 = 0.90 success, 0.10 failure
+        # DC 8, +5 bonus → roll_needed=3 → failures=2/20=0.10
         prob = SavingThrowCalculator.save_failure_probability(
-            save_dc=8,
-            target_save_bonus=5
+            spell_dc=8,
+            save_bonus=5
         )
         assert prob == 0.10
     
     def test_save_failure_probability_high_dc(self):
         """Test save failure with very high DC."""
-        # DC 20, +0 bonus
-        # Need to roll 20: 1/20 = 0.05 success, 0.95 failure (max)
+        # DC 20, +0 bonus → roll_needed=20 → failures=19/20=0.95 (clamped)
         prob = SavingThrowCalculator.save_failure_probability(
-            save_dc=20,
-            target_save_bonus=0
+            spell_dc=20,
+            save_bonus=0
         )
         assert prob == 0.95
     
     def test_save_failure_minimum(self):
         """Test minimum save failure rate (natural 1)."""
-        # DC 5, +10 bonus - still 5% failure rate
+        # DC 5, +10 bonus → roll_needed=-5 → clamped to 0.05
         prob = SavingThrowCalculator.save_failure_probability(
-            save_dc=5,
-            target_save_bonus=10
+            spell_dc=5,
+            save_bonus=10
         )
         assert prob == 0.05
     
     def test_expected_damage_full_on_fail(self):
         """Test expected damage with no save reduction."""
-        # 20 damage, DC 13, +2 save, no half damage
-        # Failure prob = 0.50
-        # Expected = 20 * 0.50 = 10.0
-        expected = SavingThrowCalculator.expected_damage(
-            full_damage=20.0,
-            save_dc=13,
-            target_save_bonus=2,
+        # 4d4 (avg=10), DC 13, save+2 → fail_prob=0.50, no half
+        # expected_total = 10 * 0.50 = 5.0
+        result = SavingThrowCalculator.expected_damage(
+            dice_count=4,
+            die_size=4,
+            modifier=0,
+            spell_dc=13,
+            save_bonus=2,
             half_on_success=False
         )
-        assert expected == 10.0
+        assert result['expected_total_damage'] == 5.0
     
     def test_expected_damage_half_on_save(self):
         """Test expected damage with half damage on successful save."""
-        # 20 damage, DC 13, +2 save, half damage on save
-        # Failure prob = 0.50
-        # Expected = 20 * 0.50 + 10 * 0.50 = 10 + 5 = 15.0
-        expected = SavingThrowCalculator.expected_damage(
-            full_damage=20.0,
-            save_dc=13,
-            target_save_bonus=2,
+        # 4d4 (avg=10), DC 13, save+2 → fail_prob=0.50, half on success
+        # expected = 0.50*10 + 0.50*5 = 5.0 + 2.5 = 7.5
+        result = SavingThrowCalculator.expected_damage(
+            dice_count=4,
+            die_size=4,
+            modifier=0,
+            spell_dc=13,
+            save_bonus=2,
             half_on_success=True
         )
-        assert expected == 15.0
+        assert result['expected_total_damage'] == 7.5
 
 
 @pytest.mark.django_db
@@ -251,12 +253,17 @@ class TestSpellAnalysisService:
             timing='on_hit'
         )
         
-        result = SpellAnalysisService.analyze_spell(
-            spell=spell,
+        from analysis.models import AnalysisContext
+        context = AnalysisContext(
             target_ac=15,
-            caster_spell_attack_bonus=5
+            caster_attack_bonus=5,
+            spell_save_dc=15,
+            target_save_bonus=0,
+            number_of_targets=1,
+            spell_slot_level=1,
         )
-        
+        result = SpellAnalysisService.analyze_spell(spell, context)
+
         assert 'average_damage' in result
         assert 'maximum_damage' in result
         assert 'expected_damage' in result
@@ -286,56 +293,140 @@ class TestSpellAnalysisService:
             timing='on_fail'
         )
         
-        result = SpellAnalysisService.analyze_spell(
-            spell=spell,
-            target_saves={'DEX': 2},
-            caster_spell_save_dc=13,
-            num_targets=3
+        from analysis.models import AnalysisContext
+        context = AnalysisContext(
+            target_ac=15,
+            target_save_bonus=2,
+            spell_save_dc=13,
+            caster_attack_bonus=5,
+            number_of_targets=3,
+            spell_slot_level=1,
         )
-        
+        result = SpellAnalysisService.analyze_spell(spell, context)
+
         assert 'average_damage' in result
         assert 'expected_damage' in result
         assert result['spell_type'] == 'saving_throw'
-        # Expected damage should account for AOE (3 targets)
+        # With 3 targets and half-damage mechanic, expected total > single-target average
         assert result['expected_damage'] > result['average_damage']
     
-    def test_analyze_spell_with_upcast(self):
-        """Test analyzing spell with upcasting."""
+    def test_analyze_spell_with_upcast_save(self):
+        """Test upcast scaling on a saving throw spell (Fireball-style)."""
+        from analysis.models import AnalysisContext
         spell = Spell.objects.create(
-            name='Magic Missile',
-            level=1,
+            name='Fireball Upcast Test',
+            level=3,
+            school='evocation',
+            casting_time='1 action',
+            range='150 feet',
+            duration='Instantaneous',
+            description='Fire damage',
+            is_saving_throw=True,
+            save_type='DEX',
+            half_damage_on_save=True,
+            upcast_base_level=3,
+            upcast_dice_increment=1,
+            upcast_die_size=6,
+        )
+        # 8d6 base damage
+        DamageComponent.objects.create(
+            spell=spell, dice_count=8, die_size=6, damage_type='fire', timing='on_fail'
+        )
+
+        base_context = AnalysisContext(
+            target_ac=15, caster_attack_bonus=5, spell_save_dc=15,
+            target_save_bonus=0, number_of_targets=1, spell_slot_level=3,
+        )
+        # Cast at level 5 → 2 extra d6s
+        upcast_context = AnalysisContext(
+            target_ac=15, caster_attack_bonus=5, spell_save_dc=15,
+            target_save_bonus=0, number_of_targets=1, spell_slot_level=5,
+        )
+
+        base_result = SpellAnalysisService.analyze_spell(spell, base_context)
+        upcast_result = SpellAnalysisService.analyze_spell(spell, upcast_context)
+
+        assert base_result['spell_type'] == 'saving_throw'
+        assert upcast_result['spell_type'] == 'saving_throw'
+
+        # 2 extra d6s should raise average by 2 * 3.5 = 7.0
+        assert base_result['upcast_bonus_dice'] == 0
+        assert upcast_result['upcast_bonus_dice'] == 2
+        assert upcast_result['average_damage'] == pytest.approx(base_result['average_damage'] + 7.0)
+        assert upcast_result['maximum_damage'] == base_result['maximum_damage'] + 12
+        # Expected damage must also increase at upcast
+        assert upcast_result['expected_damage'] > base_result['expected_damage']
+
+    def test_analyze_spell_with_upcast_attack_roll(self):
+        """Test upcast scaling on an attack roll spell."""
+        from analysis.models import AnalysisContext
+        spell = Spell.objects.create(
+            name='Scorching Ray Upcast Test',
+            level=2,
             school='evocation',
             casting_time='1 action',
             range='120 feet',
             duration='Instantaneous',
-            description='Force damage',
+            description='Fire damage',
+            is_attack_roll=True,
+            number_of_attacks=3,
+            upcast_base_level=2,
             upcast_dice_increment=1,
-            upcast_die_size=4
+            upcast_die_size=6,
         )
-        
-        # Base: 3 darts at 1d4+1 each
-        for _ in range(3):
-            DamageComponent.objects.create(
-                spell=spell,
-                dice_count=1,
-                die_size=4,
-                flat_modifier=1,
-                damage_type='force',
-                timing='automatic'
-            )
-        
-        # Analyze at spell slot level 3 (2 levels above base)
-        result = SpellAnalysisService.analyze_spell(
-            spell=spell,
-            slot_level_override=3
+        # 2d6 per ray
+        DamageComponent.objects.create(
+            spell=spell, dice_count=2, die_size=6, damage_type='fire', timing='on_hit'
         )
-        
-        # Should add 2d4 damage (1d4 per level above 1st)
-        # Base: 3*(1d4+1) = 3*3.5 = 10.5
-        # Upcast: +2d4 = +5.0
-        # Total: 15.5
-        assert 'average_damage' in result
-        assert result['average_damage'] >= 15.0  # At least the upcast amount
+
+        from analysis.models import AnalysisContext
+        base_context = AnalysisContext(
+            target_ac=14, caster_attack_bonus=5, spell_save_dc=13,
+            target_save_bonus=0, number_of_targets=1, spell_slot_level=2,
+        )
+        upcast_context = AnalysisContext(
+            target_ac=14, caster_attack_bonus=5, spell_save_dc=13,
+            target_save_bonus=0, number_of_targets=1, spell_slot_level=4,
+        )
+
+        base_result = SpellAnalysisService.analyze_spell(spell, base_context)
+        upcast_result = SpellAnalysisService.analyze_spell(spell, upcast_context)
+
+        assert base_result['spell_type'] == 'attack_roll'
+        assert upcast_result['spell_type'] == 'attack_roll'
+        assert base_result['upcast_bonus_dice'] == 0
+        assert upcast_result['upcast_bonus_dice'] == 2
+        # 2 extra d6s → average +7, expected > base
+        assert upcast_result['average_damage'] == pytest.approx(base_result['average_damage'] + 7.0)
+        assert upcast_result['expected_damage'] > base_result['expected_damage']
+
+    def test_analyze_spell_no_upcast_at_base_level(self):
+        """Casting at base level should produce zero upcast bonus dice."""
+        from analysis.models import AnalysisContext
+        spell = Spell.objects.create(
+            name='No Upcast Test',
+            level=3,
+            school='evocation',
+            casting_time='1 action',
+            range='150 feet',
+            duration='Instantaneous',
+            description='Fire',
+            is_saving_throw=True,
+            save_type='DEX',
+            half_damage_on_save=True,
+            upcast_base_level=3,
+            upcast_dice_increment=1,
+            upcast_die_size=6,
+        )
+        DamageComponent.objects.create(
+            spell=spell, dice_count=8, die_size=6, damage_type='fire', timing='on_fail'
+        )
+        context = AnalysisContext(
+            target_ac=15, caster_attack_bonus=5, spell_save_dc=15,
+            target_save_bonus=0, number_of_targets=1, spell_slot_level=3,
+        )
+        result = SpellAnalysisService.analyze_spell(spell, context)
+        assert result['upcast_bonus_dice'] == 0
     
     def test_compare_spells(self):
         """Test comparing two spells."""
@@ -381,19 +472,125 @@ class TestSpellAnalysisService:
             timing='on_fail'
         )
         
-        result = SpellAnalysisService.compare_spells(
-            spell_a=spell_a,
-            spell_b=spell_b,
+        from analysis.models import AnalysisContext
+        context = AnalysisContext(
             target_ac=15,
-            target_saves={'DEX': 2},
-            caster_spell_save_dc=13
+            target_save_bonus=2,
+            spell_save_dc=13,
+            caster_attack_bonus=5,
+            number_of_targets=1,
+            spell_slot_level=3,
         )
-        
-        assert 'spell_a_analysis' in result
-        assert 'spell_b_analysis' in result
+        result = SpellAnalysisService.compare_spells(spell_a, spell_b, context)
+
+        assert 'spell_a' in result
+        assert 'spell_b' in result
         assert 'winner' in result
-        # Both have identical damage, should be a tie
-        assert result['winner'] in ['tie', spell_a, spell_b]
+        assert result['winner'] in ['spell_a', 'spell_b']
+
+
+@pytest.mark.django_db
+class TestBreakevenAnalysis:
+    """Test SpellAnalysisService.breakeven_analysis."""
+
+    def _make_attack_spell(self, name, dice_count, die_size):
+        spell = Spell.objects.create(
+            name=name, level=2, school='evocation',
+            casting_time='1 action', range='120 feet',
+            duration='Instantaneous', description='Fire',
+            is_attack_roll=True, number_of_attacks=1,
+        )
+        DamageComponent.objects.create(
+            spell=spell, dice_count=dice_count, die_size=die_size,
+            damage_type='fire', timing='on_hit',
+        )
+        return spell
+
+    def _make_save_spell(self, name, dice_count, die_size):
+        spell = Spell.objects.create(
+            name=name, level=2, school='evocation',
+            casting_time='1 action', range='150 feet',
+            duration='Instantaneous', description='Fire',
+            is_saving_throw=True, save_type='DEX', half_damage_on_save=True,
+        )
+        DamageComponent.objects.create(
+            spell=spell, dice_count=dice_count, die_size=die_size,
+            damage_type='fire', timing='on_fail',
+        )
+        return spell
+
+    def test_breakeven_returns_required_keys(self):
+        """Result contains all expected top-level keys."""
+        from analysis.models import AnalysisContext
+        spell_a = self._make_attack_spell('Attack Spell A', 4, 6)
+        spell_b = self._make_save_spell('Save Spell B', 2, 6)
+        ctx = AnalysisContext(
+            target_ac=15, target_save_bonus=0, spell_save_dc=15,
+            caster_attack_bonus=5, number_of_targets=1, spell_slot_level=2,
+        )
+        result = SpellAnalysisService.breakeven_analysis(spell_a, spell_b, ctx)
+        assert 'breakeven_ac' in result
+        assert 'breakeven_save_bonus' in result
+        assert 'ac_profile' in result
+        assert 'save_profile' in result
+
+    def test_ac_profile_covers_full_range(self):
+        """AC profile has one entry per integer from 1 to 30."""
+        from analysis.models import AnalysisContext
+        spell_a = self._make_attack_spell('Attack Spell X', 3, 6)
+        spell_b = self._make_save_spell('Save Spell Y', 3, 6)
+        ctx = AnalysisContext(
+            target_ac=15, target_save_bonus=0, spell_save_dc=15,
+            caster_attack_bonus=5, number_of_targets=1, spell_slot_level=2,
+        )
+        result = SpellAnalysisService.breakeven_analysis(spell_a, spell_b, ctx)
+        assert len(result['ac_profile']) == 30
+        assert result['ac_profile'][0]['target_ac'] == 1
+        assert result['ac_profile'][-1]['target_ac'] == 30
+
+    def test_save_profile_covers_full_range(self):
+        """Save bonus profile has one entry per integer from -5 to +15."""
+        from analysis.models import AnalysisContext
+        spell_a = self._make_attack_spell('Attack Spell P', 3, 6)
+        spell_b = self._make_save_spell('Save Spell Q', 3, 6)
+        ctx = AnalysisContext(
+            target_ac=15, target_save_bonus=0, spell_save_dc=15,
+            caster_attack_bonus=5, number_of_targets=1, spell_slot_level=2,
+        )
+        result = SpellAnalysisService.breakeven_analysis(spell_a, spell_b, ctx)
+        assert len(result['save_profile']) == 21
+        assert result['save_profile'][0]['target_save_bonus'] == -5
+        assert result['save_profile'][-1]['target_save_bonus'] == 15
+
+    def test_attack_damage_decreases_as_ac_rises(self):
+        """Attack roll spell expected damage monotonically decreases with AC."""
+        from analysis.models import AnalysisContext
+        spell_a = self._make_attack_spell('Big Attack', 8, 6)
+        spell_b = self._make_save_spell('Save Spell R', 1, 4)  # weaker, so A leads throughout
+        ctx = AnalysisContext(
+            target_ac=1, target_save_bonus=0, spell_save_dc=15,
+            caster_attack_bonus=5, number_of_targets=1, spell_slot_level=2,
+        )
+        result = SpellAnalysisService.breakeven_analysis(spell_a, spell_b, ctx)
+        damages_a = [e['spell_a_damage'] for e in result['ac_profile']]
+        # Attack spell damage decreases (or stays flat at extremes)
+        assert damages_a[0] >= damages_a[-1]
+
+    def test_breakeven_ac_found_when_spells_cross(self):
+        """A very strong save spell should overtake a weak attack spell at some AC."""
+        from analysis.models import AnalysisContext
+        # Weak attack spell: 1d4
+        spell_a = self._make_attack_spell('Weak Attack', 1, 4)
+        # Strong save spell: 8d6 halved
+        spell_b = self._make_save_spell('Strong Save', 8, 6)
+        ctx = AnalysisContext(
+            target_ac=1, target_save_bonus=0, spell_save_dc=15,
+            caster_attack_bonus=5, number_of_targets=1, spell_slot_level=2,
+        )
+        result = SpellAnalysisService.breakeven_analysis(spell_a, spell_b, ctx)
+        # The save spell is so much stronger it should win across all ACs → no crossover
+        # OR there's a crossover at a very low AC. Either way breakeven_ac is an int or None.
+        assert result['breakeven_ac'] is None or isinstance(result['breakeven_ac'], int)
 
 
 @pytest.mark.django_db

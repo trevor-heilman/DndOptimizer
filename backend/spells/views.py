@@ -1,8 +1,16 @@
 from rest_framework import viewsets, status, permissions, filters
 from rest_framework.decorators import action
+from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
 from django.db import models, transaction
+from django.core.cache import cache
+from core.throttles import SpellImportRateThrottle
+from core.cache_utils import (
+    spell_detail_key, spell_counts_key,
+    invalidate_spell_counts, invalidate_spell_counts_and_detail,
+    SPELL_DETAIL_TTL, SPELL_COUNTS_TTL,
+)
 from .models import Spell, DamageComponent
 from .serializers import (
     SpellListSerializer,
@@ -15,12 +23,19 @@ from .serializers import (
 from .services import SpellParsingService
 
 
+class SpellPagination(PageNumberPagination):
+    page_size = 20
+    page_size_query_param = 'page_size'
+    max_page_size = 1000
+
+
 class SpellViewSet(viewsets.ModelViewSet):
     """
     ViewSet for spell CRUD operations.
     """
     queryset = Spell.objects.all().prefetch_related('damage_components', 'parsing_metadata')
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
+    pagination_class = SpellPagination
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
     filterset_fields = ['level', 'school', 'is_attack_roll', 'is_saving_throw', 'concentration', 'ritual']
     search_fields = ['name', 'description', 'source']
@@ -40,7 +55,7 @@ class SpellViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         """Filter spells - show all public + user's custom spells."""
         queryset = self.queryset
-        
+
         if self.request.user.is_authenticated:
             # Show all non-custom spells + user's custom spells
             queryset = queryset.filter(
@@ -49,12 +64,45 @@ class SpellViewSet(viewsets.ModelViewSet):
         else:
             # Show only non-custom spells
             queryset = queryset.filter(is_custom=False)
-        
+
+        # Optional class filter: ?class_name=wizard
+        class_name = self.request.query_params.get('class_name')
+        if class_name:
+            queryset = queryset.filter(classes__contains=[class_name.lower()])
+
         return queryset
 
     def perform_create(self, serializer):
         """Set created_by to current user."""
         serializer.save(created_by=self.request.user, is_custom=True)
+        if self.request.user.is_authenticated:
+            invalidate_spell_counts(self.request.user.id)
+
+    def perform_update(self, serializer):
+        instance = serializer.save()
+        cache.delete(spell_detail_key(instance.id, instance.updated_at))
+        if instance.created_by_id:
+            invalidate_spell_counts(instance.created_by_id)
+
+    def perform_destroy(self, instance):
+        key = spell_detail_key(instance.id, instance.updated_at)
+        user_id = instance.created_by_id
+        instance.delete()
+        cache.delete(key)
+        if user_id:
+            invalidate_spell_counts(user_id)
+
+    def retrieve(self, request, *args, **kwargs):
+        """Return a spell, served from cache when available."""
+        instance = self.get_object()
+        ck = spell_detail_key(instance.id, instance.updated_at)
+        cached = cache.get(ck)
+        if cached is not None:
+            return Response(cached)
+        serializer = self.get_serializer(instance)
+        data = serializer.data
+        cache.set(ck, data, SPELL_DETAIL_TTL)
+        return Response(data)
 
     @action(detail=False, methods=['get'])
     def spell_counts(self, request):
@@ -67,12 +115,18 @@ class SpellViewSet(viewsets.ModelViewSet):
                 {'system': 0, 'imported': 0, 'custom': 0},
                 status=status.HTTP_200_OK
             )
+        ck = spell_counts_key(request.user.id)
+        cached = cache.get(ck)
+        if cached is not None:
+            return Response(cached)
         system = Spell.objects.filter(is_custom=False, created_by__isnull=True).count()
         imported = Spell.objects.filter(is_custom=False, created_by=request.user).count()
         custom = Spell.objects.filter(is_custom=True, created_by=request.user).count()
-        return Response({'system': system, 'imported': imported, 'custom': custom})
+        data = {'system': system, 'imported': imported, 'custom': custom}
+        cache.set(ck, data, SPELL_COUNTS_TTL)
+        return Response(data)
 
-    @action(detail=False, methods=['post'])
+    @action(detail=False, methods=['post'], throttle_classes=[SpellImportRateThrottle])
     def import_spells(self, request):
         """
         Bulk import spells from JSON.
@@ -120,6 +174,10 @@ class SpellViewSet(viewsets.ModelViewSet):
                     'name': spell_data.get('name') or spell_data.get('Name', 'Unknown'),
                     'error': str(e)
                 })
+
+        # Invalidate spell counts after bulk import
+        if imported_spells and request.user.is_authenticated:
+            invalidate_spell_counts(request.user.id)
         
         return Response({
             'imported': len(imported_spells),

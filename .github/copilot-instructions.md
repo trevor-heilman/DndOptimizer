@@ -66,6 +66,10 @@
 - Use GitHub Actions for CI/CD: lint, type check, test, build, deploy.
 - Fail pipeline on any lint, type, or test error.
 - Use .env files for environment configuration.
+- **Container port binding**: Always use `podman-compose` (via `compose.yml`) for starting containers — never raw `podman run` for long-lived services, as manual runs default to IPv4-only and diverge from compose config.
+- **Networking on Windows/WSL**: The frontend container must be on port 80 (not 3000). The Windows hosts file has `127.0.0.1 localhost` set explicitly so `http://localhost` resolves to IPv4 — do not remove this entry. When recreating containers, use ONLY `-p 0.0.0.0:80:80` — **never** add `-p [::1]:80:80`. WSL's `wslrelay.exe` accepts TCP on `[::1]:80` but cannot forward HTTP, causing the browser (via Happy Eyeballs) to silently connect via IPv6 and then spin forever on page load.
+- **After any backend rebuild**: The Django superuser password is reset to the default in the repo memory. Always re-run `podman exec dndoptimizer_backend_1 python manage.py shell -c "...set_password..."` or use `changepassword` after rebuilding the backend container.
+- **After any backend container recreation**: Always restart the frontend container immediately after (`podman restart dndoptimizer_frontend_1`). nginx resolves the upstream hostname (`dndoptimizer_backend_1`) once at startup and caches the IP — if the backend container is recreated it gets a new IP, causing all proxied API calls to fail with 502 Bad Gateway until nginx is restarted.
 
 ## 9. Documentation
 - Maintain a clear, up-to-date README with setup, usage, and deployment instructions.

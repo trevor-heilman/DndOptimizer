@@ -4,6 +4,7 @@
 import { useState } from 'react';
 import { useBulkDeleteSpells, useSpellCounts } from '../hooks/useSpells';
 import { useAuth } from '../contexts/AuthContext';
+import { AlertMessage } from './ui';
 
 interface ClearSpellsModalProps {
   isOpen: boolean;
@@ -76,33 +77,30 @@ export function ClearSpellsModal({ isOpen, onClose }: ClearSpellsModalProps) {
   };
 
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full p-6">
+    <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
+      <div className="dnd-card border-t-2 border-crimson-800 max-w-md w-full p-6 shadow-2xl">
         <div className="flex items-center justify-between mb-2">
-          <h2 className="text-2xl font-bold text-gray-900">Delete Spells</h2>
+          <h2 className="font-display text-2xl font-bold text-crimson-300">⚠ Purge Spells</h2>
           <button
             onClick={handleClose}
             disabled={isPending}
-            className="text-gray-400 hover:text-gray-600 disabled:opacity-50"
+            className="text-parchment-500 hover:text-parchment-200 disabled:opacity-50 text-lg"
             aria-label="Close"
           >
             ✕
           </button>
         </div>
-        <p className="text-sm text-gray-500 mb-5">
+        <p className="font-body text-sm text-parchment-400 mb-5">
           Select categories to permanently delete. This cannot be undone.
         </p>
 
         {result ? (
           <div className="text-center py-6">
-            <div className="text-5xl mb-3">✓</div>
-            <p className="text-lg font-semibold text-gray-900">
-              {result.deleted} spell{result.deleted !== 1 ? 's' : ''} deleted
+            <div className="text-5xl mb-3">⚔</div>
+            <p className="font-display text-lg font-semibold text-gold-300">
+              {result.deleted} spell{result.deleted !== 1 ? 's' : ''} purged from the archives
             </p>
-            <button
-              onClick={handleClose}
-              className="mt-5 px-5 py-2 bg-primary-600 text-white rounded-md hover:bg-primary-700"
-            >
+            <button onClick={handleClose} className="mt-5 btn-secondary">
               Close
             </button>
           </div>
@@ -119,10 +117,10 @@ export function ClearSpellsModal({ isOpen, onClose }: ClearSpellsModalProps) {
                     className={[
                       'flex items-start gap-3 p-3 rounded-lg border cursor-pointer transition-colors select-none',
                       disabled
-                        ? 'opacity-50 cursor-not-allowed bg-gray-50 border-gray-200'
+                        ? 'opacity-40 cursor-not-allowed bg-smoke-900 border-smoke-700'
                         : checked
-                        ? 'border-red-300 bg-red-50'
-                        : 'border-gray-200 hover:border-gray-300 bg-white',
+                        ? 'border-crimson-600 bg-crimson-950/30'
+                        : 'border-smoke-600 hover:border-smoke-400 bg-smoke-800',
                     ].join(' ')}
                   >
                     <input
@@ -130,27 +128,29 @@ export function ClearSpellsModal({ isOpen, onClose }: ClearSpellsModalProps) {
                       checked={checked}
                       onChange={() => !disabled && toggle(cat.id)}
                       disabled={disabled}
-                      className="mt-0.5 h-4 w-4 text-red-600 rounded border-gray-300"
+                      className="mt-0.5 h-4 w-4 accent-crimson-500 rounded"
                     />
                     <div className="flex-1 min-w-0">
                       <div className="flex items-center gap-2">
-                        <span className="text-sm font-medium text-gray-900">
+                        <span className="font-display text-sm font-medium text-parchment-200">
                           {cat.label}
                         </span>
                         {cat.adminOnly && (
-                          <span className="text-xs font-normal text-amber-600">
+                          <span className="text-xs font-normal text-gold-500">
                             Admin only
                           </span>
                         )}
                         {counts && (
                           <span className={`ml-auto text-xs font-semibold px-1.5 py-0.5 rounded ${
-                            checked ? 'bg-red-100 text-red-700' : 'bg-gray-100 text-gray-600'
+                            checked
+                              ? 'bg-crimson-950 text-crimson-300'
+                              : 'bg-smoke-700 text-parchment-400'
                           }`}>
                             {counts[cat.id].toLocaleString()} spell{counts[cat.id] !== 1 ? 's' : ''}
                           </span>
                         )}
                       </div>
-                      <span className="block text-xs text-gray-500 mt-0.5">
+                      <span className="block font-body text-xs text-parchment-500 mt-0.5">
                         {cat.description}
                       </span>
                     </div>
@@ -162,25 +162,24 @@ export function ClearSpellsModal({ isOpen, onClose }: ClearSpellsModalProps) {
             {/* Confirmation input */}
             {selected.size > 0 && (
               <div className="mb-4">
-                <label className="block text-sm font-medium text-gray-700 mb-1">
-                  Type <span className="font-mono font-bold text-red-600">DELETE</span> to confirm
+                <label className="block font-display text-sm font-medium text-parchment-300 mb-1">
+                  Type <span className="font-mono font-bold text-crimson-400">DELETE</span> to confirm
                 </label>
                 <input
                   type="text"
                   value={confirm}
                   onChange={(e) => setConfirm(e.target.value)}
-                  className="w-full px-3 py-2 border border-red-300 rounded-md focus:outline-none focus:ring-2 focus:ring-red-500"
+                  className="dnd-input font-mono"
                   placeholder="DELETE"
                   autoComplete="off"
+                  style={{ borderColor: '#b91c1c' }}
                 />
               </div>
             )}
 
             {/* Error */}
             {error && (
-              <div className="mb-4 text-sm text-red-700 bg-red-50 border border-red-200 rounded p-3">
-                {(error as any)?.response?.data?.error ?? 'Failed to delete spells. Please try again.'}
-              </div>
+              <AlertMessage variant="error" message={(error as any)?.response?.data?.error ?? 'Failed to purge spells. Please try again.'} />
             )}
 
             {/* Actions */}
@@ -188,16 +187,16 @@ export function ClearSpellsModal({ isOpen, onClose }: ClearSpellsModalProps) {
               <button
                 onClick={handleClose}
                 disabled={isPending}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-md hover:bg-gray-200 disabled:opacity-50"
+                className="btn-secondary disabled:opacity-50"
               >
                 Cancel
               </button>
               <button
                 onClick={handleSubmit}
                 disabled={!canSubmit}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-md hover:bg-red-700 disabled:opacity-50 disabled:cursor-not-allowed"
+                className="btn-primary disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isPending ? 'Deleting…' : 'Delete Selected'}
+                {isPending ? 'Purging…' : 'Delete Selected'}
               </button>
             </div>
           </>
