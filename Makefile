@@ -19,6 +19,11 @@ help:
 	@echo "clean        Remove Python cache files"
 	@echo "logs         View container logs"
 	@echo "seed         Seed database with spell data"
+	@echo ""
+	@echo "Windows PowerShell Scripts (scripts/)"
+	@echo "start        Start Podman machine + all containers"
+	@echo "rebuild      Rebuild backend image, restart all pieces, run migrations"
+	@echo "rebuild-full Rebuild backend AND frontend"
 
 build:
 	podman compose build
@@ -86,3 +91,13 @@ restart:
 
 ps:
 	podman compose ps
+
+# Windows PowerShell convenience targets
+start:
+	powershell -ExecutionPolicy Bypass -File scripts/start.ps1
+
+rebuild:
+	powershell -ExecutionPolicy Bypass -File scripts/rebuild.ps1
+
+rebuild-full:
+	powershell -ExecutionPolicy Bypass -File scripts/rebuild.ps1 -Frontend

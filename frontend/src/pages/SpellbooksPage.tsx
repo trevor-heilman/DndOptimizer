@@ -6,6 +6,7 @@ import { useSpellbooks, useCreateSpellbook, useDeleteSpellbook, useDuplicateSpel
 import { SpellbookCard } from '../components/SpellbookCard';
 import { CreateSpellbookModal } from '../components/CreateSpellbookModal';
 import { LoadingSpinner, AlertMessage, EmptyState } from '../components/ui';
+import type { SpellbookCreate } from '../types/api';
 
 export function SpellbooksPage() {
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
@@ -14,7 +15,7 @@ export function SpellbooksPage() {
   const deleteSpellbook = useDeleteSpellbook();
   const duplicateSpellbook = useDuplicateSpellbook();
 
-  const handleCreate = async (data: { name: string; description?: string }) => {
+  const handleCreate = async (data: SpellbookCreate) => {
     await createSpellbook.mutateAsync(data);
   };
 

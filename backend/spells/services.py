@@ -171,6 +171,101 @@ class SpellParsingService:
       - Open5e / SRD schema (desc field, nested school object)
     """
 
+    # ------------------------------------------------------------------ #
+    # Keyword lists for tag inference
+    # ------------------------------------------------------------------ #
+    _HEALING_KEYWORDS = [
+        'regain hit points', 'restore hit points', 'healing',
+        'regains hit points', 'restores hit points', 'gain hit points',
+        'hit points equal', 'cure wounds', 'heal the creature',
+    ]
+    _AOE_KEYWORDS = [
+        'each creature', 'all creatures', 'cylinder', 'cube', 'sphere',
+        'cone', 'in a line', 'within range of', 'point you choose',
+        'radius', 'emanates', 'burst',
+    ]
+    _CROWD_CONTROL_KEYWORDS = [
+        'charmed', 'frightened', 'stunned', 'paralyzed', 'restrained',
+        'incapacitated', 'becomes prone', 'knocked prone', 'falls prone',
+        'grappled', 'petrified', 'blinded', 'deafened', 'poisoned',
+        'falls unconscious', 'falls asleep',
+    ]
+    _SUMMON_KEYWORDS = [
+        'summon ', 'conjure ', 'you create ', 'animate dead',
+        'create undead', 'familiar appears', 'elemental appears',
+        'creates a construct', 'raises the corpse',
+    ]
+    _BUFF_KEYWORDS = [
+        'advantage on', 'add your', 'add a d', 'bonus to attack',
+        'resistance to', 'immune to damage', 'gain a bonus',
+        'double the', 'gain advantage', "can't be hit",
+        'protected from', 'grant a bonus', 'increase its',
+    ]
+    _DEBUFF_KEYWORDS = [
+        'disadvantage on', 'reduces the target', 'penalty to',
+        'vulnerability to', 'reduces its speed', 'subtract',
+    ]
+    _UTILITY_KEYWORDS = [
+        'teleport', 'detect', 'reveal', 'find', 'communicate',
+        'understand', 'speak with', 'read', 'transmit', 'transport',
+        'fly', 'levitate', 'invisible', 'disguise', 'transform',
+    ]
+
+    @classmethod
+    def _infer_tags(
+        cls,
+        description: str,
+        higher_level: str,
+        dice_expressions: List[Tuple[int, int]],
+        damage_types: List[str],
+    ) -> List[str]:
+        """
+        Infer gameplay-category tags from parsed spell data.
+        A spell can receive multiple tags (e.g. damage + aoe).
+        Every spell gets at least one tag: 'utility' is the fallback.
+        """
+        text = (description + ' ' + higher_level).lower()
+        tags: set = set()
+
+        # Damage: needs dice AND a named damage type
+        if dice_expressions and damage_types:
+            tags.add('damage')
+
+        # Healing
+        if any(kw in text for kw in cls._HEALING_KEYWORDS):
+            tags.add('healing')
+
+        # AoE
+        if any(kw in text for kw in cls._AOE_KEYWORDS):
+            tags.add('aoe')
+
+        # Crowd control
+        if any(kw in text for kw in cls._CROWD_CONTROL_KEYWORDS):
+            tags.add('crowd_control')
+
+        # Summoning / conjuration
+        if any(kw in text for kw in cls._SUMMON_KEYWORDS):
+            tags.add('summoning')
+
+        # Buff (suppress if already tagged as damage, healing, or cc)
+        if any(kw in text for kw in cls._BUFF_KEYWORDS):
+            if not tags.intersection({'damage', 'healing', 'crowd_control'}):
+                tags.add('buff')
+
+        # Debuff
+        if any(kw in text for kw in cls._DEBUFF_KEYWORDS):
+            tags.add('debuff')
+
+        # Utility keywords give a utility tag even alongside other tags
+        if any(kw in text for kw in cls._UTILITY_KEYWORDS):
+            tags.add('utility')
+
+        # Fallback: every spell must have at least one tag
+        if not tags:
+            tags.add('utility')
+
+        return sorted(tags)
+
     # Maps PascalCase TCoE/D&DBeyond field names to our internal snake_case names
     _PASCAL_FIELD_MAP = {
         'Name': 'name',
@@ -246,9 +341,30 @@ class SpellParsingService:
             save_type = DamageExtractionService.extract_save_type(full_text)
             half_damage_on_save = DamageExtractionService.detect_half_damage_on_save(full_text)
         
+        # Extract spell level early (needed for cantrip detection below)
+        raw_level = raw_data.get('level', 0)
+        if isinstance(raw_level, str):
+            raw_level = 0 if raw_level.lower() == 'cantrip' else int(raw_level)
+
         # Extract upcast information
         upcast_scaling = DamageExtractionService.extract_upcast_scaling(higher_level)
-        
+
+        # Detect cantrip character-level scaling (e.g. Fire Bolt: 1d10 → 2d10 → 3d10 → 4d10
+        # at character levels 1, 5, 11, 17).  When found, trim dice_expressions to the base
+        # die only — avoids creating one DamageComponent per scaling tier.
+        _CANTRIP_TIER_KW = ('5th level', '11th level', '17th level')
+        if (
+            raw_level == 0
+            and len(dice_expressions) >= 2
+            and len(set(d[1] for d in dice_expressions)) == 1   # all same die size
+            and any(kw in full_text.lower() for kw in _CANTRIP_TIER_KW)
+        ):
+            _ct_die_size = dice_expressions[0][1]
+            dice_expressions = [(1, _ct_die_size)]
+            # Record scaling in upcast fields unless slot-upcasting was already detected
+            if not upcast_scaling:
+                upcast_scaling = (1, _ct_die_size)
+
         # Build parsing data
         parsing_data = {
             'dice_expressions': dice_expressions,
@@ -264,12 +380,18 @@ class SpellParsingService:
         confidence = ConfidenceScoringService.calculate_confidence(parsing_data)
         
         # Build normalized spell data
-        raw_level = raw_data.get('level', 0)
-        if isinstance(raw_level, str):
-            raw_level = 0 if raw_level.lower() == 'cantrip' else int(raw_level)
-
         # casting_time: accept both 'casting_time' and 'castingTime'
         casting_time = raw_data.get('casting_time') or raw_data.get('castingTime', '')
+
+        # Extract classes — may be a list of names or a list of {name: str} objects
+        raw_classes = raw_data.get('classes', [])
+        if isinstance(raw_classes, list):
+            classes = [
+                (c['name'].lower() if isinstance(c, dict) else str(c).lower())
+                for c in raw_classes
+            ]
+        else:
+            classes = []
 
         normalized_data = {
             'name': raw_data.get('name', 'Unnamed Spell'),
@@ -288,13 +410,19 @@ class SpellParsingService:
             'description': description,
             'higher_level': higher_level,
             'raw_data': raw_data,
+            'classes': classes,
         }
         
         # Add upcast data if found
         if upcast_scaling:
             normalized_data['upcast_dice_increment'] = upcast_scaling[0]
             normalized_data['upcast_die_size'] = upcast_scaling[1]
-        
+
+        # Infer gameplay tags (always at least one)
+        normalized_data['tags'] = cls._infer_tags(
+            description, higher_level, dice_expressions, damage_types
+        )
+
         return {
             'normalized_data': normalized_data,
             'parsing_data': parsing_data,

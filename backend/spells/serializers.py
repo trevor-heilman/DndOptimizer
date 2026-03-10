@@ -138,7 +138,7 @@ class SpellImportSerializer(serializers.Serializer):
         child=serializers.JSONField(),
         allow_empty=False
     )
-    source = serializers.CharField(max_length=255, required=False, default='imported')
+    source = serializers.CharField(max_length=255, required=False, default='', allow_blank=True)
     auto_parse = serializers.BooleanField(default=True)
 
     def validate_spells(self, value):

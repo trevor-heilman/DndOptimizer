@@ -21,10 +21,13 @@ import {
   useRemoveSpellFromSpellbook,
   useUpdatePreparedSpell,
 } from '../hooks/useSpellbooks';
+import { useBatchAnalyzeSpells, useGetSpellEfficiency } from '../hooks/useAnalysis';
 import { getSchoolColors } from '../constants/spellColors';
 import { AddSpellPicker } from '../components/AddSpellPicker';
-import { LoadingSpinner, AlertMessage, EmptyState } from '../components/ui';
-import type { PreparedSpell, Spell } from '../types/api';
+import { AnalysisContextForm } from '../components/AnalysisContextForm';
+import { LoadingSpinner, AlertMessage, EmptyState, ChartCard } from '../components/ui';
+import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LineChart, Line, Legend } from 'recharts';
+import type { PreparedSpell, Spell, AnalysisContext } from '../types/api';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -50,6 +53,62 @@ const CLASS_CHOICES = [
   { value: 'warlock',   label: 'Warlock' },
   { value: 'wizard',    label: 'Wizard' },
 ];
+
+// D&D 5e spell slots by character level (index = spell level 1-9)
+// Full caster table (Bard, Cleric, Druid, Sorcerer, Wizard)
+const FULL_CASTER_SLOTS: Record<number, number[]> = {
+   1: [2,0,0,0,0,0,0,0,0],  2: [3,0,0,0,0,0,0,0,0],
+   3: [4,2,0,0,0,0,0,0,0],  4: [4,3,0,0,0,0,0,0,0],
+   5: [4,3,2,0,0,0,0,0,0],  6: [4,3,3,0,0,0,0,0,0],
+   7: [4,3,3,1,0,0,0,0,0],  8: [4,3,3,2,0,0,0,0,0],
+   9: [4,3,3,3,1,0,0,0,0], 10: [4,3,3,3,2,0,0,0,0],
+  11: [4,3,3,3,2,1,0,0,0], 12: [4,3,3,3,2,1,0,0,0],
+  13: [4,3,3,3,2,1,1,0,0], 14: [4,3,3,3,2,1,1,0,0],
+  15: [4,3,3,3,2,1,1,1,0], 16: [4,3,3,3,2,1,1,1,0],
+  17: [4,3,3,3,2,1,1,1,1], 18: [4,3,3,3,3,1,1,1,1],
+  19: [4,3,3,3,3,2,1,1,1], 20: [4,3,3,3,3,2,2,1,1],
+};
+// Half caster (Paladin, Ranger, Artificer)
+const HALF_CASTER_SLOTS: Record<number, number[]> = {
+   1: [0,0,0,0,0,0,0,0,0],  2: [2,0,0,0,0,0,0,0,0],
+   3: [3,0,0,0,0,0,0,0,0],  4: [3,0,0,0,0,0,0,0,0],
+   5: [4,2,0,0,0,0,0,0,0],  6: [4,2,0,0,0,0,0,0,0],
+   7: [4,3,0,0,0,0,0,0,0],  8: [4,3,0,0,0,0,0,0,0],
+   9: [4,3,2,0,0,0,0,0,0], 10: [4,3,2,0,0,0,0,0,0],
+  11: [4,3,3,0,0,0,0,0,0], 12: [4,3,3,0,0,0,0,0,0],
+  13: [4,3,3,1,0,0,0,0,0], 14: [4,3,3,1,0,0,0,0,0],
+  15: [4,3,3,2,0,0,0,0,0], 16: [4,3,3,2,0,0,0,0,0],
+  17: [4,3,3,3,1,0,0,0,0], 18: [4,3,3,3,1,0,0,0,0],
+  19: [4,3,3,3,2,0,0,0,0], 20: [4,3,3,3,2,0,0,0,0],
+};
+// Warlock (Pact Magic) — all slots are the same level
+const WARLOCK_SLOTS: Record<number, { slots: number; slotLevel: number }> = {
+   1: { slots: 1, slotLevel: 1 },  2: { slots: 2, slotLevel: 1 },
+   3: { slots: 2, slotLevel: 2 },  4: { slots: 2, slotLevel: 2 },
+   5: { slots: 2, slotLevel: 3 },  6: { slots: 2, slotLevel: 3 },
+   7: { slots: 2, slotLevel: 4 },  8: { slots: 2, slotLevel: 4 },
+   9: { slots: 2, slotLevel: 5 }, 10: { slots: 2, slotLevel: 5 },
+  11: { slots: 3, slotLevel: 5 }, 12: { slots: 3, slotLevel: 5 },
+  13: { slots: 3, slotLevel: 5 }, 14: { slots: 3, slotLevel: 5 },
+  15: { slots: 3, slotLevel: 5 }, 16: { slots: 3, slotLevel: 5 },
+  17: { slots: 4, slotLevel: 5 }, 18: { slots: 4, slotLevel: 5 },
+  19: { slots: 4, slotLevel: 5 }, 20: { slots: 4, slotLevel: 5 },
+};
+const HALF_CASTER_CLASSES = new Set(['paladin', 'ranger', 'artificer']);
+
+function getSpellSlots(characterClass: string, level: number): number[] | null {
+  if (!level || !characterClass) return null;
+  if (characterClass === 'warlock') {
+    const wl = WARLOCK_SLOTS[level];
+    if (!wl) return null;
+    const arr = [0,0,0,0,0,0,0,0,0];
+    arr[wl.slotLevel - 1] = wl.slots;
+    return arr;
+  }
+  const table = HALF_CASTER_CLASSES.has(characterClass) ? HALF_CASTER_SLOTS : FULL_CASTER_SLOTS;
+  return table[level] ?? null;
+}
+
 
 const TAG_STYLES: Record<string, { color: string; bg: string; border: string }> = {
   damage:        { color: '#fca5a5', bg: '#450a0a55', border: '#7f1d1d' },
@@ -290,6 +349,28 @@ export function SpellbookDetailPage() {
   const [editedName,        setEditedName]        = useState('');
   const [editedDescription, setEditedDescription] = useState('');
   const [editedClass,       setEditedClass]       = useState('');
+  const [editedLevel,       setEditedLevel]       = useState('');
+
+  // Damage comparison
+  const batchAnalyze = useBatchAnalyzeSpells();
+  const spellEfficiency = useGetSpellEfficiency();
+  const [showDamageCompare, setShowDamageCompare] = useState(false);
+  const [checkedSpellIds,   setCheckedSpellIds]   = useState<Set<string>>(new Set());
+  const [damageMode,        setDamageMode]        = useState<'compare' | 'bylevel'>('bylevel');
+  const [efficiencyData,    setEfficiencyData]    = useState<Record<string, {slot_level: number; expected_damage: number}[]>>({});
+  const [damageContext,     setDamageContext]      = useState<AnalysisContext>({
+    target_ac: 15,
+    caster_attack_bonus: 5,
+    spell_save_dc: 15,
+    target_save_bonus: 0,
+    number_of_targets: 1,
+    advantage: false,
+    disadvantage: false,
+    spell_slot_level: 1,
+    crit_enabled: true,
+    half_damage_on_save: true,
+    evasion_enabled: false,
+  });
 
   // Filter / sort
   const [searchFilter,  setSearchFilter]  = useState('');
@@ -350,6 +431,16 @@ export function SpellbookDetailPage() {
   }, [preparedSpells]);
   const isFiltered    = !!(searchFilter || schoolFilter || preparedOnly || sortBy !== 'level' || sortDir !== 'asc');
 
+  // Damage spells eligible for comparison
+  const damageSpells = useMemo(() => {
+    return preparedSpells.filter(
+      ps =>
+        (ps.spell.is_attack_roll || ps.spell.is_saving_throw) &&
+        ps.spell.damage_components &&
+        ps.spell.damage_components.length > 0
+    );
+  }, [preparedSpells]);
+
   // ── Early returns ────────────────────────────────────────────────────────
 
   if (isLoading) return <LoadingSpinner />;
@@ -376,17 +467,21 @@ export function SpellbookDetailPage() {
     setEditedName(spellbook.name);
     setEditedDescription(spellbook.description ?? '');
     setEditedClass(spellbook.character_class ?? '');
+    setEditedLevel(spellbook.character_level != null ? String(spellbook.character_level) : '');
     setIsEditMode(true);
   };
 
   const handleDoneEdit = async () => {
-    const updates: Record<string, string> = {};
+    const updates: Record<string, string | number | null> = {};
     if (editedName.trim() && editedName.trim() !== spellbook.name)
       updates.name = editedName.trim();
     if (editedDescription !== (spellbook.description ?? ''))
       updates.description = editedDescription.trim();
     if (editedClass !== (spellbook.character_class ?? ''))
       updates.character_class = editedClass;
+    const lvlNum = editedLevel ? parseInt(editedLevel, 10) : null;
+    if (lvlNum !== (spellbook.character_level ?? null))
+      updates.character_level = lvlNum;
     if (Object.keys(updates).length > 0)
       await updateSpellbook.mutateAsync(updates as any);
     setIsEditMode(false);
@@ -422,6 +517,48 @@ export function SpellbookDetailPage() {
     setPreparedOnly(false);
     setSortBy('level');
     setSortDir('asc');
+  };
+
+  const handleOpenDamageCompare = () => {
+    // Default-check all damage spells when opening
+    setCheckedSpellIds(new Set(damageSpells.map(ps => ps.spell.id)));
+    batchAnalyze.reset();
+    setEfficiencyData({});
+    setShowDamageCompare(true);
+  };
+
+  const handleToggleSpellCheck = (spellId: string) => {
+    setCheckedSpellIds(prev => {
+      const next = new Set(prev);
+      if (next.has(spellId)) next.delete(spellId);
+      else next.add(spellId);
+      return next;
+    });
+  };
+
+  const handleRunDamageCompare = () => {
+    const ids = [...checkedSpellIds];
+    if (ids.length === 0) return;
+    batchAnalyze.mutate({ spellIds: ids, context: damageContext });
+  };
+
+  const handleRunByLevel = async () => {
+    const ids = [...checkedSpellIds];
+    if (ids.length === 0) return;
+    const spellMap = new Map(damageSpells.map(ps => [ps.spell.id, ps.spell]));
+    const results: Record<string, {slot_level: number; expected_damage: number}[]> = {};
+    await Promise.allSettled(ids.map(async id => {
+      const sp = spellMap.get(id);
+      const minLevel = sp && sp.level === 0 ? 0 : Math.max(1, sp?.level ?? 1);
+      const maxLevel = sp && sp.level === 0 ? 3 : 9;
+      try {
+        const resp = await import('../services/analysis').then(m =>
+          m.default.getSpellEfficiency(id, damageContext, minLevel, maxLevel)
+        );
+        results[id] = resp.efficiency_by_slot;
+      } catch { /* skip failed spells */ }
+    }));
+    setEfficiencyData(results);
   };
 
   // ── Render ────────────────────────────────────────────────────────────────
@@ -492,22 +629,38 @@ export function SpellbookDetailPage() {
           )
         )}
 
-        {/* Class selector — edit mode */}
+        {/* Class + Level selectors — edit mode */}
         {isEditMode && (
-          <div className="mt-3 flex items-center gap-3">
-            <label className="font-display text-xs uppercase tracking-widest text-smoke-400">
-              Class
-            </label>
-            <select
-              value={editedClass}
-              onChange={e => setEditedClass(e.target.value)}
-              className="dnd-input font-body text-sm py-1 max-w-xs"
-            >
-              <option value="">— No class —</option>
-              {CLASS_CHOICES.map(c => (
-                <option key={c.value} value={c.value}>{c.label}</option>
-              ))}
-            </select>
+          <div className="mt-3 flex items-center gap-4 flex-wrap">
+            <div className="flex items-center gap-2">
+              <label className="font-display text-xs uppercase tracking-widest text-smoke-400">
+                Class
+              </label>
+              <select
+                value={editedClass}
+                onChange={e => setEditedClass(e.target.value)}
+                className="dnd-input font-body text-sm py-1 max-w-[140px]"
+              >
+                <option value="">— No class —</option>
+                {CLASS_CHOICES.map(c => (
+                  <option key={c.value} value={c.value}>{c.label}</option>
+                ))}
+              </select>
+            </div>
+            <div className="flex items-center gap-2">
+              <label className="font-display text-xs uppercase tracking-widest text-smoke-400">
+                Level
+              </label>
+              <input
+                type="number"
+                value={editedLevel}
+                onChange={e => setEditedLevel(e.target.value)}
+                className="dnd-input font-body text-sm py-1 w-[80px]"
+                placeholder="1–20"
+                min={1}
+                max={20}
+              />
+            </div>
           </div>
         )}
 
@@ -531,6 +684,39 @@ export function SpellbookDetailPage() {
             </span>
           )}
         </div>
+
+        {/* Spell slots display */}
+        {!isEditMode && spellbook.character_class && spellbook.character_level && (() => {
+          const slots = getSpellSlots(spellbook.character_class, spellbook.character_level);
+          if (!slots) return null;
+          const nonzero = slots
+            .map((n, i) => [i + 1, n] as [number, number])
+            .filter(([, n]) => n > 0);
+          if (nonzero.length === 0) return null;
+          const className = spellbook.character_class.charAt(0).toUpperCase() + spellbook.character_class.slice(1);
+          return (
+            <div className="mt-3">
+              <p className="font-display text-[10px] uppercase tracking-widest text-smoke-500 mb-1.5">
+                Spell Slots — Lvl {spellbook.character_level} {className}
+                {spellbook.character_class === 'warlock' ? ' (Pact Magic)' : ''}
+              </p>
+              <div className="flex flex-wrap gap-1.5">
+                {nonzero.map(([slotLevel, count]) => {
+                  const suffix = slotLevel === 1 ? 'st' : slotLevel === 2 ? 'nd' : slotLevel === 3 ? 'rd' : 'th';
+                  return (
+                    <span
+                      key={slotLevel}
+                      className="font-display text-[10px] px-2 py-0.5 rounded"
+                      style={{ color: '#c4b5fd', background: '#2e1a5f55', border: '1px solid #5b21b655' }}
+                    >
+                      {slotLevel}{suffix}: <span style={{ color: '#e2e8f0' }}>{count}</span>
+                    </span>
+                  );
+                })}
+              </div>
+            </div>
+          );
+        })()}
 
         {/* Level breakdown */}
         {levelCounts.length > 0 && (
@@ -635,6 +821,245 @@ export function SpellbookDetailPage() {
               isEditMode={isEditMode}
             />
           ))}
+        </div>
+      )}
+
+      {/* ── Damage Comparison ──────────────────────────────────────────── */}
+      {damageSpells.length > 0 && (
+        <div className="mt-8">
+          <button
+            onClick={() => showDamageCompare ? setShowDamageCompare(false) : handleOpenDamageCompare()}
+            className="font-display text-sm flex items-center gap-2 text-gold-400 hover:text-gold-300 transition-colors mb-3"
+          >
+            <svg className={`w-4 h-4 transition-transform ${showDamageCompare ? 'rotate-90' : ''}`}
+                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+            ⚡ Compare Damage Spells ({damageSpells.length})
+          </button>
+
+          {showDamageCompare && (
+            <div className="dnd-card p-6 border-l-4 border-gold-700">
+              <h2 className="font-display text-xl font-semibold text-gold-300 mb-4">
+                Damage Comparison
+              </h2>
+
+              {/* Spell checklist */}
+              <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                {damageSpells.map(ps => (
+                  <label
+                    key={ps.spell.id}
+                    className="flex items-center gap-2 cursor-pointer group"
+                  >
+                    <input
+                      type="checkbox"
+                      checked={checkedSpellIds.has(ps.spell.id)}
+                      onChange={() => handleToggleSpellCheck(ps.spell.id)}
+                      className="accent-gold-500 w-4 h-4"
+                    />
+                    <span className="font-body text-sm text-parchment-200 group-hover:text-parchment-100 transition-colors truncate">
+                      {ps.spell.name}
+                      <span className="text-smoke-500 ml-1 text-xs">
+                        {ps.spell.level === 0 ? '(Cantrip)' : `(Lvl ${ps.spell.level})`}
+                      </span>
+                    </span>
+                  </label>
+                ))}
+              </div>
+
+              <div className="flex gap-2 mb-4 flex-wrap">
+                <button
+                  onClick={() => setCheckedSpellIds(new Set(damageSpells.map(ps => ps.spell.id)))}
+                  className="font-display text-xs text-smoke-400 hover:text-smoke-200 transition-colors"
+                >
+                  Select all
+                </button>
+                <span className="text-smoke-600">·</span>
+                <button
+                  onClick={() => setCheckedSpellIds(new Set())}
+                  className="font-display text-xs text-smoke-400 hover:text-smoke-200 transition-colors"
+                >
+                  Deselect all
+                </button>
+              </div>
+
+              {/* Context form */}
+              <div className="mb-4 border-t border-smoke-700 pt-4">
+                <AnalysisContextForm context={damageContext} onChange={setDamageContext} />
+              </div>
+
+              {/* Mode toggle */}
+              <div className="flex gap-2 mb-4">
+                <button
+                  onClick={() => setDamageMode('compare')}
+                  className={`font-display text-xs px-3 py-1.5 rounded border transition-colors ${
+                    damageMode === 'compare'
+                      ? 'bg-gold-900/50 border-gold-600 text-gold-300'
+                      : 'bg-smoke-800 border-smoke-600 text-smoke-400 hover:text-smoke-200'
+                  }`}
+                >
+                  ⚡ Compare at Slot
+                </button>
+                <button
+                  onClick={() => setDamageMode('bylevel')}
+                  className={`font-display text-xs px-3 py-1.5 rounded border transition-colors ${
+                    damageMode === 'bylevel'
+                      ? 'bg-gold-900/50 border-gold-600 text-gold-300'
+                      : 'bg-smoke-800 border-smoke-600 text-smoke-400 hover:text-smoke-200'
+                  }`}
+                >
+                  📈 By Level
+                </button>
+              </div>
+
+              {damageMode === 'compare' ? (
+                <>
+                  <button
+                    onClick={handleRunDamageCompare}
+                    disabled={checkedSpellIds.size === 0 || batchAnalyze.isPending}
+                    className="btn-gold text-sm disabled:opacity-40 disabled:cursor-not-allowed mb-4"
+                  >
+                    {batchAnalyze.isPending ? 'Analyzing…' : `⚡ Analyze ${checkedSpellIds.size} spell${checkedSpellIds.size !== 1 ? 's' : ''}`}
+                  </button>
+
+                  {batchAnalyze.isError && (
+                    <AlertMessage variant="error" message="Analysis failed. Some spells may have no parsed damage components." />
+                  )}
+
+                  {/* Bar chart */}
+                  {batchAnalyze.data && (() => {
+                    const chartData = damageSpells
+                      .filter(ps => batchAnalyze.data![ps.spell.id] !== undefined)
+                      .map(ps => ({
+                        name: ps.spell.name,
+                        expectedDamage: Number(batchAnalyze.data![ps.spell.id].results.expected_damage.toFixed(2)),
+                        efficiency:     Number(batchAnalyze.data![ps.spell.id].results.efficiency.toFixed(2)),
+                      }))
+                      .sort((a, b) => b.expectedDamage - a.expectedDamage);
+
+                    if (chartData.length === 0) return null;
+
+                    return (
+                      <ChartCard title="Expected Damage by Spell" className="mt-2">
+                        <ResponsiveContainer width="100%" height={Math.max(220, chartData.length * 36)}>
+                          <BarChart
+                            data={chartData}
+                            layout="vertical"
+                            margin={{ top: 5, right: 40, left: 0, bottom: 5 }}
+                          >
+                            <CartesianGrid strokeDasharray="3 3" stroke="#3a3a4a" horizontal={false} />
+                            <XAxis type="number" tick={{ fill: '#c4a882', fontSize: 12 }} />
+                            <YAxis
+                              type="category"
+                              dataKey="name"
+                              width={130}
+                              tick={{ fill: '#c4a882', fontSize: 12 }}
+                              tickFormatter={(v: string) => v.length > 16 ? v.slice(0, 15) + '…' : v}
+                            />
+                            <Tooltip
+                              contentStyle={{ background: '#1e1e2e', border: '1px solid #7c3aed', borderRadius: 8, color: '#c4a882' }}
+                              formatter={(value, name) => [
+                                value ?? 0,
+                                name === 'expectedDamage' ? 'Expected Damage' : 'Efficiency',
+                              ]}
+                            />
+                            <Bar dataKey="expectedDamage" name="Expected Damage" radius={[0, 4, 4, 0]}>
+                              {chartData.map((_, i) => (
+                                <Cell key={i} fill={i === 0 ? '#d4af37' : '#7c3aed'} />
+                              ))}
+                            </Bar>
+                          </BarChart>
+                        </ResponsiveContainer>
+                        {/* Efficiency table */}
+                        <div className="mt-4 border-t border-smoke-700 pt-4">
+                          <p className="font-display text-xs uppercase tracking-widest text-smoke-500 mb-2">Efficiency (dmg / slot level)</p>
+                          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+                            {chartData.map(row => (
+                              <div key={row.name} className="flex justify-between font-body text-sm bg-smoke-800 rounded px-3 py-1.5">
+                                <span className="text-parchment-300 truncate mr-2">{row.name}</span>
+                                <span className="text-gold-400 font-semibold shrink-0">{row.efficiency}</span>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </ChartCard>
+                    );
+                  })()}
+                </>
+              ) : (
+                <>
+                  <button
+                    onClick={handleRunByLevel}
+                    disabled={checkedSpellIds.size === 0 || spellEfficiency.isPending}
+                    className="btn-gold text-sm disabled:opacity-40 disabled:cursor-not-allowed mb-4"
+                  >
+                    {spellEfficiency.isPending ? 'Analyzing…' : `📈 Analyze ${checkedSpellIds.size} spell${checkedSpellIds.size !== 1 ? 's' : ''} by level`}
+                  </button>
+
+                  {/* By-level line chart */}
+                  {Object.keys(efficiencyData).length > 0 && (() => {
+                    const spellMap = new Map(damageSpells.map(ps => [ps.spell.id, ps.spell]));
+                    // Collect all slot levels present across all spells
+                    const allLevels = new Set<number>();
+                    Object.values(efficiencyData).forEach(pts =>
+                      pts.forEach(p => allLevels.add(p.slot_level))
+                    );
+                    const sortedLevels = [...allLevels].sort((a, b) => a - b);
+
+                    // Build recharts data: one row per slot_level
+                    const lineData = sortedLevels.map(lvl => {
+                      const row: Record<string, string | number> = {
+                        slotLevel: lvl === 0 ? 'Cantrip' : `Slot ${lvl}`,
+                      };
+                      Object.entries(efficiencyData).forEach(([id, pts]) => {
+                        const sp = spellMap.get(id);
+                        const pt = pts.find(p => p.slot_level === lvl);
+                        if (pt && sp) row[sp.name] = Number(pt.expected_damage.toFixed(2));
+                      });
+                      return row;
+                    });
+
+                    const spellNames = [...checkedSpellIds]
+                      .map(id => spellMap.get(id)?.name)
+                      .filter(Boolean) as string[];
+
+                    const LINE_COLORS = [
+                      '#d4af37', '#7c3aed', '#06b6d4', '#22c55e', '#f97316',
+                      '#ec4899', '#a78bfa', '#34d399', '#fb923c', '#60a5fa',
+                    ];
+
+                    return (
+                      <ChartCard title="Expected Damage by Spell Level" className="mt-2">
+                        <ResponsiveContainer width="100%" height={300}>
+                          <LineChart data={lineData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
+                            <CartesianGrid strokeDasharray="3 3" stroke="#3a3a4a" />
+                            <XAxis dataKey="slotLevel" tick={{ fill: '#c4a882', fontSize: 12 }} />
+                            <YAxis tick={{ fill: '#c4a882', fontSize: 12 }} />
+                            <Tooltip
+                              contentStyle={{ background: '#1e1e2e', border: '1px solid #7c3aed', borderRadius: 8, color: '#c4a882' }}
+                            />
+                            <Legend wrapperStyle={{ color: '#c4a882', fontSize: 12 }} />
+                            {spellNames.map((name, i) => (
+                              <Line
+                                key={name}
+                                type="monotone"
+                                dataKey={name}
+                                stroke={LINE_COLORS[i % LINE_COLORS.length]}
+                                strokeWidth={2}
+                                dot={{ r: 4 }}
+                                activeDot={{ r: 6 }}
+                                connectNulls
+                              />
+                            ))}
+                          </LineChart>
+                        </ResponsiveContainer>
+                      </ChartCard>
+                    );
+                  })()}
+                </>
+              )}
+            </div>
+          )}
         </div>
       )}
 

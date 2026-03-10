@@ -37,7 +37,7 @@ class SpellViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     pagination_class = SpellPagination
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['level', 'school', 'is_attack_roll', 'is_saving_throw', 'concentration', 'ritual']
+    filterset_fields = ['level', 'school', 'is_attack_roll', 'is_saving_throw', 'concentration', 'ritual', 'source']
     search_fields = ['name', 'description', 'source']
     ordering_fields = ['name', 'level', 'created_at']
     ordering = ['level', 'name']
@@ -79,12 +79,19 @@ class SpellViewSet(viewsets.ModelViewSet):
             invalidate_spell_counts(self.request.user.id)
 
     def perform_update(self, serializer):
+        original = serializer.instance
+        if not self.request.user.is_staff and original.created_by != self.request.user:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied('You can only edit spells you created.')
         instance = serializer.save()
         cache.delete(spell_detail_key(instance.id, instance.updated_at))
         if instance.created_by_id:
             invalidate_spell_counts(instance.created_by_id)
 
     def perform_destroy(self, instance):
+        if not self.request.user.is_staff and instance.created_by != self.request.user:
+            from rest_framework.exceptions import PermissionDenied
+            raise PermissionDenied('You can only delete spells you created.')
         key = spell_detail_key(instance.id, instance.updated_at)
         user_id = instance.created_by_id
         instance.delete()
@@ -126,6 +133,17 @@ class SpellViewSet(viewsets.ModelViewSet):
         cache.set(ck, data, SPELL_COUNTS_TTL)
         return Response(data)
 
+    @action(detail=False, methods=['get'])
+    def sources(self, request):
+        """
+        Return sorted list of distinct non-empty source values visible to
+        the current user.
+        GET /api/spells/spells/sources/
+        """
+        qs = self.get_queryset().exclude(source='')
+        source_list = sorted(set(qs.values_list('source', flat=True).distinct()))
+        return Response(source_list)
+
     @action(detail=False, methods=['post'], throttle_classes=[SpellImportRateThrottle])
     def import_spells(self, request):
         """
@@ -158,8 +176,10 @@ class SpellViewSet(viewsets.ModelViewSet):
             try:
                 with transaction.atomic():
                     parsed = SpellParsingService.parse_spell_data(dict(spell_data))
-                    # Override source with what the user provided
-                    parsed['normalized_data']['source'] = source
+                    # Only override source when the caller explicitly provided one;
+                    # otherwise keep whatever the JSON data contains.
+                    if source:
+                        parsed['normalized_data']['source'] = source
                     spell = SpellParsingService.create_spell_from_parsed_data(
                         parsed,
                         created_by=None if is_system else (request.user if request.user.is_authenticated else None)
@@ -195,6 +215,67 @@ class SpellViewSet(viewsets.ModelViewSet):
         spell = self.get_object()
         serializer = SpellExportSerializer(spell)
         return Response(serializer.data)
+
+    @action(detail=True, methods=['post'])
+    def duplicate(self, request, pk=None):
+        """
+        Create a custom copy of any spell owned by the requesting user.
+        POST /api/spells/{id}/duplicate/
+        """
+        if not request.user.is_authenticated:
+            return Response(
+                {'error': 'Authentication required'},
+                status=status.HTTP_401_UNAUTHORIZED
+            )
+        original = self.get_object()
+        new_spell = Spell.objects.create(
+            name=f"{original.name} (Copy)",
+            level=original.level,
+            school=original.school,
+            casting_time=original.casting_time,
+            range=original.range,
+            duration=original.duration,
+            concentration=original.concentration,
+            ritual=original.ritual,
+            is_attack_roll=original.is_attack_roll,
+            is_saving_throw=original.is_saving_throw,
+            save_type=original.save_type,
+            half_damage_on_save=original.half_damage_on_save,
+            number_of_attacks=original.number_of_attacks,
+            crit_enabled=original.crit_enabled,
+            aoe_radius=original.aoe_radius,
+            damage_type=original.damage_type,
+            upcast_base_level=original.upcast_base_level,
+            upcast_dice_increment=original.upcast_dice_increment,
+            upcast_die_size=original.upcast_die_size,
+            components_v=original.components_v,
+            components_s=original.components_s,
+            components_m=original.components_m,
+            material=original.material,
+            source=original.source,
+            is_custom=True,
+            description=original.description,
+            higher_level=original.higher_level,
+            classes=list(original.classes),
+            tags=list(original.tags),
+            raw_data=dict(original.raw_data),
+            created_by=request.user,
+        )
+        for dc in original.damage_components.all():
+            DamageComponent.objects.create(
+                spell=new_spell,
+                dice_count=dc.dice_count,
+                die_size=dc.die_size,
+                flat_modifier=dc.flat_modifier,
+                damage_type=dc.damage_type,
+                timing=dc.timing,
+                on_crit_extra=dc.on_crit_extra,
+                scales_with_slot=dc.scales_with_slot,
+                is_verified=False,
+            )
+        invalidate_spell_counts(request.user.id)
+        serializer = SpellDetailSerializer(new_spell, context={'request': request})
+        return Response(serializer.data, status=status.HTTP_201_CREATED)
 
     @action(detail=False, methods=['post'])
     def bulk_delete(self, request):
