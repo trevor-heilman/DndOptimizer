@@ -1,5 +1,11 @@
 # Copilot Instructions
 
+## 0. Problem-Solving Philosophy
+- **No workarounds or loopholes by default.** When an issue is found, identify and evaluate all possible solutions before acting.
+- If only workarounds exist, present them to the user and wait for approval — never silently apply a short-term fix.
+- Always prefer the correct long-term solution even if it requires more investigation or refactoring.
+- Distinguish clearly between a root-cause fix and a band-aid: name them explicitly when presenting options.
+
 ## 1. Code Quality
 - Use type hints throughout Python code and TypeScript for React.
 - Write clear, maintainable, and well-documented code.

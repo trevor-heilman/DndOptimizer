@@ -28,7 +28,12 @@ class Spellbook(models.Model):
         blank=True,
         help_text="Primary class — used to filter the Add Spells picker by default."
     )
-    
+    character_level = models.IntegerField(
+        null=True,
+        blank=True,
+        help_text="Character level (1–20) — used to display available spell slots."
+    )
+
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,

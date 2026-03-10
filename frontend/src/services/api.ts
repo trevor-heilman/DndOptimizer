@@ -43,7 +43,15 @@ class APIClient {
       async (error: AxiosError) => {
         const originalRequest = error.config as InternalAxiosRequestConfig & { _retry?: boolean };
 
-        if (error.response?.status === 401 && !originalRequest._retry) {
+        // Don't attempt token refresh for auth endpoints — a 401 there means bad
+        // credentials and should propagate as-is so the login form can display it.
+        const requestUrl = originalRequest.url ?? '';
+        const isAuthEndpoint =
+          requestUrl.includes('/users/login/') ||
+          requestUrl.includes('/users/register/') ||
+          requestUrl.includes('/users/token/refresh/');
+
+        if (error.response?.status === 401 && !originalRequest._retry && !isAuthEndpoint) {
           if (this.isRefreshing) {
             // Wait for token refresh
             return new Promise((resolve) => {

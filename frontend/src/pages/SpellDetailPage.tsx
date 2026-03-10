@@ -3,18 +3,32 @@
  */
 import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useSpell } from '../hooks/useSpells';
+import { useSpell, useDuplicateSpell } from '../hooks/useSpells';
 import { useAnalyzeSpell, useGetSpellEfficiency } from '../hooks/useAnalysis';
 import { DamageChart } from '../components/DamageChart';
+import { CantripScalingChart } from '../components/CantripScalingChart';
 import { AnalysisContextForm } from '../components/AnalysisContextForm';
 import { EfficiencyChart } from '../components/EfficiencyChart';
 import { LoadingSpinner, AlertMessage } from '../components/ui';
+import { CreateSpellModal } from '../components/CreateSpellModal';
+import { useAuth } from '../contexts/AuthContext';
 import type { AnalysisContext } from '../types/api';
 
 export function SpellDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: spell, isLoading, error } = useSpell(id!);
+  const { user } = useAuth();
+  const duplicateSpell = useDuplicateSpell();
+  const [showEdit, setShowEdit] = useState(false);
+  const canEdit = !!user && (user.is_staff || (spell?.created_by != null && spell.created_by === user.id));
+
+  const handleDuplicate = async () => {
+    if (!spell) return;
+    const copy = await duplicateSpell.mutateAsync(spell.id);
+    navigate(`/spells/${copy.id}`);
+  };
+
   const analyzeSpell = useAnalyzeSpell();
   const getEfficiency = useGetSpellEfficiency();
   const [analysisContext, setAnalysisContext] = useState<AnalysisContext>({
@@ -62,7 +76,28 @@ export function SpellDetailPage() {
         <Link to="/spells" className="font-body text-gold-500 hover:text-gold-400 text-sm mb-3 inline-flex items-center gap-1 transition-colors">
           ← Back to Spells
         </Link>
-        <h1 className="font-display text-4xl font-bold text-gold-300 mb-3">{spell.name}</h1>
+        <div className="flex items-start justify-between gap-4 mb-3">
+          <h1 className="font-display text-4xl font-bold text-gold-300">{spell.name}</h1>
+          {user && (
+            <div className="flex shrink-0 gap-2 mt-1">
+              {canEdit && (
+                <button
+                  onClick={() => setShowEdit(true)}
+                  className="btn-secondary text-sm"
+                >
+                  ✎ Edit
+                </button>
+              )}
+              <button
+                onClick={handleDuplicate}
+                disabled={duplicateSpell.isPending}
+                className="btn-secondary text-sm disabled:opacity-50"
+              >
+                {duplicateSpell.isPending ? 'Duplicating…' : '⎘ Duplicate'}
+              </button>
+            </div>
+          )}
+        </div>
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-display text-sm px-3 py-1 rounded"
                 style={{ background: '#2a2a35', color: '#fbbf24', border: '1px solid #4b4b58' }}>
@@ -84,6 +119,26 @@ export function SpellDetailPage() {
               Ritual
             </span>
           )}
+          {spell.tags && spell.tags.map((tag) => {
+            const TAG_STYLES: Record<string, { bg: string; color: string }> = {
+              damage:        { bg: '#450a0a55', color: '#fca5a5' },
+              healing:       { bg: '#052e1655', color: '#86efac' },
+              aoe:           { bg: '#3c200555', color: '#fdba74' },
+              crowd_control: { bg: '#2e1a5f55', color: '#c4b5fd' },
+              summoning:     { bg: '#0c1a3355', color: '#93c5fd' },
+              buff:          { bg: '#3d2a0a55', color: '#fde68a' },
+              debuff:        { bg: '#1a0a2e55', color: '#d8b4fe' },
+              utility:       { bg: '#1e1e2e55', color: '#94a3b8' },
+            };
+            const style = TAG_STYLES[tag] ?? TAG_STYLES.utility;
+            const label = tag.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+            return (
+              <span key={tag} className="font-display text-sm px-3 py-1 rounded"
+                    style={{ background: style.bg, color: style.color, border: `1px solid ${style.color}33` }}>
+                {label}
+              </span>
+            );
+          })}
         </div>
       </div>
 
@@ -148,12 +203,40 @@ export function SpellDetailPage() {
             </>
           )}
           {spell.upcast_dice_increment && spell.upcast_die_size && (
-            <div className="flex items-center gap-2">
-              <span className="w-32 text-sm font-display font-medium text-smoke-400">Upcast Bonus:</span>
-              <span className="text-parchment-100">
-                +{spell.upcast_dice_increment}d{spell.upcast_die_size} per level
-              </span>
-            </div>
+            spell.level === 0 ? (
+              <>
+                <div className="flex items-start gap-2">
+                  <span className="shrink-0 w-32 text-sm font-display font-medium text-smoke-400">Cantrip Scaling</span>
+                  <div className="space-y-1">
+                    {[
+                      { levels: 'Levels 1–4',  tier: 1 },
+                      { levels: 'Levels 5–10', tier: 2 },
+                      { levels: 'Levels 11–16', tier: 3 },
+                      { levels: 'Level 17+',  tier: 4 },
+                    ].map(({ levels, tier }) => (
+                      <div key={tier} className="flex items-center gap-3">
+                        <span className="text-xs text-smoke-500 w-28">{levels}</span>
+                        <span className="text-sm font-bold text-parchment-100">
+                          {tier * spell.upcast_dice_increment!}d{spell.upcast_die_size}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <CantripScalingChart
+                  upcastDiceIncrement={spell.upcast_dice_increment}
+                  upcastDieSize={spell.upcast_die_size}
+                />
+              </>
+            ) : (
+              <div className="flex items-center gap-2">
+                <span className="w-32 text-sm font-display font-medium text-smoke-400">Upcast Bonus:</span>
+                <span className="text-parchment-100">
+                  +{spell.upcast_dice_increment}d{spell.upcast_die_size}{' '}
+                  per slot level above {spell.upcast_base_level ?? spell.level}
+                </span>
+              </div>
+            )
           )}
         </div>
       </div>
@@ -165,6 +248,11 @@ export function SpellDetailPage() {
             <h2 className="dnd-section-title text-xl mb-1">Damage Components</h2>
             <p className="font-body text-sm text-smoke-400 mb-4">
               Average: <span className="text-gold-400 font-semibold">{totalAverageDamage.toFixed(1)}</span> damage
+              {spell.level === 0 && (
+                <span className="ml-3 text-xs bg-smoke-700 text-parchment-400 px-2 py-0.5 rounded">
+                  ⚠ Cantrip — damage increases at character levels 5, 11, and 17
+                </span>
+              )}
             </p>
             <div className="space-y-3">
               {spell.damage_components.map((dc, index) => {
@@ -339,6 +427,13 @@ export function SpellDetailPage() {
           ← Back to List
         </button>
       </div>
+
+      {/* Edit Spell Modal */}
+      <CreateSpellModal
+        isOpen={showEdit}
+        onClose={() => setShowEdit(false)}
+        spellToEdit={spell}
+      />
     </div>
   );
 }

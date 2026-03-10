@@ -30,7 +30,8 @@ class SpellbookListSerializer(serializers.ModelSerializer):
     class Meta:
         model = Spellbook
         fields = [
-            'id', 'name', 'description', 'character_class', 'owner', 'owner_username',
+            'id', 'name', 'description', 'character_class', 'character_level',
+            'owner', 'owner_username',
             'spell_count', 'prepared_spell_count', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'owner', 'created_at', 'updated_at']
@@ -48,7 +49,8 @@ class SpellbookDetailSerializer(serializers.ModelSerializer):
     class Meta:
         model = Spellbook
         fields = [
-            'id', 'name', 'description', 'character_class', 'owner', 'owner_username',
+            'id', 'name', 'description', 'character_class', 'character_level',
+            'owner', 'owner_username',
             'spell_count', 'prepared_spell_count', 'prepared_spells',
             'created_at', 'updated_at'
         ]
@@ -61,7 +63,7 @@ class SpellbookCreateUpdateSerializer(serializers.ModelSerializer):
     """
     class Meta:
         model = Spellbook
-        fields = ['name', 'description', 'character_class']
+        fields = ['name', 'description', 'character_class', 'character_level']
 
 
 class AddSpellToSpellbookSerializer(serializers.Serializer):

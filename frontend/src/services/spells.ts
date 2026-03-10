@@ -53,8 +53,24 @@ export const spellService = {
   /**
    * Import spells from JSON
    */
-  async importSpells(spells: any[], isSystem = false): Promise<{ imported: number; errors: any[] }> {
-    const response = await apiClient.post('/spells/spells/import_spells/', { spells, is_system: isSystem });
+  async importSpells(
+    spells: any[],
+    isSystem = false,
+    source = '',
+  ): Promise<{ imported: number; errors: any[] }> {
+    const response = await apiClient.post('/spells/spells/import_spells/', {
+      spells,
+      is_system: isSystem,
+      source,
+    });
+    return response.data;
+  },
+
+  /**
+   * Return distinct non-empty source values visible to the current user
+   */
+  async getSpellSources(): Promise<string[]> {
+    const response = await apiClient.get<string[]>('/spells/spells/sources/');
     return response.data;
   },
 
@@ -79,6 +95,14 @@ export const spellService = {
    */
   async exportSpell(id: string): Promise<any> {
     const response = await apiClient.get(`/spells/spells/${id}/export/`);
+    return response.data;
+  },
+
+  /**
+   * Duplicate a spell — returns the new custom copy owned by the current user
+   */
+  async duplicateSpell(id: string): Promise<Spell> {
+    const response = await apiClient.post<Spell>(`/spells/spells/${id}/duplicate/`);
     return response.data;
   },
 

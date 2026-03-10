@@ -9,6 +9,25 @@ interface SpellCardProps {
   spell: Spell;
 }
 
+const TAG_STYLES: Record<string, { bg: string; color: string }> = {
+  damage:        { bg: '#450a0a55', color: '#fca5a5' },
+  healing:       { bg: '#052e1655', color: '#86efac' },
+  aoe:           { bg: '#3c200555', color: '#fdba74' },
+  crowd_control: { bg: '#2e1a5f55', color: '#c4b5fd' },
+  summoning:     { bg: '#0c1a3355', color: '#93c5fd' },
+  buff:          { bg: '#3d2a0a55', color: '#fde68a' },
+  debuff:        { bg: '#1a0a2e55', color: '#d8b4fe' },
+  utility:       { bg: '#1e1e2e55', color: '#94a3b8' },
+};
+
+function tagLabel(tag: string): string {
+  return tag.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+}
+
+interface SpellCardProps {
+  spell: Spell;
+}
+
 export function SpellCard({ spell }: SpellCardProps) {
   const levelText = spell.level === 0 ? 'Cantrip' : `Level ${spell.level}`;
   const schoolText = spell.school.charAt(0).toUpperCase() + spell.school.slice(1);
@@ -76,6 +95,24 @@ export function SpellCard({ spell }: SpellCardProps) {
                 style={{ background: dc_colors.bg, color: dc_colors.text }}
               >
                 {dc.dice_count}d{dc.die_size} {dc.damage_type}
+              </span>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Gameplay tags */}
+      {spell.tags && spell.tags.length > 0 && (
+        <div className="mt-2 flex flex-wrap gap-1.5">
+          {spell.tags.map((tag) => {
+            const style = TAG_STYLES[tag] ?? TAG_STYLES.utility;
+            return (
+              <span
+                key={tag}
+                className="text-xs font-display px-2 py-0.5 rounded"
+                style={{ background: style.bg, color: style.color, border: `1px solid ${style.color}33` }}
+              >
+                {tagLabel(tag)}
               </span>
             );
           })}

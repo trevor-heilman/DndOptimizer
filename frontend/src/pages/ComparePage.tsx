@@ -1,14 +1,130 @@
 /**
  * Compare Page
  */
-import { useState } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { useSpells } from '../hooks/useSpells';
 import { useCompareSpells } from '../hooks/useAnalysis';
 import { AnalysisContextForm } from '../components/AnalysisContextForm';
 import { DamageComparisonChart } from '../components/DamageComparisonChart';
-import type { AnalysisContext } from '../types/api';
+import type { AnalysisContext, Spell } from '../types/api';
 
+// ── Inline spell combobox ─────────────────────────────────────────────────────
+interface SpellComboboxProps {
+  label: string;
+  accentClass: string;
+  value: string;
+  onChange: (id: string) => void;
+  spells: Spell[];
+}
+
+function SpellCombobox({ label, accentClass, value, onChange, spells }: SpellComboboxProps) {
+  const [query, setQuery] = useState('');
+  const [open, setOpen] = useState(false);
+  const containerRef = useRef<HTMLDivElement>(null);
+
+  const selected = spells.find(s => s.id === value) ?? null;
+
+  const filtered = query.trim()
+    ? spells.filter(s => s.name.toLowerCase().includes(query.toLowerCase()))
+    : spells;
+
+  // Close dropdown when clicking outside
+  useEffect(() => {
+    function onPointerDown(e: MouseEvent) {
+      if (containerRef.current && !containerRef.current.contains(e.target as Node)) {
+        setOpen(false);
+      }
+    }
+    document.addEventListener('pointerdown', onPointerDown);
+    return () => document.removeEventListener('pointerdown', onPointerDown);
+  }, []);
+
+  function handleSelect(spell: Spell) {
+    onChange(spell.id);
+    setQuery('');
+    setOpen(false);
+  }
+
+  function handleClear() {
+    onChange('');
+    setQuery('');
+  }
+
+  const SCHOOL_COLORS: Record<string, string> = {
+    evocation: '#f97316', conjuration: '#22c55e', abjuration: '#60a5fa',
+    divination: '#a78bfa', enchantment: '#ec4899', illusion: '#14b8a6',
+    necromancy: '#94a3b8', transmutation: '#d4af37',
+  };
+
+  return (
+    <div ref={containerRef} className="relative">
+      <label className={`font-display text-xl font-semibold ${accentClass} mb-3 block`}>{label}</label>
+
+      {selected && !open ? (
+        // Selected state — show pill with clear
+        <div className="dnd-input flex items-center justify-between gap-2 cursor-pointer"
+             onClick={() => { setOpen(true); setQuery(''); }}>
+          <div className="flex items-center gap-2 min-w-0">
+            <span className="font-body text-parchment-100 truncate">{selected.name}</span>
+            <span className="font-display text-[10px] px-1.5 py-0.5 rounded shrink-0"
+                  style={{ color: '#94a3b8', background: '#1e2335', border: '1px solid #2d3555' }}>
+              {selected.level === 0 ? 'Cantrip' : `Lvl ${selected.level}`}
+            </span>
+            <span className="font-display text-[10px] px-1.5 py-0.5 rounded capitalize shrink-0"
+                  style={{ color: SCHOOL_COLORS[selected.school] ?? '#c4a882', background: '#1e1e2e', border: '1px solid #2d3555' }}>
+              {selected.school}
+            </span>
+          </div>
+          <button onClick={e => { e.stopPropagation(); handleClear(); }}
+                  className="text-smoke-400 hover:text-smoke-200 shrink-0 text-lg leading-none" aria-label="Clear">
+            ×
+          </button>
+        </div>
+      ) : (
+        // Search input
+        <input
+          type="text"
+          value={query}
+          autoFocus={open}
+          onChange={e => { setQuery(e.target.value); setOpen(true); }}
+          onFocus={() => setOpen(true)}
+          placeholder="Search spells…"
+          className="dnd-input font-body w-full"
+        />
+      )}
+
+      {/* Dropdown */}
+      {open && (
+        <div className="absolute z-50 w-full mt-1 max-h-72 overflow-y-auto rounded-lg border border-smoke-600 bg-smoke-900 shadow-2xl">
+          {filtered.length === 0 ? (
+            <div className="px-4 py-3 font-body text-sm text-smoke-400">No spells found</div>
+          ) : (
+            filtered.map(spell => (
+              <button
+                key={spell.id}
+                onPointerDown={e => { e.preventDefault(); handleSelect(spell); }}
+                className="w-full flex items-center gap-2 px-3 py-2 text-left hover:bg-smoke-700 transition-colors"
+              >
+                <span className="font-body text-sm text-parchment-200 flex-1 truncate">{spell.name}</span>
+                <span className="font-display text-[10px] px-1.5 py-0.5 rounded shrink-0"
+                      style={{ color: '#94a3b8', background: '#1e2335', border: '1px solid #2d3555' }}>
+                  {spell.level === 0 ? 'Cantrip' : `Lvl ${spell.level}`}
+                </span>
+                <span className="font-display text-[10px] px-1.5 py-0.5 rounded capitalize shrink-0"
+                      style={{ color: SCHOOL_COLORS[spell.school] ?? '#c4a882', background: '#1e1e2e', border: '1px solid #2d3555' }}>
+                  {spell.school}
+                </span>
+              </button>
+            ))
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+// ── Main page ─────────────────────────────────────────────────────────────────
 export function ComparePage() {
   const [searchParams] = useSearchParams();
   const initialSpell1 = searchParams.get('spell1') || '';
@@ -16,8 +132,6 @@ export function ComparePage() {
 
   const [spell1Id, setSpell1Id] = useState(initialSpell1);
   const [spell2Id, setSpell2Id] = useState(initialSpell2);
-  const [spell1Search, setSpell1Search] = useState('');
-  const [spell2Search, setSpell2Search] = useState('');
   const [context, setContext] = useState<AnalysisContext>({
     target_ac: 15,
     caster_attack_bonus: 5,
@@ -36,22 +150,11 @@ export function ComparePage() {
   const compareSpells = useCompareSpells();
 
   const allSpells = allSpellsResponse?.results || [];
-  const filteredSpells1 = spell1Search
-    ? allSpells.filter((s) => s.name.toLowerCase().includes(spell1Search.toLowerCase()))
-    : allSpells;
-  const filteredSpells2 = spell2Search
-    ? allSpells.filter((s) => s.name.toLowerCase().includes(spell2Search.toLowerCase()))
-    : allSpells;
-
   const spell1 = allSpells.find((s) => s.id === spell1Id);
   const spell2 = allSpells.find((s) => s.id === spell2Id);
 
   const handleCompare = async () => {
-    if (!spell1Id || !spell2Id) {
-      alert('Please select both spells to compare');
-      return;
-    }
-
+    if (!spell1Id || !spell2Id) return;
     await compareSpells.mutateAsync({ spellAId: spell1Id, spellBId: spell2Id, context });
   };
 
@@ -65,31 +168,15 @@ export function ComparePage() {
 
       {/* Spell Selection */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
-        {/* Spell 1 Selection */}
+        {/* Spell 1 */}
         <div className="dnd-card border-l-4 border-arcane-700 p-6">
-          <h2 className="font-display text-xl font-semibold text-arcane-300 mb-4">🔮 Spell 1</h2>
-          <div className="mb-3 space-y-2">
-            <input
-              type="text"
-              value={spell1Search}
-              onChange={(e) => setSpell1Search(e.target.value)}
-              placeholder="Search spells…"
-              className="dnd-input font-body"
-            />
-            <select
-              value={spell1Id}
-              onChange={(e) => setSpell1Id(e.target.value)}
-              className="dnd-input font-body"
-            >
-              <option value="">Select a spell…</option>
-              {filteredSpells1.slice(0, 50).map((spell) => (
-                <option key={spell.id} value={spell.id}>
-                  {spell.name} (Level {spell.level})
-                </option>
-              ))}
-            </select>
-          </div>
-
+          <SpellCombobox
+            label="🔮 Spell 1"
+            accentClass="text-arcane-300"
+            value={spell1Id}
+            onChange={setSpell1Id}
+            spells={allSpells}
+          />
           {spell1 && (
             <div className="mt-4 p-4 bg-smoke-800 rounded-lg border border-smoke-700">
               <h3 className="font-display font-semibold text-parchment-100 mb-2">{spell1.name}</h3>
@@ -105,31 +192,15 @@ export function ComparePage() {
           )}
         </div>
 
-        {/* Spell 2 Selection */}
+        {/* Spell 2 */}
         <div className="dnd-card border-l-4 border-crimson-700 p-6">
-          <h2 className="font-display text-xl font-semibold text-crimson-300 mb-4">⚡ Spell 2</h2>
-          <div className="mb-3 space-y-2">
-            <input
-              type="text"
-              value={spell2Search}
-              onChange={(e) => setSpell2Search(e.target.value)}
-              placeholder="Search spells…"
-              className="dnd-input font-body"
-            />
-            <select
-              value={spell2Id}
-              onChange={(e) => setSpell2Id(e.target.value)}
-              className="dnd-input font-body"
-            >
-              <option value="">Select a spell…</option>
-              {filteredSpells2.slice(0, 50).map((spell) => (
-                <option key={spell.id} value={spell.id}>
-                  {spell.name} (Level {spell.level})
-                </option>
-              ))}
-            </select>
-          </div>
-
+          <SpellCombobox
+            label="⚡ Spell 2"
+            accentClass="text-crimson-300"
+            value={spell2Id}
+            onChange={setSpell2Id}
+            spells={allSpells}
+          />
           {spell2 && (
             <div className="mt-4 p-4 bg-smoke-800 rounded-lg border border-smoke-700">
               <h3 className="font-display font-semibold text-parchment-100 mb-2">{spell2.name}</h3>
@@ -178,11 +249,10 @@ export function ComparePage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
             {/* Spell A Results */}
             <div className={`dnd-card p-6 border-2 ${
-              comparisonResult.winner === 'spell_a' ? 'border-gold-500' :
-              comparisonResult.winner === 'tie' ? 'border-arcane-500' : 'border-smoke-600'
+              comparisonResult.winner === 'spell_a' ? 'border-gold-500' : 'border-smoke-600'
             }`}>
               <h3 className="font-display text-xl font-semibold text-parchment-100 mb-4 flex items-center gap-2">
-                {comparisonResult.spell_a.spell_name}
+                {comparisonResult.spell_a.name}
                 {comparisonResult.winner === 'spell_a' && (
                   <span className="font-display text-xs px-2 py-1 rounded"
                         style={{ background: '#451a03', color: '#fbbf24', border: '1px solid #b45309' }}>
@@ -191,44 +261,34 @@ export function ComparePage() {
                 )}
               </h3>
               <div className="font-body space-y-3">
-                {[
-                  { label: 'Type', value: comparisonResult.spell_a.spell_type.replace('_', ' ') },
-                  { label: 'Average Damage', value: comparisonResult.spell_a.average_damage.toFixed(2) },
-                  { label: 'Min – Max', value: `${comparisonResult.spell_a.minimum_damage} – ${comparisonResult.spell_a.maximum_damage}` },
-                ].map(({ label, value }) => (
-                  <div key={label} className="flex justify-between">
-                    <span className="text-smoke-400">{label}:</span>
-                    <span className="text-parchment-200 font-medium capitalize">{value}</span>
-                  </div>
-                ))}
+                <div className="flex justify-between">
+                  <span className="text-smoke-400">Level:</span>
+                  <span className="text-parchment-200 font-medium">
+                    {comparisonResult.spell_a.level === 0 ? 'Cantrip' : comparisonResult.spell_a.level}
+                  </span>
+                </div>
                 <div className="flex justify-between">
                   <span className="text-smoke-400">Expected Damage:</span>
                   <span className="font-display text-lg font-bold text-gold-400">
                     {comparisonResult.spell_a.expected_damage.toFixed(2)}
                   </span>
                 </div>
-                {comparisonResult.spell_a.hit_probability !== undefined && (
-                  <div className="flex justify-between">
-                    <span className="text-smoke-400">Hit Probability:</span>
-                    <span className="text-parchment-200 font-medium">{(comparisonResult.spell_a.hit_probability * 100).toFixed(1)}%</span>
-                  </div>
-                )}
-                {comparisonResult.spell_a.save_failure_probability !== undefined && (
-                  <div className="flex justify-between">
-                    <span className="text-smoke-400">Save Fail:</span>
-                    <span className="text-parchment-200 font-medium">{(comparisonResult.spell_a.save_failure_probability * 100).toFixed(1)}%</span>
-                  </div>
-                )}
+                <div className="flex justify-between">
+                  <span className="text-smoke-400">Efficiency:</span>
+                  <span className="text-parchment-200 font-medium">
+                    {comparisonResult.spell_a.efficiency.toFixed(2)}
+                    <span className="text-smoke-500 text-xs ml-1">dmg/slot</span>
+                  </span>
+                </div>
               </div>
             </div>
 
             {/* Spell B Results */}
             <div className={`dnd-card p-6 border-2 ${
-              comparisonResult.winner === 'spell_b' ? 'border-gold-500' :
-              comparisonResult.winner === 'tie' ? 'border-arcane-500' : 'border-smoke-600'
+              comparisonResult.winner === 'spell_b' ? 'border-gold-500' : 'border-smoke-600'
             }`}>
               <h3 className="font-display text-xl font-semibold text-parchment-100 mb-4 flex items-center gap-2">
-                {comparisonResult.spell_b.spell_name}
+                {comparisonResult.spell_b.name}
                 {comparisonResult.winner === 'spell_b' && (
                   <span className="font-display text-xs px-2 py-1 rounded"
                         style={{ background: '#451a03', color: '#fbbf24', border: '1px solid #b45309' }}>
@@ -237,63 +297,40 @@ export function ComparePage() {
                 )}
               </h3>
               <div className="font-body space-y-3">
-                {[
-                  { label: 'Type', value: comparisonResult.spell_b.spell_type.replace('_', ' ') },
-                  { label: 'Average Damage', value: comparisonResult.spell_b.average_damage.toFixed(2) },
-                  { label: 'Min – Max', value: `${comparisonResult.spell_b.minimum_damage} – ${comparisonResult.spell_b.maximum_damage}` },
-                ].map(({ label, value }) => (
-                  <div key={label} className="flex justify-between">
-                    <span className="text-smoke-400">{label}:</span>
-                    <span className="text-parchment-200 font-medium capitalize">{value}</span>
-                  </div>
-                ))}
+                <div className="flex justify-between">
+                  <span className="text-smoke-400">Level:</span>
+                  <span className="text-parchment-200 font-medium">
+                    {comparisonResult.spell_b.level === 0 ? 'Cantrip' : comparisonResult.spell_b.level}
+                  </span>
+                </div>
                 <div className="flex justify-between">
                   <span className="text-smoke-400">Expected Damage:</span>
                   <span className="font-display text-lg font-bold text-gold-400">
                     {comparisonResult.spell_b.expected_damage.toFixed(2)}
                   </span>
                 </div>
-                {comparisonResult.spell_b.hit_probability !== undefined && (
-                  <div className="flex justify-between">
-                    <span className="text-smoke-400">Hit Probability:</span>
-                    <span className="text-parchment-200 font-medium">{(comparisonResult.spell_b.hit_probability * 100).toFixed(1)}%</span>
-                  </div>
-                )}
-                {comparisonResult.spell_b.save_failure_probability !== undefined && (
-                  <div className="flex justify-between">
-                    <span className="text-smoke-400">Save Fail:</span>
-                    <span className="text-parchment-200 font-medium">{(comparisonResult.spell_b.save_failure_probability * 100).toFixed(1)}%</span>
-                  </div>
-                )}
+                <div className="flex justify-between">
+                  <span className="text-smoke-400">Efficiency:</span>
+                  <span className="text-parchment-200 font-medium">
+                    {comparisonResult.spell_b.efficiency.toFixed(2)}
+                    <span className="text-smoke-500 text-xs ml-1">dmg/slot</span>
+                  </span>
+                </div>
               </div>
             </div>
           </div>
 
-          {/* Winner Summary */}
-          <div className="dnd-card p-6 text-center border-t-2 border-gold-800 mb-4">
-            {comparisonResult.winner === 'tie' ? (
-              <p className="font-display text-xl font-semibold text-arcane-300">
-                ⚖️ It's a tie! Both spells have similar expected damage.
-              </p>
-            ) : (
-              <>
-                <p className="font-display text-xl font-semibold text-gold-300 mb-2">
-                  👑{' '}
-                  {comparisonResult.winner === 'spell_a'
-                    ? comparisonResult.spell_a.spell_name
-                    : comparisonResult.spell_b.spell_name}{' '}
-                  is the victor!
-                </p>
-                <p className="font-body text-parchment-300">
-                  Expected damage lead:{' '}
-                  <span className="font-display font-bold text-gold-400">{comparisonResult.difference.toFixed(2)}</span>{' '}
-                  ({((comparisonResult.difference / Math.min(comparisonResult.spell_a.expected_damage, comparisonResult.spell_b.expected_damage)) * 100).toFixed(1)}% more effective)
-                </p>
-              </>
-            )}
+          {/* Damage Difference */}
+          <div className="mb-6 p-4 bg-smoke-800 rounded-lg border border-smoke-700 text-center">
+            <span className="font-display text-sm text-smoke-400">Damage Difference: </span>
+            <span className="font-display text-lg font-bold text-gold-400">
+              {comparisonResult.damage_difference.toFixed(2)}
+            </span>
+            <span className="font-body text-sm text-smoke-400 ml-2">
+              in favour of {comparisonResult.winner === 'spell_a' ? comparisonResult.spell_a.name : comparisonResult.spell_b.name}
+            </span>
           </div>
 
-          {/* Visual Comparison Chart */}
           <DamageComparisonChart comparisonResult={comparisonResult} />
         </div>
       )}
