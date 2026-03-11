@@ -1,13 +1,16 @@
 /**
- * Modal for creating a custom spell.
+ * Modal for creating or editing a spell.
  */
-import { useState } from 'react';
-import { useCreateSpell } from '../hooks/useSpells';
+import { useState, useEffect } from 'react';
+import { useCreateSpell, useUpdateSpell } from '../hooks/useSpells';
 import { ModalShell, AlertMessage } from './ui';
+import type { Spell } from '../types/api';
 
 interface CreateSpellModalProps {
   isOpen: boolean;
   onClose: () => void;
+  /** When provided the modal operates in edit mode, pre-filling the form. */
+  spellToEdit?: Spell;
 }
 
 const SCHOOLS = [
@@ -74,6 +77,7 @@ interface SpellFormState {
   save_type: string;
   half_damage_on_save: boolean;
   classes: string[];
+  source: string;
   description: string;
   higher_level: string;
 }
@@ -98,14 +102,60 @@ const defaultForm: SpellFormState = {
   save_type: '',
   half_damage_on_save: false,
   classes: [],
+  source: '',
   description: '',
   higher_level: '',
 };
 
-export function CreateSpellModal({ isOpen, onClose }: CreateSpellModalProps) {
-  const [form, setForm] = useState<SpellFormState>(defaultForm);
+/** Map a Spell back into the editable SpellFormState. */
+function spellToFormState(spell: Spell): SpellFormState {
+  const castingTimeKnown = (CASTING_TIME_OPTIONS as readonly string[]).includes(spell.casting_time);
+  const rangeKnown = (RANGE_OPTIONS as readonly string[]).includes(spell.range);
+  return {
+    name: spell.name,
+    level: spell.level,
+    school: spell.school,
+    casting_time: castingTimeKnown ? spell.casting_time : 'Other',
+    casting_time_custom: castingTimeKnown ? '' : spell.casting_time,
+    range: rangeKnown ? spell.range : 'Other',
+    range_custom: rangeKnown ? '' : spell.range,
+    duration: spell.duration,
+    concentration: spell.concentration,
+    ritual: spell.ritual,
+    components_v: spell.components_v ?? false,
+    components_s: spell.components_s ?? false,
+    components_m: spell.components_m ?? false,
+    material: spell.material ?? '',
+    is_attack_roll: spell.is_attack_roll,
+    is_saving_throw: spell.is_saving_throw,
+    save_type: spell.save_type ?? '',
+    half_damage_on_save: spell.half_damage_on_save,
+    classes: spell.classes ?? [],
+    source: spell.source ?? '',
+    description: spell.description,
+    higher_level: spell.higher_level ?? '',
+  };
+}
+
+export function CreateSpellModal({ isOpen, onClose, spellToEdit }: CreateSpellModalProps) {
+  const isEditMode = !!spellToEdit;
+  const [form, setForm] = useState<SpellFormState>(
+    spellToEdit ? spellToFormState(spellToEdit) : defaultForm
+  );
   const [errors, setErrors] = useState<Record<string, string>>({});
   const createSpell = useCreateSpell();
+  const updateSpell = useUpdateSpell();
+
+  // Re-initialise form whenever the modal opens or the target spell changes
+  useEffect(() => {
+    if (isOpen) {
+      setForm(spellToEdit ? spellToFormState(spellToEdit) : defaultForm);
+      setErrors({});
+      createSpell.reset();
+      updateSpell.reset();
+    }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, spellToEdit?.id]);
 
   if (!isOpen) return null;
 
@@ -113,6 +163,7 @@ export function CreateSpellModal({ isOpen, onClose }: CreateSpellModalProps) {
     setForm(defaultForm);
     setErrors({});
     createSpell.reset();
+    updateSpell.reset();
     onClose();
   };
 
@@ -148,21 +199,30 @@ export function CreateSpellModal({ isOpen, onClose }: CreateSpellModalProps) {
     e.preventDefault();
     if (!validate()) return;
 
-    await createSpell.mutateAsync({
+    const payload = {
       ...form,
       casting_time: form.casting_time === 'Other' ? form.casting_time_custom.trim() : form.casting_time,
       range: form.range === 'Other' ? form.range_custom.trim() : form.range,
       save_type: form.is_saving_throw ? form.save_type : undefined,
       material: form.components_m ? form.material.trim() : '',
-    } as any);
+    } as any;
+    if (isEditMode && spellToEdit) {
+      await updateSpell.mutateAsync({ id: spellToEdit.id, data: payload });
+    } else {
+      await createSpell.mutateAsync(payload);
+    }
   };
+
+  const isPending = isEditMode ? updateSpell.isPending : createSpell.isPending;
+  const isError   = isEditMode ? updateSpell.isError   : createSpell.isError;
+  const isSuccess = isEditMode ? updateSpell.isSuccess  : createSpell.isSuccess;
 
   const labelCls = 'block font-display text-sm font-medium text-parchment-300 mb-1';
   const inputCls = 'dnd-input font-body text-sm';
   const errCls = 'font-body text-xs text-crimson-400 mt-1';
 
   return (
-    <ModalShell accent="arcane" maxWidth="max-w-2xl" title="✦ Create Custom Spell" onClose={handleClose} disabled={createSpell.isPending}>
+    <ModalShell accent="arcane" maxWidth="max-w-2xl" title={isEditMode ? '✦ Edit Spell' : '✦ Create Custom Spell'} onClose={handleClose} disabled={isPending}>
       <form onSubmit={handleSubmit} className="space-y-5">
           {/* Name */}
           <div>
@@ -373,6 +433,17 @@ export function CreateSpellModal({ isOpen, onClose }: CreateSpellModalProps) {
             </div>
           </div>
 
+          {/* Source */}
+          <div>
+            <label className={labelCls}>Source</label>
+            <input
+              value={form.source}
+              onChange={(e) => set('source', e.target.value)}
+              className={inputCls}
+              placeholder="e.g. Player's Handbook, My Campaign"
+            />
+          </div>
+
           {/* Description */}
           <div>
             <label className={labelCls}>Description *</label>
@@ -399,13 +470,13 @@ export function CreateSpellModal({ isOpen, onClose }: CreateSpellModalProps) {
           </div>
 
           {/* API Error */}
-          {createSpell.isError && (
-            <AlertMessage variant="error" message="Failed to create spell. Please check your inputs and try again." />
+          {isError && (
+            <AlertMessage variant="error" message="Failed to save spell. Please check your inputs and try again." />
           )}
 
           {/* Success */}
-          {createSpell.isSuccess && (
-            <AlertMessage variant="success" message="✓ Spell inscribed in the archives!" />
+          {isSuccess && (
+            <AlertMessage variant="success" message={isEditMode ? '✓ Spell updated!' : '✓ Spell inscribed in the archives!'} />
           )}
 
           {/* Footer buttons inside form so Enter submits */}
@@ -415,15 +486,17 @@ export function CreateSpellModal({ isOpen, onClose }: CreateSpellModalProps) {
               onClick={handleClose}
               className="btn-secondary"
             >
-              {createSpell.isSuccess ? 'Close' : 'Cancel'}
+              {isSuccess ? 'Close' : 'Cancel'}
             </button>
-            {!createSpell.isSuccess && (
+            {!isSuccess && (
               <button
                 type="submit"
-                disabled={createSpell.isPending}
+                disabled={isPending}
                 className="btn-gold disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {createSpell.isPending ? 'Inscribing…' : 'Create Spell'}
+                {isPending
+                  ? (isEditMode ? 'Saving…' : 'Inscribing…')
+                  : (isEditMode ? 'Save Changes' : 'Create Spell')}
               </button>
             )}
           </div>

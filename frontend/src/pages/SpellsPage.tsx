@@ -2,7 +2,7 @@
  * Spells List Page
  */
 import { useState } from 'react';
-import { useSpells } from '../hooks/useSpells';
+import { useSpells, useSpellSources } from '../hooks/useSpells';
 import { SpellCard } from '../components/SpellCard';
 import { ImportSpellsModal } from '../components/ImportSpellsModal';
 import { CreateSpellModal } from '../components/CreateSpellModal';
@@ -23,15 +23,19 @@ const SCHOOLS = [
 export function SpellsPage() {
   const [level, setLevel] = useState<number | undefined>(undefined);
   const [school, setSchool] = useState<string | undefined>(undefined);
+  const [source, setSource] = useState<string | undefined>(undefined);
   const [search, setSearch] = useState('');
   const [page, setPage] = useState(1);
   const [showImport, setShowImport] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [showClear, setShowClear] = useState(false);
 
+  const { data: sourcesData } = useSpellSources();
+
   const { data, isLoading, error } = useSpells({
     level,
     school,
+    source,
     search: search || undefined,
     page,
     page_size: 20,
@@ -136,6 +140,27 @@ export function SpellsPage() {
             </div>
           </div>
 
+          {/* Source filter */}
+          <div>
+            <label htmlFor="source" className="block text-sm font-display font-medium text-parchment-300 mb-1">
+              Source
+            </label>
+            <select
+              id="source"
+              value={source ?? ''}
+              onChange={(e) => {
+                setSource(e.target.value || undefined);
+                setPage(1);
+              }}
+              className="dnd-input font-body"
+            >
+              <option value="">All Sources</option>
+              {(sourcesData ?? []).map((s) => (
+                <option key={s} value={s}>{s}</option>
+              ))}
+            </select>
+          </div>
+
           <div className="flex gap-2">
             <button type="submit" className="btn-gold text-sm">
               Apply Filters
@@ -146,6 +171,7 @@ export function SpellsPage() {
                 setSearch('');
                 setLevel(undefined);
                 setSchool(undefined);
+                setSource(undefined);
                 setPage(1);
               }}
               className="btn-secondary text-sm"
@@ -176,28 +202,66 @@ export function SpellsPage() {
           </div>
 
           {/* Pagination */}
-          {data.count > 20 && (
-            <div className="flex justify-center items-center gap-3">
-              <button
-                onClick={() => setPage((p) => Math.max(1, p - 1))}
-                disabled={!data.previous}
-                className="btn-secondary text-sm disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                ← Previous
-              </button>
-              <span className="font-display text-sm text-parchment-300 px-3 py-1.5
-                               bg-smoke-800 border border-smoke-600 rounded">
-                Page {page}
-              </span>
-              <button
-                onClick={() => setPage((p) => p + 1)}
-                disabled={!data.next}
-                className="btn-secondary text-sm disabled:opacity-40 disabled:cursor-not-allowed"
-              >
-                Next →
-              </button>
-            </div>
-          )}
+          {data.count > 20 && (() => {
+            const totalPages = Math.ceil(data.count / 20);
+            const pageButtons = Array.from({ length: Math.min(totalPages, 10) }, (_, i) => i + 1);
+            const showLastPage = totalPages > 10;
+            return (
+              <div className="flex justify-center items-center gap-1.5 flex-wrap mt-4">
+                <button
+                  onClick={() => setPage((p) => Math.max(1, p - 1))}
+                  disabled={page === 1}
+                  className="btn-secondary text-sm px-3 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  ←
+                </button>
+
+                {pageButtons.map((n) => (
+                  <button
+                    key={n}
+                    onClick={() => setPage(n)}
+                    className="font-display text-sm w-9 h-9 rounded transition-colors"
+                    style={
+                      page === n
+                        ? { background: '#451a03', color: '#fbbf24', border: '1px solid #b45309', fontWeight: 700 }
+                        : undefined
+                    }
+                  >
+                    <span className={page === n ? '' : 'btn-secondary block w-full h-full rounded leading-9'}>
+                      {n}
+                    </span>
+                  </button>
+                ))}
+
+                {showLastPage && (
+                  <>
+                    <span className="font-display text-smoke-500 px-1 select-none">…</span>
+                    <button
+                      onClick={() => setPage(totalPages)}
+                      className="font-display text-sm w-9 h-9 rounded transition-colors"
+                      style={
+                        page === totalPages
+                          ? { background: '#451a03', color: '#fbbf24', border: '1px solid #b45309', fontWeight: 700 }
+                          : undefined
+                      }
+                    >
+                      <span className={page === totalPages ? '' : 'btn-secondary block w-full h-full rounded leading-9'}>
+                        {totalPages}
+                      </span>
+                    </button>
+                  </>
+                )}
+
+                <button
+                  onClick={() => setPage((p) => Math.min(totalPages, p + 1))}
+                  disabled={page >= totalPages}
+                  className="btn-secondary text-sm px-3 disabled:opacity-40 disabled:cursor-not-allowed"
+                >
+                  →
+                </button>
+              </div>
+            );
+          })()}
 
           {/* Empty State */}
           {data.results.length === 0 && (

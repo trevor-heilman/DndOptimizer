@@ -30,11 +30,34 @@ export function useCreateSpell() {
   });
 }
 
+export function useUpdateSpell() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ id, data }: { id: string; data: Partial<Spell> }) =>
+      spellService.updateSpell(id, data),
+    onSuccess: (_data, { id }) => {
+      queryClient.invalidateQueries({ queryKey: ['spells'] });
+      queryClient.invalidateQueries({ queryKey: ['spell', id] });
+    },
+  });
+}
+
+export function useDuplicateSpell() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => spellService.duplicateSpell(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['spells'] });
+      queryClient.invalidateQueries({ queryKey: ['spellCounts'] });
+    },
+  });
+}
+
 export function useImportSpells() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ spells, isSystem }: { spells: any[]; isSystem?: boolean }) =>
-      spellService.importSpells(spells, isSystem),
+    mutationFn: ({ spells, isSystem, source }: { spells: any[]; isSystem?: boolean; source?: string }) =>
+      spellService.importSpells(spells, isSystem, source),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['spells'] });
       queryClient.invalidateQueries({ queryKey: ['spellCounts'] });
@@ -67,5 +90,13 @@ export function useSpellCounts() {
   return useQuery({
     queryKey: ['spellCounts'],
     queryFn: () => spellService.getSpellCounts(),
+  });
+}
+
+export function useSpellSources() {
+  return useQuery({
+    queryKey: ['spellSources'],
+    queryFn: () => spellService.getSpellSources(),
+    staleTime: 60_000, // sources change infrequently
   });
 }

@@ -180,6 +180,41 @@ mypy .
 
 See the [documentation/](documentation/) folder for requirements and architecture docs.
 
+## Latest Session Update (2026-03-10)
+
+- Added spellbook character progression support:
+   - `character_level` added to backend model + serializer + migration
+   - create spellbook modal now supports class + level
+   - spellbook detail now shows class-specific spell slot table (full caster, half caster, warlock)
+- Added spellbook damage analysis enhancements:
+   - new compare panel supports `Compare at Slot` and `By Level` modes
+   - by-level line chart handles cantrips and leveled spells
+- Improved spell comparison UX:
+   - replaced native dropdown with searchable combobox on compare page
+   - removed `slice(0, 50)` result cap so all matching spells can be selected
+- Fixed class filter root cause for add-to-spellbook flow:
+   - parser now persists `classes` from imported spell JSON
+   - existing DB rows still require a one-time backfill command after deploy
+- Stabilized rebuild workflow:
+   - fixed frontend tooltip typing issue in `SpellbookDetailPage`
+   - hardened `scripts/rebuild.sh` so missing frontend container does not abort rebuild
+   - switched frontend recreation to `podman-compose up -d frontend` for config consistency
+
+### Pending Operational Step
+
+After deploying, run a one-time class backfill for existing spells so class filtering works for old records:
+
+```bash
+podman exec dndoptimizer_backend_1 python manage.py shell -c 'from spells.models import Spell; updated=0
+for s in Spell.objects.all():
+      c=s.raw_data.get("classes",[])
+      if c and not s.classes:
+            s.classes=[x["name"].lower() if isinstance(x,dict) else str(x).lower() for x in c]
+            s.save(update_fields=["classes"])
+            updated+=1
+print(updated)'
+```
+
 ✅ **Phase 1-4 Complete: Full-Stack Production-Ready Application**
 
 ### Completed Backend (Phase 1-3)
