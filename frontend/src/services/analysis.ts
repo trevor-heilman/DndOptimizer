@@ -29,13 +29,15 @@ export const analysisService = {
   /**
    * Compare two spells in a given context.
    * POST /api/analysis/compare/
+   * The backend wraps analysis in a SpellComparison model; we return just the
+   * `results` sub-object which matches CompareSpellsResponse.
    */
   async compareSpells(request: CompareSpellsRequest): Promise<CompareSpellsResponse> {
-    const response = await apiClient.post<CompareSpellsResponse>(
+    const response = await apiClient.post<{ results: CompareSpellsResponse }>(
       '/analysis/compare/',
       request
     );
-    return response.data;
+    return response.data.results;
   },
 
   /**

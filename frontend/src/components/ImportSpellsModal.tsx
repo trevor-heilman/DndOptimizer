@@ -38,6 +38,7 @@ export function ImportSpellsModal({ isOpen, onClose }: ImportSpellsModalProps) {
   const [parsedCount, setParsedCount] = useState<number | null>(null);
   const [parsedSpells, setParsedSpells] = useState<any[]>([]);
   const [isSystem, setIsSystem] = useState(false);
+  const [sourceOverride, setSourceOverride] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
   const importSpells = useImportSpells();
 
@@ -49,6 +50,7 @@ export function ImportSpellsModal({ isOpen, onClose }: ImportSpellsModalProps) {
     setParsedCount(null);
     setParsedSpells([]);
     setIsSystem(false);
+    setSourceOverride('');
     importSpells.reset();
     onClose();
   };
@@ -122,7 +124,7 @@ export function ImportSpellsModal({ isOpen, onClose }: ImportSpellsModalProps) {
 
   const handleImport = async () => {
     if (parsedSpells.length === 0) return;
-    await importSpells.mutateAsync({ spells: parsedSpells, isSystem });
+    await importSpells.mutateAsync({ spells: parsedSpells, isSystem, source: sourceOverride.trim() });
   };
 
   const importResult = importSpells.data;
@@ -246,6 +248,22 @@ export function ImportSpellsModal({ isOpen, onClose }: ImportSpellsModalProps) {
                 </span>
               </div>
             </label>
+          )}
+
+          {/* Optional source override */}
+          {!importSpells.isSuccess && (
+            <div>
+              <label className="block font-display text-sm font-medium text-parchment-300 mb-1">
+                Source Override <span className="font-body text-xs text-parchment-500 font-normal">(optional)</span>
+              </label>
+              <input
+                type="text"
+                value={sourceOverride}
+                onChange={(e) => setSourceOverride(e.target.value)}
+                className="dnd-input font-body text-sm"
+                placeholder="e.g. Player's Handbook — leave blank to use source from JSON"
+              />
+            </div>
           )}
 
           {/* Import Error */}

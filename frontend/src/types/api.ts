@@ -74,6 +74,7 @@ export interface Spell {
   material?: string;
   description: string;
   higher_level?: string;
+  upcast_base_level?: number;
   upcast_dice_increment?: number;
   upcast_die_size?: number;
   raw_data?: Record<string, any>;
@@ -98,6 +99,7 @@ export interface SpellListParams {
   school?: string;
   search?: string;
   class_name?: string;
+  source?: string;
 }
 
 // Spellbook types
@@ -117,6 +119,7 @@ export interface Spellbook {
   name: string;
   description?: string;
   character_class?: string;
+  character_level?: number;
   /**
    * Only present on detail endpoint (SpellbookDetailSerializer).
    * Use prepared_spells[n].spell to access spell data.
@@ -138,12 +141,14 @@ export interface SpellbookCreate {
   name: string;
   description?: string;
   character_class?: string;
+  character_level?: number;
 }
 
 export interface SpellbookUpdate {
   name?: string;
   description?: string;
   character_class?: string;
+  character_level?: number;
 }
 
 // Analysis types
@@ -200,11 +205,20 @@ export interface CompareSpellsRequest extends AnalysisContext {
   spell_b_id: string;
 }
 
+/** One spell's entry inside the compare results */
+export interface SpellComparisonResult {
+  name: string;
+  level: number;
+  expected_damage: number;
+  efficiency: number;
+}
+
+/** Shape of response.data.results from POST /api/analysis/compare/ */
 export interface CompareSpellsResponse {
-  spell_a: SpellAnalysisResult;
-  spell_b: SpellAnalysisResult;
-  winner: 'spell_a' | 'spell_b' | 'tie';
-  difference: number;
+  spell_a: SpellComparisonResult;
+  spell_b: SpellComparisonResult;
+  winner: 'spell_a' | 'spell_b';
+  damage_difference: number;
 }
 
 // Pagination
