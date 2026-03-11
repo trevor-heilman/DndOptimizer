@@ -3,18 +3,40 @@
  */
 import { useState } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
-import { useSpell } from '../hooks/useSpells';
+import { useSpell, useDuplicateSpell, useDeleteSpell } from '../hooks/useSpells';
 import { useAnalyzeSpell, useGetSpellEfficiency } from '../hooks/useAnalysis';
 import { DamageChart } from '../components/DamageChart';
+import { CantripScalingChart } from '../components/CantripScalingChart';
 import { AnalysisContextForm } from '../components/AnalysisContextForm';
 import { EfficiencyChart } from '../components/EfficiencyChart';
 import { LoadingSpinner, AlertMessage } from '../components/ui';
+import { CreateSpellModal } from '../components/CreateSpellModal';
+import { useAuth } from '../contexts/AuthContext';
 import type { AnalysisContext } from '../types/api';
 
 export function SpellDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const { data: spell, isLoading, error } = useSpell(id!);
+  const { user } = useAuth();
+  const duplicateSpell = useDuplicateSpell();
+  const deleteSpell = useDeleteSpell();
+  const [showEdit, setShowEdit] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const canEdit = !!user && (user.is_staff || (spell?.created_by != null && spell.created_by === user.id));
+
+  const handleDuplicate = async () => {
+    if (!spell) return;
+    const copy = await duplicateSpell.mutateAsync(spell.id);
+    navigate(`/spells/${copy.id}`);
+  };
+
+  const handleDelete = async () => {
+    if (!spell) return;
+    await deleteSpell.mutateAsync(spell.id);
+    navigate('/spells');
+  };
+
   const analyzeSpell = useAnalyzeSpell();
   const getEfficiency = useGetSpellEfficiency();
   const [analysisContext, setAnalysisContext] = useState<AnalysisContext>({
@@ -62,7 +84,37 @@ export function SpellDetailPage() {
         <Link to="/spells" className="font-body text-gold-500 hover:text-gold-400 text-sm mb-3 inline-flex items-center gap-1 transition-colors">
           ← Back to Spells
         </Link>
-        <h1 className="font-display text-4xl font-bold text-gold-300 mb-3">{spell.name}</h1>
+        <div className="flex items-start justify-between gap-4 mb-3">
+          <h1 className="font-display text-4xl font-bold text-gold-300">{spell.name}</h1>
+          {user && (
+            <div className="flex shrink-0 gap-2 mt-1">
+              {canEdit && (
+                <button
+                  onClick={() => setShowEdit(true)}
+                  className="btn-secondary text-sm"
+                >
+                  ✎ Edit
+                </button>
+              )}
+              {canEdit && (
+                <button
+                  onClick={() => setConfirmDelete(true)}
+                  disabled={deleteSpell.isPending}
+                  className="text-sm px-3 py-1.5 rounded-md border border-crimson-800 text-crimson-400 hover:bg-crimson-950 hover:border-crimson-700 transition-colors font-display disabled:opacity-50"
+                >
+                  {deleteSpell.isPending ? 'Deleting…' : '🗑 Delete'}
+                </button>
+              )}
+              <button
+                onClick={handleDuplicate}
+                disabled={duplicateSpell.isPending}
+                className="btn-secondary text-sm disabled:opacity-50"
+              >
+                {duplicateSpell.isPending ? 'Duplicating…' : '⎘ Duplicate'}
+              </button>
+            </div>
+          )}
+        </div>
         <div className="flex flex-wrap items-center gap-2">
           <span className="font-display text-sm px-3 py-1 rounded"
                 style={{ background: '#2a2a35', color: '#fbbf24', border: '1px solid #4b4b58' }}>
@@ -84,6 +136,26 @@ export function SpellDetailPage() {
               Ritual
             </span>
           )}
+          {spell.tags && spell.tags.map((tag) => {
+            const TAG_STYLES: Record<string, { bg: string; color: string }> = {
+              damage:        { bg: '#450a0a55', color: '#fca5a5' },
+              healing:       { bg: '#052e1655', color: '#86efac' },
+              aoe:           { bg: '#3c200555', color: '#fdba74' },
+              crowd_control: { bg: '#2e1a5f55', color: '#c4b5fd' },
+              summoning:     { bg: '#0c1a3355', color: '#93c5fd' },
+              buff:          { bg: '#3d2a0a55', color: '#fde68a' },
+              debuff:        { bg: '#1a0a2e55', color: '#d8b4fe' },
+              utility:       { bg: '#1e1e2e55', color: '#94a3b8' },
+            };
+            const style = TAG_STYLES[tag] ?? TAG_STYLES.utility;
+            const label = tag.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
+            return (
+              <span key={tag} className="font-display text-sm px-3 py-1 rounded"
+                    style={{ background: style.bg, color: style.color, border: `1px solid ${style.color}33` }}>
+                {label}
+              </span>
+            );
+          })}
         </div>
       </div>
 
@@ -148,12 +220,40 @@ export function SpellDetailPage() {
             </>
           )}
           {spell.upcast_dice_increment && spell.upcast_die_size && (
-            <div className="flex items-center gap-2">
-              <span className="w-32 text-sm font-display font-medium text-smoke-400">Upcast Bonus:</span>
-              <span className="text-parchment-100">
-                +{spell.upcast_dice_increment}d{spell.upcast_die_size} per level
-              </span>
-            </div>
+            spell.level === 0 ? (
+              <>
+                <div className="flex items-start gap-2">
+                  <span className="shrink-0 w-32 text-sm font-display font-medium text-smoke-400">Cantrip Scaling</span>
+                  <div className="space-y-1">
+                    {[
+                      { levels: 'Levels 1–4',  tier: 1 },
+                      { levels: 'Levels 5–10', tier: 2 },
+                      { levels: 'Levels 11–16', tier: 3 },
+                      { levels: 'Level 17+',  tier: 4 },
+                    ].map(({ levels, tier }) => (
+                      <div key={tier} className="flex items-center gap-3">
+                        <span className="text-xs text-smoke-500 w-28">{levels}</span>
+                        <span className="text-sm font-bold text-parchment-100">
+                          {tier * spell.upcast_dice_increment!}d{spell.upcast_die_size}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                <CantripScalingChart
+                  upcastDiceIncrement={spell.upcast_dice_increment}
+                  upcastDieSize={spell.upcast_die_size}
+                />
+              </>
+            ) : (
+              <div className="flex items-center gap-2">
+                <span className="w-32 text-sm font-display font-medium text-smoke-400">Upcast Bonus:</span>
+                <span className="text-parchment-100">
+                  +{spell.upcast_dice_increment}d{spell.upcast_die_size}{' '}
+                  per slot level above {spell.upcast_base_level ?? spell.level}
+                </span>
+              </div>
+            )
           )}
         </div>
       </div>
@@ -165,6 +265,11 @@ export function SpellDetailPage() {
             <h2 className="dnd-section-title text-xl mb-1">Damage Components</h2>
             <p className="font-body text-sm text-smoke-400 mb-4">
               Average: <span className="text-gold-400 font-semibold">{totalAverageDamage.toFixed(1)}</span> damage
+              {spell.level === 0 && (
+                <span className="ml-3 text-xs bg-smoke-700 text-parchment-400 px-2 py-0.5 rounded">
+                  ⚠ Cantrip — damage increases at character levels 5, 11, and 17
+                </span>
+              )}
             </p>
             <div className="space-y-3">
               {spell.damage_components.map((dc, index) => {
@@ -191,8 +296,90 @@ export function SpellDetailPage() {
                 );
               })}
             </div>
+
+            {/* Per-level damage breakdown */}
+            {spell.upcast_dice_increment && spell.upcast_die_size && (
+              <div className="mt-4 border-t border-smoke-700 pt-4">
+                <h3 className="font-display text-sm font-semibold text-smoke-300 uppercase tracking-wide mb-3">
+                  {spell.level === 0 ? 'Damage by Character Level' : 'Damage by Spell Slot'}
+                </h3>
+                {spell.level === 0 ? (
+                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+                    {[
+                      { label: 'Levels 1–4',   tier: 1 },
+                      { label: 'Levels 5–10',  tier: 2 },
+                      { label: 'Levels 11–16', tier: 3 },
+                      { label: 'Level 17+',    tier: 4 },
+                    ].map(({ label, tier }) => {
+                      const dice = tier * spell.upcast_dice_increment!;
+                      const avg  = dice * (spell.upcast_die_size! + 1) / 2;
+                      const max  = dice * spell.upcast_die_size!;
+                      return (
+                        <div key={tier} className="bg-smoke-800 rounded-lg p-3 border border-smoke-700 text-center">
+                          <div className="font-body text-xs text-smoke-400 mb-1">{label}</div>
+                          <div className="font-display text-lg font-bold text-parchment-100">{dice}d{spell.upcast_die_size}</div>
+                          <div className="font-body text-xs mt-0.5">
+                            avg <span className="text-gold-400 font-semibold">{avg.toFixed(1)}</span>
+                            <span className="text-smoke-500 ml-1">({dice}–{max})</span>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                ) : (
+                  <div className="overflow-x-auto">
+                    <table className="w-full text-sm font-body">
+                      <thead>
+                        <tr className="border-b border-smoke-700 text-xs text-smoke-400">
+                          <th className="text-left py-1.5 pr-6 font-display">Slot</th>
+                          <th className="text-left py-1.5 pr-4 font-display">Bonus Dice</th>
+                          <th className="text-right py-1.5 pr-4 font-display">Avg</th>
+                          <th className="text-right py-1.5 font-display">Range</th>
+                        </tr>
+                      </thead>
+                      <tbody>
+                        {(() => {
+                          // Pre-sum base damage across all components once
+                          let baseMin = 0, baseAvg = 0, baseMax = 0;
+                          for (const dc of spell.damage_components) {
+                            baseMin += dc.dice_count + (dc.flat_modifier ?? 0);
+                            baseAvg += dc.dice_count * (dc.die_size + 1) / 2 + (dc.flat_modifier ?? 0);
+                            baseMax += dc.dice_count * dc.die_size + (dc.flat_modifier ?? 0);
+                          }
+                          const upcastBase = spell.upcast_base_level ?? spell.level;
+                          return Array.from({ length: 10 - spell.level }, (_, i) => {
+                            const slot      = spell.level + i;
+                            const extraDice = slot > upcastBase ? (slot - upcastBase) * spell.upcast_dice_increment! : 0;
+                            const extraAvg  = extraDice * (spell.upcast_die_size! + 1) / 2;
+                            const finalMin  = Math.round(baseMin + extraDice);
+                            const finalAvg  = baseAvg + extraAvg;
+                            const finalMax  = Math.round(baseMax + extraDice * spell.upcast_die_size!);
+                            const isBase    = slot === spell.level;
+                            return (
+                              <tr key={slot} className="border-b border-smoke-800 hover:bg-smoke-800/40">
+                                <td className="py-1.5 pr-6">
+                                  {isBase
+                                    ? <span className="text-gold-400 font-semibold">Slot {slot} <span className="text-xs text-smoke-400 font-normal">(base)</span></span>
+                                    : <span className="text-parchment-300">Slot {slot}</span>
+                                  }
+                                </td>
+                                <td className="py-1.5 pr-4 text-smoke-400 text-xs">
+                                  {extraDice > 0 ? <span className="text-gold-500">+{extraDice}d{spell.upcast_die_size}</span> : '—'}
+                                </td>
+                                <td className="py-1.5 pr-4 text-right font-semibold text-gold-400">{finalAvg.toFixed(1)}</td>
+                                <td className="py-1.5 text-right text-smoke-400">{finalMin}–{finalMax}</td>
+                              </tr>
+                            );
+                          });
+                        })()}
+                      </tbody>
+                    </table>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
-          <DamageChart damageComponents={spell.damage_components} title="Damage Distribution" />
+          <DamageChart damageComponents={spell.damage_components} spell={spell} title="Damage Distribution" />
         </>
       )}
 
@@ -312,13 +499,13 @@ export function SpellDetailPage() {
                       style={{ background: '#3d2a0a55', color: '#fcd34d', border: '1px solid #78350f' }}>
                   Requires Review
                 </span>
-                {!spell.parsing_metadata.is_reviewed && (
+                {!spell.parsing_metadata.reviewed_at && (
                   <span className="text-sm text-smoke-400 italic">Not yet reviewed</span>
                 )}
               </div>
             )}
             
-            {spell.parsing_metadata.is_reviewed && spell.parsing_metadata.reviewed_at && (
+            {spell.parsing_metadata.reviewed_at && (
               <div className="flex items-center gap-2">
                 <span className="w-32 font-display text-sm font-medium text-smoke-400">Reviewed:</span>
                 <span className="text-sm text-parchment-300">
@@ -339,6 +526,44 @@ export function SpellDetailPage() {
           ← Back to List
         </button>
       </div>
+
+      {/* Edit Spell Modal */}
+      <CreateSpellModal
+        isOpen={showEdit}
+        onClose={() => setShowEdit(false)}
+        spellToEdit={spell}
+      />
+
+      {/* Delete Confirmation */}
+      {confirmDelete && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 backdrop-blur-sm p-4">
+          <div className="dnd-card max-w-sm w-full p-6 border-l-4 border-crimson-700">
+            <h3 className="font-display text-xl font-semibold text-crimson-400 mb-2">Delete Spell?</h3>
+            <p className="font-body text-parchment-300 text-sm mb-6">
+              <span className="font-semibold text-parchment-100">{spell.name}</span> will be permanently deleted. This cannot be undone.
+            </p>
+            {deleteSpell.isError && (
+              <p className="font-body text-crimson-400 text-sm mb-4">Failed to delete spell. Please try again.</p>
+            )}
+            <div className="flex justify-end gap-3">
+              <button
+                onClick={() => setConfirmDelete(false)}
+                disabled={deleteSpell.isPending}
+                className="btn-secondary text-sm"
+              >
+                Cancel
+              </button>
+              <button
+                onClick={handleDelete}
+                disabled={deleteSpell.isPending}
+                className="text-sm px-4 py-2 rounded-md border border-crimson-700 bg-crimson-950 text-crimson-300 hover:bg-crimson-900 transition-colors font-display disabled:opacity-50"
+              >
+                {deleteSpell.isPending ? 'Deleting…' : 'Delete'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
