@@ -8,11 +8,11 @@ This document covers free options for deploying DndOptimizer with a real domain 
 
 ## Local Development (Current / Recommended)
 
-**Stack:** Podman + Caddy (replaces nginx for dual-stack IPv4+IPv6 support)
+**Stack:** Podman + nginx (dual-stack IPv4+IPv6)
 
-The default nginx configuration only binds IPv4 (`127.0.0.1`). Modern browsers resolve `localhost` to IPv6 (`::1`) first, causing "connection refused" errors on Windows with Podman. Caddy binds both stacks automatically.
-
-See [Caddy switch implementation](#local-fix-caddy) below.
+The frontend container runs nginx with `listen 80; listen [::]:80;` providing dual-stack support.
+The Windows hosts file pins `127.0.0.1 localhost` so browsers always reach the IPv4 interface.
+See `frontend/nginx.conf` for the full nginx configuration.
 
 ---
 
@@ -68,7 +68,7 @@ fly deploy
 4. Register domain on [DuckDNS](https://www.duckdns.org) pointing to VM IP
 5. Install Certbot: `snap install certbot --classic`
 6. Run `certbot certonly --standalone -d yourapp.duckdns.org`
-7. Configure nginx/Caddy to use the issued cert
+7. Configure nginx to use the issued cert
 8. Set up DuckDNS cron for dynamic IP updates
 
 **Caveats:**
@@ -135,32 +135,4 @@ Before going live, ensure the following are addressed:
 
 ---
 
-## Local Fix: Caddy {#local-fix-caddy}
-
-Replace the nginx stage in [frontend/Dockerfile](../frontend/Dockerfile) with Caddy:
-
-```dockerfile
-# Production stage — Caddy (dual-stack IPv4+IPv6, fixes localhost on Windows/Podman)
-FROM caddy:alpine
-COPY --from=build /app/dist /srv
-COPY Caddyfile /etc/caddy/Caddyfile
-EXPOSE 80
-CMD ["caddy", "run", "--config", "/etc/caddy/Caddyfile"]
-```
-
-`frontend/Caddyfile`:
-```
-:80 {
-    root * /srv
-    try_files {path} /index.html
-    file_server
-    encode gzip
-}
-```
-
-This replaces nginx entirely — gzip, SPA routing, and dual-stack are all handled. Rebuild with:
-```powershell
-podman build -t localhost/dndoptimizer_frontend:latest frontend/
-podman stop dndoptimizer_frontend_1 ; podman rm dndoptimizer_frontend_1
-podman run -d --name dndoptimizer_frontend_1 --network dndoptimizer_default -p 80:80 localhost/dndoptimizer_frontend:latest
-```
+_This document was last updated March 11, 2026._

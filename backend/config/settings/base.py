@@ -16,6 +16,7 @@ INSTALLED_APPS = [
     'django.contrib.staticfiles',
     'rest_framework',
     'rest_framework_simplejwt',
+    'rest_framework_simplejwt.token_blacklist',
     'django_filters',
     'corsheaders',
     'drf_spectacular',
@@ -69,7 +70,7 @@ else:
     DATABASES = {
         'default': {
             'ENGINE': 'django.db.backends.postgresql',
-            'NAME': os.environ.get('POSTGRES_DB', 'dndoptimizer'),
+            'NAME': os.environ.get('POSTGRES_DB', 'spellwright'),
             'USER': os.environ.get('POSTGRES_USER', 'dnduser'),
             'PASSWORD': os.environ.get('POSTGRES_PASSWORD', 'dndpass'),
             'HOST': os.environ.get('POSTGRES_HOST', 'db'),
@@ -159,7 +160,7 @@ CACHES = {
 
 # OpenAPI / drf-spectacular
 SPECTACULAR_SETTINGS = {
-    'TITLE': 'DndOptimizer API',
+    'TITLE': 'Spellwright API',
     'DESCRIPTION': 'D&D 5e spell analysis and optimization platform.',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False,

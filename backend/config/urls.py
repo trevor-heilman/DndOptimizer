@@ -12,7 +12,7 @@ def api_root(request):
     API root endpoint with available endpoints.
     """
     return Response({
-        'message': 'Welcome to DndOptimizer API',
+        'message': 'Welcome to Spellwright API',
         'version': '1.0.0',
         'endpoints': {
             'admin': '/admin/',

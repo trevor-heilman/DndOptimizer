@@ -13,7 +13,9 @@
 import { useState, useMemo } from 'react';
 import { useSpells } from '../hooks/useSpells';
 import { useAddSpellToSpellbook } from '../hooks/useSpellbooks';
-import { getSchoolColors } from '../constants/spellColors';
+import { getSchoolColors, DAMAGE_TYPES } from '../constants/spellColors';
+import { MultiSelect } from './MultiSelect';
+import type { MultiSelectOption } from './MultiSelect';
 import type { Spell } from '../types/api';
 
 // ─── Constants ───────────────────────────────────────────────────────────────
@@ -199,12 +201,26 @@ export interface AddSpellPickerProps {
   onClose: () => void;
 }
 
+const SCHOOL_OPTIONS: MultiSelectOption[] = SCHOOLS.map((s) => ({
+  value: s,
+  label: s.charAt(0).toUpperCase() + s.slice(1),
+}));
+
+const CLASS_OPTIONS: MultiSelectOption[] = CLASS_CHOICES.map((c) => ({
+  value: c.value,
+  label: c.label,
+}));
+
 export function AddSpellPicker({ spellbookId, alreadyAddedIds, spellbookClass, onClose }: AddSpellPickerProps) {
   const [search, setSearch] = useState('');
-  const [levelFilter, setLevelFilter] = useState<number | null>(null);
-  const [schoolFilter, setSchoolFilter] = useState('');
-  const [classFilter, setClassFilter] = useState(spellbookClass ?? '');
-  const [tagFilter, setTagFilter] = useState('');
+  // Multi-select levels: empty Set = all levels
+  const [levelFilter, setLevelFilter] = useState<Set<number>>(new Set());
+  const [schoolFilter, setSchoolFilter] = useState<string[]>([]);
+  const [classFilter, setClassFilter] = useState<string[]>(spellbookClass ? [spellbookClass] : []);
+  const [tagFilter, setTagFilter] = useState<string[]>([]);
+  const [damageTypeFilter, setDamageTypeFilter] = useState<string[]>([]);
+  const [concentrationOnly, setConcentrationOnly] = useState(false);
+  const [componentFilter, setComponentFilter] = useState({ v: false, s: false, m: false });
   const [addingIds, setAddingIds] = useState<Set<string>>(new Set());
   // Track adds locally so buttons flip to "Added" without closing
   const [localAddedIds, setLocalAddedIds] = useState<Set<string>>(new Set(alreadyAddedIds));
@@ -217,15 +233,23 @@ export function AddSpellPicker({ spellbookId, alreadyAddedIds, spellbookClass, o
   const filtered = useMemo(() => {
     const q = search.toLowerCase();
     return allSpells.filter(spell => {
-      if (levelFilter !== null && spell.level !== levelFilter) return false;
-      if (schoolFilter && spell.school !== schoolFilter) return false;
-      // Class filter: show spell if it has no class data yet, or if the class matches
-      if (classFilter && spell.classes && spell.classes.length > 0 && !spell.classes.includes(classFilter)) return false;
-      if (tagFilter && !spell.tags?.includes(tagFilter)) return false;
+      if (levelFilter.size > 0 && !levelFilter.has(spell.level)) return false;
+      if (schoolFilter.length > 0 && !schoolFilter.includes(spell.school)) return false;
+      // Class filter: show spell if it has no class data yet, or if any selected class matches
+      if (classFilter.length > 0 && spell.classes && spell.classes.length > 0 && !classFilter.some(c => spell.classes!.includes(c))) return false;
+      if (tagFilter.length > 0 && !tagFilter.some(t => spell.tags?.includes(t))) return false;
+      if (damageTypeFilter.length > 0) {
+        const dmgTypes = spell.damage_components?.map(dc => dc.damage_type) ?? [];
+        if (!damageTypeFilter.some(dt => dmgTypes.includes(dt))) return false;
+      }
+      if (concentrationOnly && !spell.concentration) return false;
+      if (componentFilter.v && !spell.components_v) return false;
+      if (componentFilter.s && !spell.components_s) return false;
+      if (componentFilter.m && !spell.components_m) return false;
       if (q && !spell.name.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [allSpells, levelFilter, schoolFilter, classFilter, tagFilter, search]);
+  }, [allSpells, levelFilter, schoolFilter, classFilter, tagFilter, damageTypeFilter, concentrationOnly, componentFilter, search]);
 
   const grouped = useMemo(() => {
     const map = new Map<number, Spell[]>();
@@ -298,12 +322,12 @@ export function AddSpellPicker({ spellbookId, alreadyAddedIds, spellbookClass, o
             autoFocus
           />
 
-          {/* Level pills */}
+          {/* Level pills — multi-select; "All" clears selection */}
           <div className="flex flex-wrap gap-1.5">
             <button
-              onClick={() => setLevelFilter(null)}
+              onClick={() => setLevelFilter(new Set())}
               className={`font-display text-xs px-2.5 py-1 rounded border transition-colors ${
-                levelFilter === null
+                levelFilter.size === 0
                   ? 'bg-arcane-800/80 border-arcane-600 text-arcane-200'
                   : 'border-smoke-600 text-smoke-400 hover:border-smoke-500 hover:text-smoke-300'
               }`}
@@ -313,9 +337,15 @@ export function AddSpellPicker({ spellbookId, alreadyAddedIds, spellbookClass, o
             {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9].map(lvl => (
               <button
                 key={lvl}
-                onClick={() => setLevelFilter(levelFilter === lvl ? null : lvl)}
+                onClick={() =>
+                  setLevelFilter(prev => {
+                    const next = new Set(prev);
+                    if (next.has(lvl)) next.delete(lvl); else next.add(lvl);
+                    return next;
+                  })
+                }
                 className={`font-display text-xs px-2.5 py-1 rounded border transition-colors ${
-                  levelFilter === lvl
+                  levelFilter.has(lvl)
                     ? 'bg-arcane-800/80 border-arcane-600 text-arcane-200'
                     : 'border-smoke-600 text-smoke-400 hover:border-smoke-500 hover:text-smoke-300'
                 }`}
@@ -325,38 +355,30 @@ export function AddSpellPicker({ spellbookId, alreadyAddedIds, spellbookClass, o
             ))}
           </div>
 
-          {/* Row: school + class filters */}
+          {/* Row: school + class multi-select filters */}
           <div className="flex gap-2 flex-wrap">
-            <select
+            <MultiSelect
+              placeholder="All Schools"
+              options={SCHOOL_OPTIONS}
               value={schoolFilter}
-              onChange={e => setSchoolFilter(e.target.value)}
-              className="dnd-input font-body text-sm flex-1 min-w-[120px]"
-            >
-              <option value="">All Schools</option>
-              {SCHOOLS.map(s => (
-                <option key={s} value={s}>
-                  {s.charAt(0).toUpperCase() + s.slice(1)}
-                </option>
-              ))}
-            </select>
-            <select
+              onChange={setSchoolFilter}
+              className="flex-1 min-w-[120px]"
+            />
+            <MultiSelect
+              placeholder="All Classes"
+              options={CLASS_OPTIONS}
               value={classFilter}
-              onChange={e => setClassFilter(e.target.value)}
-              className="dnd-input font-body text-sm flex-1 min-w-[120px]"
-            >
-              <option value="">All Classes</option>
-              {CLASS_CHOICES.map(c => (
-                <option key={c.value} value={c.value}>{c.label}</option>
-              ))}
-            </select>
+              onChange={setClassFilter}
+              className="flex-1 min-w-[120px]"
+            />
           </div>
 
-          {/* Tag filter pills */}
+          {/* Tag filter pills — multi-select */}
           <div className="flex flex-wrap gap-1.5">
             <button
-              onClick={() => setTagFilter('')}
+              onClick={() => setTagFilter([])}
               className={`font-display text-xs px-2.5 py-1 rounded border transition-colors ${
-                tagFilter === ''
+                tagFilter.length === 0
                   ? 'bg-smoke-800/80 border-smoke-500 text-smoke-200'
                   : 'border-smoke-700 text-smoke-500 hover:border-smoke-500 hover:text-smoke-300'
               }`}
@@ -366,9 +388,13 @@ export function AddSpellPicker({ spellbookId, alreadyAddedIds, spellbookClass, o
             {TAG_FILTERS.map(tf => (
               <button
                 key={tf.value}
-                onClick={() => setTagFilter(tagFilter === tf.value ? '' : tf.value)}
+                onClick={() =>
+                  setTagFilter(prev =>
+                    prev.includes(tf.value) ? prev.filter(t => t !== tf.value) : [...prev, tf.value]
+                  )
+                }
                 className={`font-display text-xs px-2.5 py-1 rounded border transition-colors ${
-                  tagFilter === tf.value
+                  tagFilter.includes(tf.value)
                     ? 'bg-arcane-800/80 border-arcane-600 text-arcane-200'
                     : 'border-smoke-700 text-smoke-500 hover:border-smoke-500 hover:text-smoke-300'
                 }`}
@@ -376,6 +402,44 @@ export function AddSpellPicker({ spellbookId, alreadyAddedIds, spellbookClass, o
                 {tf.label}
               </button>
             ))}
+          </div>
+
+          {/* Damage Type + Concentration + Components */}
+          <div className="flex flex-wrap gap-3 items-start">
+            <MultiSelect
+              placeholder="All Damage Types"
+              options={DAMAGE_TYPES.map(d => ({ value: d, label: d.charAt(0).toUpperCase() + d.slice(1) }))}
+              value={damageTypeFilter}
+              onChange={setDamageTypeFilter}
+              className="flex-1 min-w-[140px]"
+            />
+            <div className="flex flex-wrap gap-3 items-center">
+              {[
+                { key: 'concentration' as const, label: 'Conc', state: concentrationOnly, set: setConcentrationOnly },
+              ].map(({ key, label, state, set }) => (
+                <label key={key} className="flex items-center gap-1.5 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={state}
+                    onChange={e => set(e.target.checked)}
+                    className="w-3.5 h-3.5 rounded accent-gold-500"
+                  />
+                  <span className="font-body text-xs text-smoke-400 group-hover:text-smoke-200">{label}</span>
+                </label>
+              ))}
+              <span className="font-display text-xs text-smoke-500">Components:</span>
+              {(['v', 's', 'm'] as const).map(c => (
+                <label key={c} className="flex items-center gap-1 cursor-pointer group">
+                  <input
+                    type="checkbox"
+                    checked={componentFilter[c]}
+                    onChange={e => setComponentFilter(prev => ({ ...prev, [c]: e.target.checked }))}
+                    className="w-3.5 h-3.5 rounded accent-gold-500"
+                  />
+                  <span className="font-body text-xs text-smoke-400 group-hover:text-smoke-200 uppercase">{c}</span>
+                </label>
+              ))}
+            </div>
           </div>
         </div>
 
@@ -387,7 +451,7 @@ export function AddSpellPicker({ spellbookId, alreadyAddedIds, spellbookClass, o
             </div>
           ) : grouped.length === 0 ? (
             <p className="font-body text-smoke-400 text-center py-12">
-              {search || levelFilter !== null || schoolFilter
+              {search || levelFilter.size > 0 || schoolFilter.length > 0 || classFilter.length > 0 || tagFilter.length > 0 || damageTypeFilter.length > 0 || concentrationOnly || componentFilter.v || componentFilter.s || componentFilter.m
                 ? 'No spells match your filters.'
                 : 'No spells available to add.'}
             </p>

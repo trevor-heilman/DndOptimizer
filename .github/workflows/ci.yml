@@ -14,7 +14,7 @@ jobs:
       postgres:
         image: postgres:16
         env:
-          POSTGRES_DB: dndoptimizer_test
+          POSTGRES_DB: spellwright_test
           POSTGRES_USER: testuser
           POSTGRES_PASSWORD: testpass
         options: >-
@@ -66,7 +66,7 @@ jobs:
     - name: Run tests with coverage
       env:
         DJANGO_SETTINGS_MODULE: config.settings.test
-        POSTGRES_DB: dndoptimizer_test
+        POSTGRES_DB: spellwright_test
         POSTGRES_USER: testuser
         POSTGRES_PASSWORD: testpass
         POSTGRES_HOST: localhost
@@ -140,12 +140,12 @@ jobs:
     
     - name: Build backend container image
       run: |
-        podman build -t dndoptimizer-backend ./backend
+        podman build -t spellwright-backend ./backend
     
     - name: Test backend container image
       run: |
-        podman run --rm dndoptimizer-backend python --version
+        podman run --rm spellwright-backend python --version
 
     - name: Build frontend container image
       run: |
-        podman build -t dndoptimizer-frontend ./frontend
+        podman build -t spellwright-frontend ./frontend

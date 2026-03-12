@@ -9,7 +9,7 @@
 
 ```bash
 # Navigate to project root
-cd DndOptimizer
+cd Spellwright
 
 # Build and start containers
 podman compose up --build
@@ -226,7 +226,7 @@ podman compose exec backend pytest
 
 ### Check Database
 ```bash
-podman compose exec db psql -U dnduser -d dndoptimizer
+podman compose exec db psql -U dnduser -d spellwright
 ```
 
 ## Troubleshooting

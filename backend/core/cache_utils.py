@@ -1,5 +1,5 @@
 """
-Cache key builders and helpers for DndOptimizer.
+Cache key builders and helpers for Spellwright.
 
 All TTLs are in seconds.  Keys are kept intentionally readable so they can be
 inspected in Redis with KEYS or SCAN.

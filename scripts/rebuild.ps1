@@ -1,6 +1,6 @@
 ﻿<#
 .SYNOPSIS
-    Sync to WSL2, then rebuild and restart the DndOptimizer stack.
+    Sync to WSL2, then rebuild and restart the Spellwright stack.
 
 .DESCRIPTION
     Rsyncs the latest source from Windows to the Ubuntu-24.04 WSL2 filesystem,
@@ -13,18 +13,20 @@
       4. Start new backend container
       5. Restart frontend (refreshes nginx upstream IP cache)
       6. Run Django migrations
-      7. Reset admin password
+      (Password is NOT reset — it lives in the PostgreSQL volume and persists
+       across container rebuilds.  Pass --reset-password to rebuild.sh directly
+       if you wiped the database volume.)
 
 .PARAMETER Frontend
-    Also rebuild and recreate the frontend container.
+    Also rebuild and recreate the frontend container (spellwright_frontend_1).
 
 .PARAMETER SkipPasswordReset
-    Skip the admin password reset step.
+    Skip the admin password reset step (default behaviour — password lives in
+    the PostgreSQL volume and is NOT reset by container rebuild).
 
 .EXAMPLE
     .\scripts\rebuild.ps1
     .\scripts\rebuild.ps1 -Frontend
-    .\scripts\rebuild.ps1 -SkipPasswordReset
 #>
 
 param(
@@ -51,7 +53,6 @@ Write-Host "    Sync complete." -ForegroundColor Green
 # ── 2. Delegate rebuild to WSL2 bash script ──────────────────────────────
 Write-Host "`n[2] Running rebuild in WSL2..." -ForegroundColor Cyan
 
-$bashArgs = ''
 $bashArgs = @()
 if ($Frontend)          { $bashArgs += '--frontend' }
 if ($SkipPasswordReset) { $bashArgs += '--skip-password' }
@@ -59,5 +60,11 @@ if ($SkipPasswordReset) { $bashArgs += '--skip-password' }
 # Pass the sudo password into WSL as WSL_SUDO_PASS so rebuild.sh can use
 # `echo "$WSL_SUDO_PASS" | sudo -S <cmd>` for any elevation needed.
 $env:WSL_SUDO_PASS = $env:UbuntuPW
+# Temporarily suppress NativeCommandError so podman-compose's stderr version
+# string doesn't terminate the script before rebuild.sh finishes.
+$savedPref = $ErrorActionPreference
+$ErrorActionPreference = 'Continue'
 wsl -d Ubuntu-24.04 -- bash "$WslProject/scripts/rebuild.sh" @bashArgs
-if ($LASTEXITCODE -ne 0) { throw "rebuild.sh failed." }
+$wslExit = $LASTEXITCODE
+$ErrorActionPreference = $savedPref
+if ($wslExit -ne 0) { throw "rebuild.sh failed with exit code $wslExit." }

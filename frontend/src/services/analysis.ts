@@ -8,6 +8,10 @@ import type {
   SpellEfficiencyResponse,
   CompareSpellsRequest,
   CompareSpellsResponse,
+  BreakevenRequest,
+  BreakevenResponse,
+  CompareGrowthRequest,
+  CompareGrowthResponse,
 } from '../types/api';
 
 export const analysisService = {
@@ -56,6 +60,23 @@ export const analysisService = {
       max_slot_level: maxLevel,
       ...context,
     });
+    return response.data;
+  },
+  /**
+   * Find the AC and save-bonus breakeven crossover between two spells.
+   * POST /api/analysis/breakeven/
+   */
+  async breakevenAnalysis(request: BreakevenRequest): Promise<BreakevenResponse> {
+    const response = await apiClient.post<BreakevenResponse>('/analysis/breakeven/', request);
+    return response.data;
+  },
+
+  /**
+   * Sweep damage output across character levels (cantrips) or slot levels (spells).
+   * POST /api/analysis/compare_growth/
+   */
+  async compareGrowth(request: CompareGrowthRequest): Promise<CompareGrowthResponse> {
+    const response = await apiClient.post<CompareGrowthResponse>('/analysis/compare_growth/', request);
     return response.data;
   },
 };

@@ -13,6 +13,7 @@ from .serializers import (
     SpellAnalysisRequestSerializer,
     SpellEfficiencyRequestSerializer,
     BreakevenRequestSerializer,
+    CompareGrowthRequestSerializer,
 )
 from spells.models import Spell
 
@@ -34,9 +35,10 @@ class AnalysisViewSet(viewsets.ViewSet):
         serializer.is_valid(raise_exception=True)
         
         data = serializer.validated_data
-        
-        spell_a = Spell.objects.get(id=data['spell_a_id'])
-        spell_b = Spell.objects.get(id=data['spell_b_id'])
+
+        _spells = Spell.objects.prefetch_related('damage_components')
+        spell_a = _spells.get(id=data['spell_a_id'])
+        spell_b = _spells.get(id=data['spell_b_id'])
 
         ctx_params = {k: v for k, v in data.items() if k not in ('spell_a_id', 'spell_b_id')}
         ctx_params['_ts_a'] = spell_a.updated_at.timestamp()
@@ -46,20 +48,11 @@ class AnalysisViewSet(viewsets.ViewSet):
         if cached is not None:
             return Response(cached)
 
-        context = AnalysisContext.create_from_data(
-            data, user=request.user if request.user.is_authenticated else None
-        )
+        context = AnalysisContext.from_data(data)
 
         results = SpellAnalysisService.compare_spells(spell_a, spell_b, context)
-        
-        comparison = SpellComparison.objects.create(
-            spell_a=spell_a,
-            spell_b=spell_b,
-            context=context,
-            results=results
-        )
-        
-        response_data = SpellComparisonSerializer(comparison).data
+
+        response_data = {'results': results}
         cache.set(ck, response_data, ANALYSIS_TTL)
         return Response(response_data)
 
@@ -73,7 +66,7 @@ class AnalysisViewSet(viewsets.ViewSet):
         serializer.is_valid(raise_exception=True)
         
         data = serializer.validated_data
-        spell = Spell.objects.get(id=data['spell_id'])
+        spell = Spell.objects.prefetch_related('damage_components').get(id=data['spell_id'])
 
         # Build cache key from spell ID + updated_at + context params
         ctx_params = {k: v for k, v in data.items() if k != 'spell_id'}
@@ -87,7 +80,8 @@ class AnalysisViewSet(viewsets.ViewSet):
         context = AnalysisContext.create_from_data(
             data, user=request.user if request.user.is_authenticated else None
         )
-        
+        context.character_level = data.get('character_level', 1)
+
         results = SpellAnalysisService.analyze_spell(spell, context)
         
         response_data = {
@@ -108,7 +102,7 @@ class AnalysisViewSet(viewsets.ViewSet):
         serializer.is_valid(raise_exception=True)
         
         data = serializer.validated_data
-        spell = Spell.objects.get(id=data['spell_id'])
+        spell = Spell.objects.prefetch_related('damage_components').get(id=data['spell_id'])
 
         ctx_params = {k: v for k, v in data.items() if k != 'spell_id'}
         ctx_params['_spell_ts'] = spell.updated_at.timestamp()
@@ -148,8 +142,9 @@ class AnalysisViewSet(viewsets.ViewSet):
         serializer.is_valid(raise_exception=True)
         data = serializer.validated_data
 
-        spell_a = Spell.objects.get(id=data['spell_a_id'])
-        spell_b = Spell.objects.get(id=data['spell_b_id'])
+        _spells = Spell.objects.prefetch_related('damage_components')
+        spell_a = _spells.get(id=data['spell_a_id'])
+        spell_b = _spells.get(id=data['spell_b_id'])
 
         ctx_params = {k: v for k, v in data.items() if k not in ('spell_a_id', 'spell_b_id')}
         ctx_params['_ts_a'] = spell_a.updated_at.timestamp()
@@ -167,6 +162,43 @@ class AnalysisViewSet(viewsets.ViewSet):
             'spell_a': {'id': str(spell_a.id), 'name': spell_a.name, 'level': spell_a.level},
             'spell_b': {'id': str(spell_b.id), 'name': spell_b.name, 'level': spell_b.level},
             **results,
+        }
+        cache.set(ck, response_data, ANALYSIS_TTL)
+        return Response(response_data)
+
+    @action(detail=False, methods=['post'])
+    def compare_growth(self, request):
+        """
+        Compute damage growth profiles for two spells across character levels 1-20.
+        Cantrips are scaled by the standard 5e tier multiplier at each character level.
+        Leveled spells use the highest available spell slot at each character level.
+        POST /api/analysis/compare_growth/
+        """
+        serializer = CompareGrowthRequestSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        _spells = Spell.objects.prefetch_related('damage_components')
+        spell_a = _spells.get(id=data['spell_a_id'])
+        spell_b = _spells.get(id=data['spell_b_id'])
+
+        ctx_params = {k: v for k, v in data.items() if k not in ('spell_a_id', 'spell_b_id')}
+        ctx_params['_ts_a'] = spell_a.updated_at.timestamp()
+        ctx_params['_ts_b'] = spell_b.updated_at.timestamp()
+        ck = analysis_key('compare_growth', [spell_a.id, spell_b.id], ctx_params)
+        cached = cache.get(ck)
+        if cached is not None:
+            return Response(cached)
+
+        # Build a context with spell_slot_level=1 (overridden internally by the service)
+        context = AnalysisContext.from_data({**data, 'spell_slot_level': 1})
+
+        growth_data = SpellAnalysisService.compare_growth_analysis(spell_a, spell_b, context)
+
+        response_data = {
+            'spell_a': {'id': str(spell_a.id), 'name': spell_a.name, 'level': spell_a.level},
+            'spell_b': {'id': str(spell_b.id), 'name': spell_b.name, 'level': spell_b.level},
+            **growth_data,
         }
         cache.set(ck, response_data, ANALYSIS_TTL)
         return Response(response_data)

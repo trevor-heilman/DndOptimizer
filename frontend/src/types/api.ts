@@ -1,5 +1,5 @@
 /**
- * TypeScript types for DndOptimizer API
+ * TypeScript types for Spellwright API
  */
 
 // User types
@@ -47,7 +47,6 @@ export interface SpellParsingMetadata {
   id: string;
   parsing_confidence: number;
   requires_review: boolean;
-  is_reviewed: boolean;
   reviewed_by?: string;
   reviewed_at?: string;
   parsing_notes?: Record<string, any>;
@@ -66,6 +65,7 @@ export interface Spell {
   ritual: boolean;
   is_attack_roll: boolean;
   is_saving_throw: boolean;
+  is_auto_hit: boolean;
   save_type?: string;
   half_damage_on_save: boolean;
   components_v?: boolean;
@@ -77,6 +77,7 @@ export interface Spell {
   upcast_base_level?: number;
   upcast_dice_increment?: number;
   upcast_die_size?: number;
+  upcast_attacks_increment?: number;
   raw_data?: Record<string, any>;
   damage_components?: DamageComponent[];
   parsing_metadata?: SpellParsingMetadata;
@@ -86,6 +87,7 @@ export interface Spell {
   source?: string;
   is_custom?: boolean;
   aoe_radius?: number;
+  number_of_attacks?: number;
   /** Class names that can learn this spell, e.g. ["wizard", "sorcerer"] */
   classes?: string[];
   /** Gameplay tags, e.g. ["damage", "aoe", "ritual"] */
@@ -95,11 +97,25 @@ export interface Spell {
 export interface SpellListParams {
   page?: number;
   page_size?: number;
-  level?: number;
-  school?: string;
+  /** Single level or multiple levels (OR logic) */
+  level?: number | number[];
+  /** Single school or multiple schools (OR logic) */
+  school?: string | string[];
   search?: string;
-  class_name?: string;
-  source?: string;
+  /** Single class or multiple classes (OR logic) */
+  class_name?: string | string[];
+  /** Single source or multiple sources (OR logic) */
+  source?: string | string[];
+  concentration?: boolean;
+  is_attack_roll?: boolean;
+  is_saving_throw?: boolean;
+  /** Single damage type or multiple (OR logic) */
+  damage_type?: string | string[];
+  /** Single tag or multiple tags (OR logic) */
+  tag?: string | string[];
+  has_v?: boolean;
+  has_s?: boolean;
+  has_m?: boolean;
 }
 
 // Spellbook types
@@ -161,6 +177,7 @@ export interface AnalysisContext {
   advantage?: boolean;
   disadvantage?: boolean;
   spell_slot_level?: number;
+  character_level?: number;
   crit_enabled?: boolean;
   half_damage_on_save?: boolean;
   evasion_enabled?: boolean;
@@ -181,7 +198,7 @@ export interface SpellAnalysisResult {
 export interface SpellAnalysisApiResult {
   spell: { id: string; name: string; level: number };
   results: {
-    type: 'attack_roll' | 'saving_throw' | 'non_damage';
+    spell_type: 'attack_roll' | 'saving_throw' | 'non_damage';
     expected_damage: number;
     efficiency: number;
   };
@@ -219,6 +236,75 @@ export interface CompareSpellsResponse {
   spell_b: SpellComparisonResult;
   winner: 'spell_a' | 'spell_b';
   damage_difference: number;
+}
+
+/** One data point in a breakeven sweep profile */
+export interface BreakevenProfilePoint {
+  value: number;
+  spell_a_damage: number;
+  spell_b_damage: number;
+}
+
+export interface BreakevenRequest extends AnalysisContext {
+  spell_a_id: string;
+  spell_b_id: string;
+}
+
+export interface BreakevenResponse {
+  spell_a: { id: string; name: string; level: number };
+  spell_b: { id: string; name: string; level: number };
+  breakeven_ac: number | null;
+  breakeven_save_bonus: number | null;
+  ac_profile: BreakevenProfilePoint[];
+  save_profile: BreakevenProfilePoint[];
+}
+
+// ── Spell Growth / Compare Growth ────────────────────────────────────────────
+
+export interface CompareGrowthRequest {
+  spell_a_id: string;
+  spell_b_id: string;
+  target_ac?: number;
+  target_save_bonus?: number;
+  spell_save_dc?: number;
+  caster_attack_bonus?: number;
+  number_of_targets?: number;
+  advantage?: boolean;
+  disadvantage?: boolean;
+  crit_enabled?: boolean;
+  half_damage_on_save?: boolean;
+  evasion_enabled?: boolean;
+}
+
+export interface GrowthProfilePoint {
+  /** Character level (1-20) for cantrip profiles; spell slot level (1-9) for spell profiles. */
+  x: number;
+  label: string;
+  spell_a_damage: number;
+  spell_b_damage: number;
+  /** Highest available slot at this character level for the spell (null if cantrip). */
+  spell_a_slot: number | null;
+  spell_b_slot: number | null;
+}
+
+export interface SlotProfilePoint {
+  slot: number;
+  label: string;
+  spell_a_damage: number;
+  spell_b_damage: number;
+}
+
+export interface CompareGrowthResponse {
+  spell_a: { id: string; name: string; level: number };
+  spell_b: { id: string; name: string; level: number };
+  /** Character-level sweep (1-20). Cantrips scale by tier; spells cast at highest available slot. */
+  profile: GrowthProfilePoint[];
+  /** Character level at which the weaker spell first surpasses the other, or null. */
+  crossover_x: number | null;
+  /** Slot-level sweep (only present when both spells are leveled). */
+  slot_profile: SlotProfilePoint[];
+  /** Slot level at which the weaker spell first surpasses the other, or null. */
+  slot_crossover: number | null;
 }
 
 // Pagination

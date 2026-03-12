@@ -51,7 +51,6 @@ export const mockSpell = {
     id: 'pm-1',
     parsing_confidence: 0.9,
     requires_review: false,
-    is_reviewed: false,
   },
   created_by: 'user-1',
   created_at: '2026-01-01T00:00:00Z',

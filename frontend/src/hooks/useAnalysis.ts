@@ -3,7 +3,7 @@
  */
 import { useMutation } from '@tanstack/react-query';
 import analysisService from '../services/analysis';
-import type { AnalysisContext, SpellAnalysisApiResult } from '../types/api';
+import type { AnalysisContext, SpellAnalysisApiResult, BreakevenRequest, CompareGrowthRequest } from '../types/api';
 
 export function useAnalyzeSpell() {
   return useMutation({
@@ -35,27 +35,43 @@ export function useGetSpellEfficiency() {
   });
 }
 
-/** Analyze multiple spells in parallel, returning results keyed by spell ID. */
+/** Analyze multiple spells in batches, capping concurrent requests to avoid overwhelming the server. */
 export function useBatchAnalyzeSpells() {
   return useMutation({
     mutationFn: async ({
       spellIds,
       context,
+      concurrency = 5,
     }: {
       spellIds: string[];
       context: AnalysisContext;
+      concurrency?: number;
     }): Promise<Record<string, SpellAnalysisApiResult>> => {
-      const settled = await Promise.allSettled(
-        spellIds.map((id) => analysisService.analyzeSpell(id, context))
-      );
       const out: Record<string, SpellAnalysisApiResult> = {};
-      settled.forEach((result, idx) => {
-        if (result.status === 'fulfilled') {
-          out[spellIds[idx]] = result.value;
-        }
-      });
+      for (let i = 0; i < spellIds.length; i += concurrency) {
+        const batch = spellIds.slice(i, i + concurrency);
+        const settled = await Promise.allSettled(
+          batch.map((id) => analysisService.analyzeSpell(id, context))
+        );
+        settled.forEach((result, idx) => {
+          if (result.status === 'fulfilled') {
+            out[batch[idx]] = result.value;
+          }
+        });
+      }
       return out;
     },
   });
 }
 
+export function useBreakevenAnalysis() {
+  return useMutation({
+    mutationFn: (request: BreakevenRequest) => analysisService.breakevenAnalysis(request),
+  });
+}
+
+export function useCompareGrowth() {
+  return useMutation({
+    mutationFn: (request: CompareGrowthRequest) => analysisService.compareGrowth(request),
+  });
+}

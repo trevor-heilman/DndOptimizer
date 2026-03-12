@@ -49,6 +49,7 @@ function ScalingBarChart({ data }: { data: { label: string; avg: number; max: nu
         <YAxis label={{ value: 'Damage', angle: -90, position: 'insideLeft', fill: '#c4a882' }} tick={{ fill: '#c4a882', fontSize: 12 }} />
         <Tooltip content={<TooltipContent />} />
         <Legend wrapperStyle={{ color: '#c4a882', fontFamily: 'Cinzel, serif', fontSize: 13 }} />
+        <Bar dataKey="min" name="Minimum" fill="#4c1d95" radius={[4, 4, 0, 0]} />
         <Bar dataKey="avg" name="Average" fill="#b45309" radius={[4, 4, 0, 0]} />
         <Bar dataKey="max" name="Maximum" fill="#d4af37" radius={[4, 4, 0, 0]} />
       </BarChart>
