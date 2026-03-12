@@ -1,6 +1,6 @@
-# Contributing to DndOptimizer
+# Contributing to Spellwright
 
-Thank you for considering contributing to DndOptimizer! This document provides guidelines and instructions for contributing.
+Thank you for considering contributing to Spellwright! This document provides guidelines and instructions for contributing.
 
 ## Code of Conduct
 
@@ -11,7 +11,7 @@ Thank you for considering contributing to DndOptimizer! This document provides g
 ## Getting Started
 
 1. Fork the repository
-2. Clone your fork: `git clone https://github.com/yourusername/DndOptimizer.git`
+2. Clone your fork: `git clone https://github.com/yourusername/Spellwright.git`
 3. Create a branch: `git checkout -b feature/your-feature-name`
 4. Make your changes
 5. Push to your fork and submit a pull request

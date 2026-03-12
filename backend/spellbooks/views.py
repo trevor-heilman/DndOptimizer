@@ -2,6 +2,7 @@ from rest_framework import viewsets, status, permissions
 from rest_framework.decorators import action
 from rest_framework.response import Response
 from django_filters.rest_framework import DjangoFilterBackend
+from django.db.models import Count, Q
 from .models import Spellbook, PreparedSpell
 from .serializers import (
     SpellbookListSerializer,
@@ -17,7 +18,7 @@ class SpellbookViewSet(viewsets.ModelViewSet):
     """
     ViewSet for spellbook CRUD operations.
     """
-    queryset = Spellbook.objects.all().prefetch_related('prepared_spells__spell')
+    queryset = Spellbook.objects.all().select_related('owner').prefetch_related('prepared_spells__spell')
     permission_classes = [permissions.IsAuthenticated]
     filter_backends = [DjangoFilterBackend]
 
@@ -33,9 +34,17 @@ class SpellbookViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         """Users can only see their own spellbooks."""
+        qs = self.queryset.annotate(
+            spell_count=Count('prepared_spells', distinct=True),
+            prepared_spell_count=Count(
+                'prepared_spells',
+                filter=Q(prepared_spells__prepared=True),
+                distinct=True,
+            )
+        )
         if self.request.user.is_staff:
-            return self.queryset
-        return self.queryset.filter(owner=self.request.user)
+            return qs
+        return qs.filter(owner=self.request.user)
 
     def perform_create(self, serializer):
         """Set owner to current user."""

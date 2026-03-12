@@ -115,6 +115,18 @@ export const spellService = {
     });
     return response.data;
   },
+
+  /** Admin: list spells that require a confidence review. */
+  async getNeedsReview(): Promise<Spell[]> {
+    const response = await apiClient.get<Spell[]>('/spells/spells/needs_review/');
+    return response.data;
+  },
+
+  /** Admin: mark a spell's parsing as reviewed. */
+  async markReviewed(id: string): Promise<Spell> {
+    const response = await apiClient.post<Spell>(`/spells/spells/${id}/mark_reviewed/`);
+    return response.data;
+  },
 };
 
 export default spellService;

@@ -44,6 +44,10 @@ class Spell(models.Model):
     # Combat properties
     is_attack_roll = models.BooleanField(default=False)
     is_saving_throw = models.BooleanField(default=False)
+    is_auto_hit = models.BooleanField(
+        default=False,
+        help_text='Spell automatically hits with no attack roll or saving throw (e.g. Magic Missile).'
+    )
     save_type = models.CharField(max_length=3, choices=SAVE_TYPE_CHOICES, blank=True, null=True)
     half_damage_on_save = models.BooleanField(default=False)
     
@@ -57,6 +61,10 @@ class Spell(models.Model):
     upcast_base_level = models.IntegerField(null=True, blank=True)
     upcast_dice_increment = models.IntegerField(null=True, blank=True)
     upcast_die_size = models.IntegerField(null=True, blank=True)
+    upcast_attacks_increment = models.IntegerField(
+        null=True, blank=True,
+        help_text='Additional attack rolls per slot level above upcast_base_level (e.g. Scorching Ray +1 ray/slot).'
+    )
     
     # Spell components
     components_v = models.BooleanField(default=False, help_text='Verbal component required.')

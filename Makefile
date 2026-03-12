@@ -1,7 +1,7 @@
 .PHONY: help build up down migrate shell test lint format clean
 
 help:
-	@echo "DndOptimizer - Make Commands"
+	@echo "Spellwright - Make Commands"
 	@echo "----------------------------"
 	@echo "build        Build Podman containers"
 	@echo "up           Start all services"

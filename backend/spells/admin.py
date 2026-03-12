@@ -26,7 +26,7 @@ class SpellAdmin(admin.ModelAdmin):
             'fields': ('is_attack_roll', 'is_saving_throw', 'save_type', 'half_damage_on_save', 'number_of_attacks', 'crit_enabled', 'aoe_radius', 'damage_type')
         }),
         ('Upcast Properties', {
-            'fields': ('upcast_base_level', 'upcast_dice_increment', 'upcast_die_size')
+            'fields': ('upcast_base_level', 'upcast_dice_increment', 'upcast_die_size', 'upcast_attacks_increment')
         }),
         ('Description', {
             'fields': ('description', 'higher_level')

@@ -1,14 +1,17 @@
 /**
  * Compare Page
  */
-import { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
 import { useSpells } from '../hooks/useSpells';
-import { useCompareSpells, useBreakevenAnalysis } from '../hooks/useAnalysis';
+import { useCompareSpells, useBreakevenAnalysis, useCompareGrowth } from '../hooks/useAnalysis';
 import { AnalysisContextForm } from '../components/AnalysisContextForm';
 import { DamageComparisonChart } from '../components/DamageComparisonChart';
-import type { AnalysisContext, Spell, BreakevenResponse } from '../types/api';
+import { GrowthChart3D } from '../components/GrowthChart3D';
+import { MultiSelect } from '../components/MultiSelect';
+import { SPELL_SCHOOLS, DND_CLASSES, DAMAGE_TYPES } from '../constants/spellColors';
+import type { AnalysisContext, Spell, BreakevenResponse, CompareGrowthResponse, CompareSpellsResponse } from '../types/api';
 
 // ── Inline spell combobox ─────────────────────────────────────────────────────
 interface SpellComboboxProps {
@@ -125,6 +128,99 @@ function SpellCombobox({ label, accentClass, value, onChange, spells }: SpellCom
   );
 }
 
+// ── Spell filter bar (compact, per-picker) ───────────────────────────────────
+interface SpellFilter {
+  schools: string[];
+  classes: string[];
+  levels: string[];
+  damageTypes: string[];
+  concentration: boolean;
+}
+
+const EMPTY_FILTER: SpellFilter = { schools: [], classes: [], levels: [], damageTypes: [], concentration: false };
+
+function applySpellFilter(spells: Spell[], filter: SpellFilter, query: string): Spell[] {
+  const q = query.toLowerCase();
+  return spells.filter((s) => {
+    if (filter.schools.length > 0 && !filter.schools.includes(s.school)) return false;
+    if (filter.classes.length > 0 && s.classes && s.classes.length > 0 && !filter.classes.some((c) => s.classes!.includes(c))) return false;
+    if (filter.levels.length > 0 && !filter.levels.includes(String(s.level))) return false;
+    if (filter.damageTypes.length > 0) {
+      const types = s.damage_components?.map((dc) => dc.damage_type) ?? [];
+      if (!filter.damageTypes.some((dt) => types.includes(dt))) return false;
+    }
+    if (filter.concentration && !s.concentration) return false;
+    if (q && !s.name.toLowerCase().includes(q)) return false;
+    return true;
+  });
+}
+
+interface SpellFilterBarProps {
+  filter: SpellFilter;
+  onChange: (f: SpellFilter) => void;
+}
+
+function SpellFilterBar({ filter, onChange }: SpellFilterBarProps) {
+  const set = <K extends keyof SpellFilter>(key: K, val: SpellFilter[K]) =>
+    onChange({ ...filter, [key]: val });
+
+  const levelOptions = [
+    { value: '0', label: 'Cantrip' },
+    ...[1, 2, 3, 4, 5, 6, 7, 8, 9].map((l) => ({ value: String(l), label: `Level ${l}` })),
+  ];
+  const schoolOptions = SPELL_SCHOOLS.map((s) => ({
+    value: s,
+    label: s.charAt(0).toUpperCase() + s.slice(1),
+  }));
+  const classOptions = DND_CLASSES.map((c) => ({
+    value: c,
+    label: c.charAt(0).toUpperCase() + c.slice(1),
+  }));
+  const dmgOptions = DAMAGE_TYPES.map((d) => ({
+    value: d,
+    label: d.charAt(0).toUpperCase() + d.slice(1),
+  }));
+
+  const active =
+    filter.schools.length + filter.classes.length + filter.levels.length + filter.damageTypes.length + (filter.concentration ? 1 : 0);
+
+  return (
+    <div className="mt-3 p-3 rounded-lg bg-smoke-800/60 border border-smoke-700 space-y-2">
+      <div className="flex items-center justify-between mb-1">
+        <span className="font-display text-xs text-smoke-400 uppercase tracking-wider">Filter spells</span>
+        {active > 0 && (
+          <button
+            type="button"
+            onClick={() => onChange(EMPTY_FILTER)}
+            className="font-body text-xs text-smoke-500 hover:text-smoke-300"
+          >
+            Clear ({active})
+          </button>
+        )}
+      </div>
+      <div className="grid grid-cols-2 gap-2">
+        <MultiSelect placeholder="All Levels" options={levelOptions} value={filter.levels}
+          onChange={(v) => set('levels', v)} />
+        <MultiSelect placeholder="All Schools" options={schoolOptions} value={filter.schools}
+          onChange={(v) => set('schools', v)} />
+        <MultiSelect placeholder="All Classes" options={classOptions} value={filter.classes}
+          onChange={(v) => set('classes', v)} />
+        <MultiSelect placeholder="All Damage Types" options={dmgOptions} value={filter.damageTypes}
+          onChange={(v) => set('damageTypes', v)} />
+      </div>
+      <label className="flex items-center gap-2 cursor-pointer">
+        <input
+          type="checkbox"
+          checked={filter.concentration}
+          onChange={(e) => set('concentration', e.target.checked)}
+          className="w-3.5 h-3.5 rounded accent-gold-500"
+        />
+        <span className="font-body text-xs text-smoke-400">Concentration only</span>
+      </label>
+    </div>
+  );
+}
+
 // ── Main page ─────────────────────────────────────────────────────────────────
 export function ComparePage() {
   const [searchParams] = useSearchParams();
@@ -146,43 +242,60 @@ export function ComparePage() {
     half_damage_on_save: true,
     evasion_enabled: false,
   });
+  const [filterA, setFilterA] = useState<SpellFilter>(EMPTY_FILTER);
+  const [filterB, setFilterB] = useState<SpellFilter>(EMPTY_FILTER);
 
   const { data: allSpellsResponse } = useSpells({ page: 1, page_size: 1000 });
   const compareSpells = useCompareSpells();
   const breakeven = useBreakevenAnalysis();
+  const growthAnalysis = useCompareGrowth();
 
   const allSpells = allSpellsResponse?.results || [];
+  const filteredSpellsA = useMemo(() => applySpellFilter(allSpells, filterA, ''), [allSpells, filterA]);
+  const filteredSpellsB = useMemo(() => applySpellFilter(allSpells, filterB, ''), [allSpells, filterB]);
   const spell1 = allSpells.find((s) => s.id === spell1Id);
   const spell2 = allSpells.find((s) => s.id === spell2Id);
 
-  const handleCompare = async () => {
+  const isAnalyzing = compareSpells.isPending || breakeven.isPending || growthAnalysis.isPending;
+
+  const handleAnalyze = async () => {
     if (!spell1Id || !spell2Id) return;
-    await compareSpells.mutateAsync({ spellAId: spell1Id, spellBId: spell2Id, context });
+    const { spell_slot_level: _omit, ...growthContext } = context;
+    await Promise.all([
+      compareSpells.mutateAsync({ spellAId: spell1Id, spellBId: spell2Id, context }),
+      breakeven.mutateAsync({ spell_a_id: spell1Id, spell_b_id: spell2Id, ...context }),
+      growthAnalysis.mutateAsync({ spell_a_id: spell1Id, spell_b_id: spell2Id, ...growthContext }),
+    ]);
   };
 
-  const handleBreakeven = async () => {
-    if (!spell1Id || !spell2Id) return;
-    await breakeven.mutateAsync({ spell_a_id: spell1Id, spell_b_id: spell2Id, ...context });
-  };
-
-  const comparisonResult = compareSpells.data as any;
+  const comparisonResult = compareSpells.data as CompareSpellsResponse | undefined;
 
   return (
     <div className="max-w-7xl mx-auto">
-      <h1 className="font-display text-3xl font-bold text-gold-300 mb-6 flex items-center gap-2">
-        <span aria-hidden="true">⚖️</span> Compare Spells
-      </h1>
+      <div className="mb-8">
+        <p className="font-display uppercase tracking-[0.3em] text-[10px] text-crimson-700 mb-1.5">
+          ✦ &nbsp; Arcane Scales &nbsp; ✦
+        </p>
+        <h1 className="font-display text-3xl font-extrabold tracking-wide text-gold-300">
+          Compare Spells
+        </h1>
+        <div className="flex items-center gap-3 mt-3 select-none" aria-hidden="true">
+          <div className="h-px flex-1" style={{ background: 'linear-gradient(to right, transparent, rgba(190,18,60,0.4))' }} />
+          <span className="text-crimson-800 text-xs">✦</span>
+          <div className="h-px w-12" style={{ background: 'rgba(190,18,60,0.2)' }} />
+        </div>
+      </div>
 
       {/* Spell Selection */}
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
         {/* Spell 1 */}
-        <div className="dnd-card border-l-4 border-arcane-700 p-6">
+        <div className="rounded-xl p-6" style={{ background: 'linear-gradient(155deg, #0d0720 0%, #10082a 100%)', border: '1px solid rgba(109,40,217,0.25)', borderLeft: '3px solid rgba(109,40,217,0.65)' }}>
           <SpellCombobox
             label="🔮 Spell 1"
             accentClass="text-arcane-300"
             value={spell1Id}
             onChange={setSpell1Id}
-            spells={allSpells}
+            spells={filteredSpellsA}
           />
           {spell1 && (
             <div className="mt-4 p-4 bg-smoke-800 rounded-lg border border-smoke-700">
@@ -197,16 +310,17 @@ export function ComparePage() {
               </div>
             </div>
           )}
+          <SpellFilterBar filter={filterA} onChange={setFilterA} />
         </div>
 
         {/* Spell 2 */}
-        <div className="dnd-card border-l-4 border-crimson-700 p-6">
+        <div className="rounded-xl p-6" style={{ background: 'linear-gradient(155deg, #130408 0%, #1a0510 100%)', border: '1px solid rgba(190,18,60,0.25)', borderLeft: '3px solid rgba(190,18,60,0.65)' }}>
           <SpellCombobox
             label="⚡ Spell 2"
             accentClass="text-crimson-300"
             value={spell2Id}
             onChange={setSpell2Id}
-            spells={allSpells}
+            spells={filteredSpellsB}
           />
           {spell2 && (
             <div className="mt-4 p-4 bg-smoke-800 rounded-lg border border-smoke-700">
@@ -221,44 +335,32 @@ export function ComparePage() {
               </div>
             </div>
           )}
+          <SpellFilterBar filter={filterB} onChange={setFilterB} />
         </div>
       </div>
 
-      {/* Analysis Context */}
-      <div className="dnd-card p-6 mb-6">
-        <AnalysisContextForm context={context} onChange={setContext} />
-      </div>
-
-      {/* Compare Button */}
-      <div className="mb-6 flex gap-4">
+      {/* Analyze Button */}
+      <div className="mb-6">
         <button
-          onClick={handleCompare}
-          disabled={!spell1Id || !spell2Id || compareSpells.isPending}
-          className="btn-gold flex-1 py-3 text-lg disabled:opacity-40 disabled:cursor-not-allowed"
+          onClick={handleAnalyze}
+          disabled={!spell1Id || !spell2Id || isAnalyzing}
+          className="btn-gold w-full py-3 text-lg disabled:opacity-40 disabled:cursor-not-allowed"
         >
-          {compareSpells.isPending ? 'Invoking the arcane scales…' : '⚖️ Compare Spells'}
-        </button>
-        <button
-          onClick={handleBreakeven}
-          disabled={!spell1Id || !spell2Id || breakeven.isPending}
-          className="btn-secondary flex-1 py-3 text-lg disabled:opacity-40 disabled:cursor-not-allowed"
-          style={{ background: '#1e1438', color: '#c4b5fd', border: '1px solid #5b21b6' }}
-        >
-          {breakeven.isPending ? 'Calculating crossover…' : '📊 Find Breakeven Point'}
+          {isAnalyzing ? '🔮 Invoking the arcane scales…' : '🔮 Analyze'}
         </button>
       </div>
 
       {/* Error Display */}
-      {compareSpells.isError && (
+      {(compareSpells.isError || breakeven.isError || growthAnalysis.isError) && (
         <div className="dnd-card border-l-4 border-crimson-700 p-6 mb-6">
           <h2 className="font-display text-xl font-semibold text-crimson-400 mb-2">Error</h2>
-          <p className="font-body text-parchment-400">Failed to compare spells. Please try again.</p>
+          <p className="font-body text-parchment-400">Analysis failed. Please check your spell selections and try again.</p>
         </div>
       )}
 
       {/* Comparison Results */}
       {comparisonResult && (
-        <div className="dnd-card p-6">
+        <div className="dnd-card p-6 mb-6">
           <h2 className="font-display text-2xl font-bold text-gold-300 mb-6">Comparison Results</h2>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-6 mb-6">
@@ -346,26 +448,36 @@ export function ComparePage() {
             </span>
           </div>
 
-          <DamageComparisonChart comparisonResult={comparisonResult} />
-        </div>
-      )}
-
-      {/* Breakeven Error */}
-      {breakeven.isError && (
-        <div className="dnd-card border-l-4 border-crimson-700 p-6 mb-6">
-          <h2 className="font-display text-xl font-semibold text-crimson-400 mb-2">Error</h2>
-          <p className="font-body text-parchment-400">Failed to calculate breakeven. Please try again.</p>
+          <DamageComparisonChart compareData={comparisonResult} growthData={growthAnalysis.data} />
         </div>
       )}
 
       {/* Breakeven Results */}
-      {breakeven.data && <BreakevenResults result={breakeven.data} />}
+      {breakeven.data && (
+        <BreakevenResults
+          result={breakeven.data}
+          context={context}
+          spells={[spell1, spell2].filter((s): s is Spell => s !== undefined)}
+          onContextChange={setContext}
+          onReanalyze={handleAnalyze}
+        />
+      )}
+
+      {/* Growth Results */}
+      {growthAnalysis.data && <GrowthResults result={growthAnalysis.data} />}
     </div>
   );
 }
 
 // ── Breakeven results component ───────────────────────────────────────────────
-function BreakevenResults({ result }: { result: BreakevenResponse }) {
+interface BreakevenResultsProps {
+  result: BreakevenResponse;
+  context: AnalysisContext;
+  spells: Spell[];
+  onContextChange: (ctx: AnalysisContext) => void;
+  onReanalyze: () => void;
+}
+function BreakevenResults({ result, context, spells, onContextChange, onReanalyze }: BreakevenResultsProps) {
   const spellAColor = '#818cf8'; // arcane-400
   const spellBColor = '#f87171'; // crimson-400
 
@@ -384,6 +496,14 @@ function BreakevenResults({ result }: { result: BreakevenResponse }) {
   return (
     <div className="dnd-card p-6 mt-6">
       <h2 className="font-display text-2xl font-bold text-gold-300 mb-6">Breakeven Analysis</h2>
+
+      {/* Combat Parameters */}
+      <div className="mb-6 p-4 bg-smoke-800 rounded-lg border border-smoke-700">
+        <AnalysisContextForm context={context} onChange={onContextChange} spells={spells} />
+        <div className="mt-4 text-right">
+          <button onClick={onReanalyze} className="btn-gold px-6 py-2">🔮 Re-analyze</button>
+        </div>
+      </div>
 
       {/* Summary pills */}
       <div className="flex flex-wrap gap-4 mb-8">
@@ -450,6 +570,161 @@ function BreakevenResults({ result }: { result: BreakevenResponse }) {
           </LineChart>
         </ResponsiveContainer>
       </div>
+    </div>
+  );
+}
+
+// ── Growth results component ──────────────────────────────────────────────────
+function GrowthResults({ result }: { result: CompareGrowthResponse }) {
+  const colorA = '#818cf8'; // arcane-400
+  const colorB = '#f87171'; // crimson-400
+  const [show3D, setShow3D] = useState(false);
+
+  const isCantrip = (level: number) => level === 0;
+  const eitherCantrip = isCantrip(result.spell_a.level) || isCantrip(result.spell_b.level);
+
+  // Map profile → chart-friendly objects keyed by spell name for Recharts
+  const profileData = result.profile.map((p) => ({
+    x: p.x,
+    label: p.label,
+    [result.spell_a.name]: parseFloat(p.spell_a_damage.toFixed(2)),
+    [result.spell_b.name]: parseFloat(p.spell_b_damage.toFixed(2)),
+  }));
+
+  const xAxisLabel = eitherCantrip ? 'Character Level' : 'Character Level (highest available slot)';
+
+  return (
+    <div className="dnd-card p-6 mt-6">
+      <div className="flex items-center justify-between gap-4 mb-2">
+        <h2 className="font-display text-2xl font-bold text-gold-300">Spell Growth Analysis</h2>
+        <button
+          onClick={() => setShow3D((v) => !v)}
+          className="btn-secondary text-sm px-3 py-1.5 shrink-0"
+          title="Toggle 3D view — X: character level, Y: damage, Z: spell slot level"
+        >
+          {show3D ? '📊 2D View' : '🧊 3D View'}
+        </button>
+      </div>
+      <p className="font-body text-sm text-smoke-400 mb-6">
+        {eitherCantrip
+          ? 'Cantrips scale by character level (×1/×2/×3/×4 at levels 1/5/11/17). Leveled spells are cast at the highest available full-caster slot for each character level.'
+          : 'Both spells cast at the highest available full-caster slot for each character level.'}
+      </p>
+
+      {/* Crossover summary */}
+      <div className="flex flex-wrap gap-4 mb-8">
+        <div className="px-4 py-3 rounded-lg border border-emerald-700 bg-smoke-800 text-center min-w-[200px]">
+          <div className="font-display text-xs text-smoke-400 uppercase tracking-wider mb-1">
+            Character-Level Crossover
+          </div>
+          <div className="font-display text-2xl font-bold text-emerald-300">
+            {result.crossover_x !== null ? `Level ${result.crossover_x}` : '—'}
+          </div>
+          {result.crossover_x === null ? (
+            <div className="font-body text-xs text-smoke-500 mt-1">No crossover in levels 1–20</div>
+          ) : (
+            <div className="font-body text-xs text-smoke-400 mt-1">
+              {/* Find which spell takes over at the crossover level */}
+              {(() => {
+                const before = result.profile.find((p) => p.x === result.crossover_x! - 1);
+                const at = result.profile.find((p) => p.x === result.crossover_x);
+                if (!at) return null;
+                const leader = at.spell_a_damage >= at.spell_b_damage ? result.spell_a.name : result.spell_b.name;
+                const wasLeader = before
+                  ? (before.spell_a_damage >= before.spell_b_damage ? result.spell_a.name : result.spell_b.name)
+                  : null;
+                if (leader !== wasLeader) {
+                  return `${leader} takes the lead`;
+                }
+                return `${leader} ahead from here`;
+              })()}
+            </div>
+          )}
+        </div>
+
+        {result.slot_profile.length > 0 && (
+          <div className="px-4 py-3 rounded-lg border border-violet-700 bg-smoke-800 text-center min-w-[200px]">
+            <div className="font-display text-xs text-smoke-400 uppercase tracking-wider mb-1">
+              Slot-Level Crossover
+            </div>
+            <div className="font-display text-2xl font-bold text-violet-300">
+              {result.slot_crossover !== null ? `Slot ${result.slot_crossover}` : '—'}
+            </div>
+            {result.slot_crossover === null && (
+              <div className="font-body text-xs text-smoke-500 mt-1">No crossover across slots 1–9</div>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* 3D chart */}
+      {show3D && (
+        <div className="mb-8">
+          <h3 className="font-display text-lg font-semibold text-parchment-200 mb-1">
+            3D Growth View
+          </h3>
+          <p className="font-body text-xs text-smoke-400 mb-3">
+            X = character level · Y = spell slot level (0 = cantrip) · Z = expected damage.
+            Drag to rotate, scroll to zoom.
+          </p>
+          <GrowthChart3D result={result} />
+        </div>
+      )}
+
+      {/* Character-level progression chart + slot chart (hidden in 3D mode) */}
+      {!show3D && (
+        <>
+          <div className="mb-8">
+            <h3 className="font-display text-lg font-semibold text-parchment-200 mb-3">
+              Damage by Character Level
+            </h3>
+            <ResponsiveContainer width="100%" height={280}>
+              <LineChart data={profileData} margin={{ top: 5, right: 20, left: 0, bottom: 20 }}>
+                <CartesianGrid strokeDasharray="3 3" stroke="#2d3555" />
+                <XAxis
+                  dataKey="x"
+                  stroke="#6b7280"
+                  tick={{ fill: '#9ca3af', fontSize: 11 }}
+                  label={{ value: xAxisLabel, position: 'insideBottom', offset: -10, fill: '#6b7280', fontSize: 12 }}
+                />
+                <YAxis stroke="#6b7280" tick={{ fill: '#9ca3af', fontSize: 11 }} />
+                <Tooltip
+                  contentStyle={{ background: '#1e1e2e', border: '1px solid #2d3555', borderRadius: 6 }}
+                  labelStyle={{ color: '#c4a882' }}
+                  itemStyle={{ color: '#e2d9c8' }}
+                  formatter={(v) => (typeof v === 'number' ? v.toFixed(2) : '')}
+                  labelFormatter={(x) => {
+                    const pt = profileData.find((p) => p.x === x);
+                    return pt ? pt.label : `Level ${x}`;
+                  }}
+                />
+                <Legend wrapperStyle={{ color: '#9ca3af', fontSize: 12, paddingTop: 8 }} />
+                {result.crossover_x !== null && (
+                  <ReferenceLine
+                    x={result.crossover_x}
+                    stroke="#fbbf24"
+                    strokeDasharray="4 4"
+                    label={{ value: `Crossover: L${result.crossover_x}`, fill: '#fbbf24', fontSize: 11 }}
+                  />
+                )}
+                {eitherCantrip && [5, 11, 17].map((lvl) => (
+                  <ReferenceLine
+                    key={lvl}
+                    x={lvl}
+                    stroke="#4ade80"
+                    strokeDasharray="3 3"
+                    strokeOpacity={0.55}
+                    label={{ value: `Tier ${lvl === 5 ? 2 : lvl === 11 ? 3 : 4}`, position: 'top', fill: '#4ade80', fontSize: 10 }}
+                  />
+                ))}
+                <Line type="monotone" dataKey={result.spell_a.name} stroke={colorA} dot={false} strokeWidth={2} />
+                <Line type="monotone" dataKey={result.spell_b.name} stroke={colorB} dot={false} strokeWidth={2} />
+              </LineChart>
+            </ResponsiveContainer>
+          </div>
+
+        </>
+      )}
     </div>
   );
 }

@@ -124,42 +124,26 @@ class ConfidenceScoringService:
         Score ranges from 0.0 to 1.0.
         """
         score = 0.0
-        max_score = 0.0
-        
-        # Dice expressions found (weight: 0.3)
-        max_score += 0.3
+
         if parsing_data.get('dice_expressions'):
             score += 0.3
-        
-        # Damage type found (weight: 0.2)
-        max_score += 0.2
+
         if parsing_data.get('damage_types'):
             score += 0.2
-        
-        # Spell type detected (attack or save) (weight: 0.2)
-        max_score += 0.2
+
         if parsing_data.get('is_attack_roll') or parsing_data.get('is_saving_throw'):
             score += 0.2
-        
-        # Save type extracted for save spells (weight: 0.15)
-        max_score += 0.15
+
+        # Save-specific criteria: award full weight when not applicable (non-save spells)
         if parsing_data.get('is_saving_throw'):
             if parsing_data.get('save_type'):
                 score += 0.15
-        else:
-            # Not applicable for non-save spells
-            score += 0.15
-        
-        # Half damage mechanic detected for save spells (weight: 0.15)
-        max_score += 0.15
-        if parsing_data.get('is_saving_throw'):
             if 'half_damage_on_save' in parsing_data:
                 score += 0.15
         else:
-            # Not applicable for non-save spells
-            score += 0.15
-        
-        return score / max_score if max_score > 0 else 0.0
+            score += 0.30  # both save-specific checks are not applicable
+
+        return score
 
 
 class SpellParsingService:
@@ -247,10 +231,9 @@ class SpellParsingService:
         if any(kw in text for kw in cls._SUMMON_KEYWORDS):
             tags.add('summoning')
 
-        # Buff (suppress if already tagged as damage, healing, or cc)
+        # Buff (allow alongside damage/healing/cc — spells like Faerie Fire are both)
         if any(kw in text for kw in cls._BUFF_KEYWORDS):
-            if not tags.intersection({'damage', 'healing', 'crowd_control'}):
-                tags.add('buff')
+            tags.add('buff')
 
         # Debuff
         if any(kw in text for kw in cls._DEBUFF_KEYWORDS):
@@ -325,12 +308,15 @@ class SpellParsingService:
             higher_level = ' '.join(higher_level)
         
         full_text = f"{description} {higher_level}"
-        
-        # Extract damage information
-        dice_expressions = DamageExtractionService.extract_dice_expressions(full_text)
-        damage_types = DamageExtractionService.extract_damage_types(full_text)
-        
-        # Detect spell type
+
+        # Damage components are extracted from description ONLY — not from higher_level.
+        # The higher_level text contains upcast scaling dice (e.g. "1d4 per slot level")
+        # which must NOT be treated as base damage components.
+        dice_expressions = DamageExtractionService.extract_dice_expressions(description)
+        damage_types = DamageExtractionService.extract_damage_types(description)
+
+        # Spell-type detection still uses full_text because some spells describe
+        # their attack/save mechanics across both fields.
         is_attack_roll = DamageExtractionService.detect_attack_spell(full_text)
         is_saving_throw = DamageExtractionService.detect_save_spell(full_text)
         

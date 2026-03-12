@@ -192,13 +192,54 @@ class SpellAnalysisService:
         return levels_above * spell.upcast_dice_increment
 
     @staticmethod
+    def _upcast_extra_attacks(spell, slot_level: int) -> int:
+        """
+        Return extra attack rolls gained from upcasting (e.g. Scorching Ray +1 ray/slot).
+        Returns 0 if the spell has no upcast_attacks_increment or slot is at/below base level.
+        """
+        if not getattr(spell, 'upcast_attacks_increment', None):
+            return 0
+        base_level = spell.upcast_base_level if spell.upcast_base_level is not None else spell.level
+        levels_above = max(0, slot_level - base_level)
+        return levels_above * spell.upcast_attacks_increment
+
+    @staticmethod
     def analyze_spell(spell, context) -> Dict[str, Any]:
         """
         Analyze a spell given a combat context.
-        Applies upcast scaling when context.spell_slot_level exceeds the spell's
-        base level (using upcast_dice_increment / upcast_die_size on the spell).
+        Cantrips scale by character level (via context.character_level).
+        Leveled spells apply upcast scaling when context.spell_slot_level exceeds the
+        spell's base level (using upcast_dice_increment / upcast_die_size on the spell).
         Returns expected damage and efficiency metrics.
         """
+        # --- Cantrip: use character-level tier scaling, not spell slot ---
+        if spell.level == 0:
+            char_level = getattr(context, 'character_level', 1)
+            multiplier = SpellAnalysisService._cantrip_tier_multiplier(char_level)
+            components = list(spell.damage_components.all())
+            total_avg = sum(
+                DiceCalculator.average(c.dice_count * multiplier, c.die_size, c.flat_modifier)
+                for c in components
+            )
+            total_max = sum(
+                DiceCalculator.maximum(c.dice_count * multiplier, c.die_size, c.flat_modifier)
+                for c in components
+            )
+            expected = SpellAnalysisService._analyze_cantrip_at_char_level(spell, context, char_level)
+            spell_type = (
+                'attack_roll' if spell.is_attack_roll
+                else 'saving_throw' if spell.is_saving_throw
+                else 'non_damage'
+            )
+            return {
+                'spell_type': spell_type,
+                'average_damage': total_avg,
+                'maximum_damage': total_max,
+                'expected_damage': expected,
+                'upcast_bonus_dice': 0,
+                'efficiency': expected,
+            }
+
         components = list(spell.damage_components.all())
         total_average = sum(
             DiceCalculator.average(c.dice_count, c.die_size, c.flat_modifier) for c in components
@@ -210,6 +251,9 @@ class SpellAnalysisService:
         # Upcast bonus dice (0 when not applicable)
         extra_dice = SpellAnalysisService._upcast_extra_dice(spell, context.spell_slot_level)
         upcast_die_size = spell.upcast_die_size or 6  # fallback to d6 if not set
+        # Upcast bonus attacks (e.g. Scorching Ray: +1 ray per slot above base)
+        extra_attacks = SpellAnalysisService._upcast_extra_attacks(spell, context.spell_slot_level)
+        total_attacks = spell.number_of_attacks + extra_attacks
 
         if spell.is_attack_roll:
             total_expected = 0
@@ -223,7 +267,7 @@ class SpellAnalysisService:
                     advantage=context.advantage,
                     disadvantage=context.disadvantage,
                     crit_enabled=context.crit_enabled,
-                    number_of_attacks=spell.number_of_attacks
+                    number_of_attacks=total_attacks
                 )
                 total_expected += result['expected_damage']
 
@@ -238,7 +282,7 @@ class SpellAnalysisService:
                     advantage=context.advantage,
                     disadvantage=context.disadvantage,
                     crit_enabled=context.crit_enabled,
-                    number_of_attacks=spell.number_of_attacks
+                    number_of_attacks=total_attacks
                 )
                 total_expected += upcast_result['expected_damage']
                 total_average += DiceCalculator.average(extra_dice, upcast_die_size)
@@ -297,6 +341,28 @@ class SpellAnalysisService:
                 'efficiency': total_expected / context.spell_slot_level if context.spell_slot_level > 0 else 0,
             }
 
+        elif spell.is_auto_hit:
+            # Guaranteed-hit spells (e.g. Magic Missile): expected damage = avg_per_dart * total_attacks
+            total_expected = 0.0
+            for component in components:
+                avg = DiceCalculator.average(component.dice_count, component.die_size, component.flat_modifier)
+                total_expected += avg * total_attacks
+
+            if extra_dice > 0:
+                extra_avg = DiceCalculator.average(extra_dice, upcast_die_size) * total_attacks
+                total_expected += extra_avg
+                total_average += DiceCalculator.average(extra_dice, upcast_die_size)
+                total_maximum += DiceCalculator.maximum(extra_dice, upcast_die_size)
+
+            return {
+                'spell_type': 'auto_hit',
+                'average_damage': total_average * total_attacks,
+                'maximum_damage': total_maximum * total_attacks,
+                'expected_damage': total_expected,
+                'upcast_bonus_dice': extra_dice,
+                'efficiency': total_expected / context.spell_slot_level if context.spell_slot_level > 0 else 0,
+            }
+
         return {
             'spell_type': 'non_damage',
             'average_damage': total_average,
@@ -345,11 +411,167 @@ class SpellAnalysisService:
             number_of_targets=base.number_of_targets,
             advantage=base.advantage,
             disadvantage=base.disadvantage,
-            spell_slot_level=base.spell_slot_level,
+            spell_slot_level=overrides.get('spell_slot_level', base.spell_slot_level),
             crit_enabled=base.crit_enabled,
             half_damage_on_save=base.half_damage_on_save,
             evasion_enabled=base.evasion_enabled,
         )
+
+    # Standard full-caster: character level → highest available spell slot
+    _CHAR_LEVEL_TO_SLOT: Dict[int, int] = {
+        1: 1, 2: 1, 3: 2, 4: 2, 5: 3, 6: 3, 7: 4, 8: 4, 9: 5, 10: 5,
+        11: 6, 12: 6, 13: 7, 14: 7, 15: 8, 16: 8, 17: 9, 18: 9, 19: 9, 20: 9,
+    }
+
+    @staticmethod
+    def _cantrip_tier_multiplier(character_level: int) -> int:
+        """Return the standard 5e cantrip die-count multiplier for a given character level."""
+        if character_level >= 17:
+            return 4
+        if character_level >= 11:
+            return 3
+        if character_level >= 5:
+            return 2
+        return 1
+
+    @classmethod
+    def _analyze_cantrip_at_char_level(cls, spell, base_context, character_level: int) -> float:
+        """Compute expected damage for a cantrip using the 5e tier-multiplier model."""
+        multiplier = cls._cantrip_tier_multiplier(character_level)
+        components = list(spell.damage_components.all())
+
+        if spell.is_attack_roll:
+            total = 0.0
+            for c in components:
+                r = AttackRollCalculator.expected_damage(
+                    dice_count=c.dice_count * multiplier,
+                    die_size=c.die_size,
+                    modifier=c.flat_modifier,
+                    attack_bonus=base_context.caster_attack_bonus,
+                    target_ac=base_context.target_ac,
+                    advantage=base_context.advantage,
+                    disadvantage=base_context.disadvantage,
+                    crit_enabled=base_context.crit_enabled,
+                    number_of_attacks=spell.number_of_attacks,
+                )
+                total += r['expected_damage']
+            return total
+        elif spell.is_saving_throw:
+            total = 0.0
+            for c in components:
+                r = SavingThrowCalculator.expected_damage(
+                    dice_count=c.dice_count * multiplier,
+                    die_size=c.die_size,
+                    modifier=c.flat_modifier,
+                    spell_dc=base_context.spell_save_dc,
+                    save_bonus=base_context.target_save_bonus,
+                    half_on_success=spell.half_damage_on_save,
+                    advantage=base_context.advantage,
+                    disadvantage=base_context.disadvantage,
+                    evasion=base_context.evasion_enabled,
+                    number_of_targets=base_context.number_of_targets,
+                )
+                total += r['expected_total_damage']
+            return total
+        elif spell.is_auto_hit:
+            total = 0.0
+            for c in components:
+                avg = DiceCalculator.average(c.dice_count * multiplier, c.die_size, c.flat_modifier)
+                total += avg * spell.number_of_attacks
+            return total
+        return 0.0
+
+    @classmethod
+    def _analyze_spell_at_slot(cls, spell, base_context, slot_level: int) -> float:
+        """Analyze a leveled spell at a specific slot level, returning expected damage."""
+        ctx = cls._clone_context(base_context, spell_slot_level=slot_level)
+        return cls.analyze_spell(spell, ctx)['expected_damage']
+
+    @classmethod
+    def compare_growth_analysis(cls, spell_a, spell_b, base_context) -> Dict[str, Any]:
+        """
+        Compute damage growth profiles for both spells across character levels 1-20.
+
+        For cantrips: uses standard 5e tier multiplier at each character level.
+        For leveled spells: uses the highest available spell slot at each character level,
+        so at character level 7 a level-3 spell is cast with a 4th-level slot (upcast).
+
+        Also produces a slot-level sweep for leveled-vs-leveled comparisons.
+        """
+        is_a_cantrip = spell_a.level == 0
+        is_b_cantrip = spell_b.level == 0
+
+        profile = []
+        for char_level in range(1, 21):
+            best_slot = cls._CHAR_LEVEL_TO_SLOT[char_level]
+
+            # Spell A
+            if is_a_cantrip:
+                a_dmg = cls._analyze_cantrip_at_char_level(spell_a, base_context, char_level)
+                a_slot = None
+            else:
+                if best_slot >= spell_a.level:
+                    a_slot = best_slot  # upcast to max available
+                    a_dmg = cls._analyze_spell_at_slot(spell_a, base_context, a_slot)
+                else:
+                    a_slot = None
+                    a_dmg = 0.0
+
+            # Spell B
+            if is_b_cantrip:
+                b_dmg = cls._analyze_cantrip_at_char_level(spell_b, base_context, char_level)
+                b_slot = None
+            else:
+                if best_slot >= spell_b.level:
+                    b_slot = best_slot
+                    b_dmg = cls._analyze_spell_at_slot(spell_b, base_context, b_slot)
+                else:
+                    b_slot = None
+                    b_dmg = 0.0
+
+            profile.append({
+                'x': char_level,
+                'label': f'Lvl {char_level}',
+                'spell_a_damage': round(a_dmg, 4),
+                'spell_b_damage': round(b_dmg, 4),
+                'spell_a_slot': a_slot,
+                'spell_b_slot': b_slot,
+            })
+
+        # Crossover: first character level where A first exceeds B
+        crossover_x = None
+        for i in range(1, len(profile)):
+            prev, curr = profile[i - 1], profile[i]
+            if prev['spell_a_damage'] <= prev['spell_b_damage'] and curr['spell_a_damage'] > curr['spell_b_damage']:
+                crossover_x = curr['x']
+                break
+
+        # Slot-level sweep (only meaningful when both are leveled spells)
+        slot_profile: list = []
+        slot_crossover = None
+        if not is_a_cantrip and not is_b_cantrip:
+            min_slot = min(spell_a.level, spell_b.level)
+            for slot in range(min_slot, 10):
+                a_sd = cls._analyze_spell_at_slot(spell_a, base_context, slot) if slot >= spell_a.level else 0.0
+                b_sd = cls._analyze_spell_at_slot(spell_b, base_context, slot) if slot >= spell_b.level else 0.0
+                slot_profile.append({
+                    'slot': slot,
+                    'label': f'Slot {slot}',
+                    'spell_a_damage': round(a_sd, 4),
+                    'spell_b_damage': round(b_sd, 4),
+                })
+            for i in range(1, len(slot_profile)):
+                prev, curr = slot_profile[i - 1], slot_profile[i]
+                if prev['spell_a_damage'] <= prev['spell_b_damage'] and curr['spell_a_damage'] > curr['spell_b_damage']:
+                    slot_crossover = curr['slot']
+                    break
+
+        return {
+            'profile': profile,
+            'crossover_x': crossover_x,
+            'slot_profile': slot_profile,
+            'slot_crossover': slot_crossover,
+        }
 
     @staticmethod
     def _sweep_param(spell_a, spell_b, base_context, param: str, values) -> tuple:
@@ -366,7 +588,7 @@ class SpellAnalysisService:
             a = SpellAnalysisService.analyze_spell(spell_a, ctx)['expected_damage']
             b = SpellAnalysisService.analyze_spell(spell_b, ctx)['expected_damage']
             diff = a - b
-            profile.append({param: val, 'spell_a_damage': round(a, 4), 'spell_b_damage': round(b, 4)})
+            profile.append({'value': val, 'spell_a_damage': round(a, 4), 'spell_b_damage': round(b, 4)})
             if prev_diff is not None and breakeven is None and prev_diff * diff < 0:
                 breakeven = prev_val  # last integer point before the lead changed
             prev_diff = diff

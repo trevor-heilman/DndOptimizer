@@ -37,7 +37,7 @@ class SpellViewSet(viewsets.ModelViewSet):
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     pagination_class = SpellPagination
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
-    filterset_fields = ['level', 'school', 'is_attack_roll', 'is_saving_throw', 'concentration', 'ritual', 'source']
+    filterset_fields = ['is_attack_roll', 'is_saving_throw', 'concentration', 'ritual']
     search_fields = ['name', 'description', 'source']
     ordering_fields = ['name', 'level', 'created_at']
     ordering = ['level', 'name']
@@ -65,10 +65,50 @@ class SpellViewSet(viewsets.ModelViewSet):
             # Show only non-custom spells
             queryset = queryset.filter(is_custom=False)
 
-        # Optional class filter: ?class_name=wizard
-        class_name = self.request.query_params.get('class_name')
-        if class_name:
-            queryset = queryset.filter(classes__contains=[class_name.lower()])
+        # Optional class filter: ?class_name=wizard&class_name=sorcerer (OR logic)
+        class_names = self.request.query_params.getlist('class_name')
+        if class_names:
+            q = models.Q()
+            for cn in class_names:
+                q |= models.Q(classes__contains=[cn.lower()])
+            queryset = queryset.filter(q)
+
+        # Optional tag filter: ?tag=damage&tag=aoe (OR logic)
+        tags = self.request.query_params.getlist('tag')
+        if tags:
+            q = models.Q()
+            for t in tags:
+                q |= models.Q(tags__contains=[t.lower()])
+            queryset = queryset.filter(q)
+
+        # Multi-value level filter: ?level=1&level=3
+        levels = self.request.query_params.getlist('level')
+        if levels:
+            try:
+                queryset = queryset.filter(level__in=[int(l) for l in levels])
+            except (ValueError, TypeError):
+                pass
+
+        # Multi-value school filter: ?school=evocation&school=necromancy
+        schools = self.request.query_params.getlist('school')
+        if schools:
+            queryset = queryset.filter(school__in=schools)
+
+        # Multi-value source filter: ?source=PHB&source=XGTE
+        sources = self.request.query_params.getlist('source')
+        if sources:
+            queryset = queryset.filter(source__in=sources)
+
+        # Multi-value damage_type filter: ?damage_type=fire&damage_type=cold
+        damage_types = self.request.query_params.getlist('damage_type')
+        if damage_types:
+            queryset = queryset.filter(damage_type__in=damage_types)
+
+        # Optional component filters: ?has_v=true, ?has_s=true, ?has_m=true
+        for param, field in (('has_v', 'components_v'), ('has_s', 'components_s'), ('has_m', 'components_m')):
+            val = self.request.query_params.get(param)
+            if val is not None:
+                queryset = queryset.filter(**{field: val.lower() == 'true'})
 
         return queryset
 
@@ -350,6 +390,45 @@ class SpellViewSet(viewsets.ModelViewSet):
             'spells': serializer.data,
             'count': len(serializer.data)
         })
+
+    @action(detail=False, methods=['get'], permission_classes=[permissions.IsAdminUser])
+    def needs_review(self, request):
+        """
+        Return spells flagged for admin review (requires_review=True).
+        Results are ordered by confidence ascending (lowest first).
+        GET /api/spells/spells/needs_review/
+        """
+        queryset = (
+            Spell.objects
+            .filter(parsing_metadata__requires_review=True)
+            .prefetch_related('damage_components', 'parsing_metadata')
+            .order_by('parsing_metadata__parsing_confidence', 'name')
+        )
+        page = self.paginate_queryset(queryset)
+        if page is not None:
+            serializer = SpellDetailSerializer(page, many=True)
+            return self.get_paginated_response(serializer.data)
+        serializer = SpellDetailSerializer(queryset, many=True)
+        return Response(serializer.data)
+
+    @action(detail=True, methods=['post'], permission_classes=[permissions.IsAdminUser])
+    def mark_reviewed(self, request, pk=None):
+        """
+        Mark a spell's parsing metadata as reviewed by the current admin.
+        POST /api/spells/spells/{id}/mark_reviewed/
+        """
+        from django.utils import timezone
+        spell = self.get_object()
+        metadata = getattr(spell, 'parsing_metadata', None)
+        if metadata is None:
+            return Response({'error': 'No parsing metadata found'}, status=status.HTTP_400_BAD_REQUEST)
+        metadata.requires_review = False
+        metadata.reviewed_by = request.user
+        metadata.reviewed_at = timezone.now()
+        metadata.save(update_fields=['requires_review', 'reviewed_by', 'reviewed_at'])
+        # Invalidate cached detail so next fetch reflects the updated metadata
+        cache.delete(spell_detail_key(spell.id, spell.updated_at))
+        return Response({'status': 'reviewed'})
 
 
 class DamageComponentViewSet(viewsets.ModelViewSet):

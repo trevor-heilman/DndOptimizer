@@ -1,3 +1,16 @@
+export const SPELL_SCHOOLS = [
+  'abjuration',
+  'conjuration',
+  'divination',
+  'enchantment',
+  'evocation',
+  'illusion',
+  'necromancy',
+  'transmutation',
+] as const;
+
+export type SpellSchool = typeof SPELL_SCHOOLS[number];
+
 /**
  * Centralized spell color maps.
  *
@@ -50,6 +63,25 @@ export const DAMAGE_COLORS: Record<string, DamageColors> = {
 };
 
 export const DEFAULT_DAMAGE_COLORS: DamageColors = { bg: '#1c1c24', text: '#d1d5db' };
+
+export const DAMAGE_TYPES = Object.keys({
+  fire: 1, cold: 1, lightning: 1, thunder: 1, poison: 1,
+  acid: 1, necrotic: 1, radiant: 1, force: 1, psychic: 1,
+  bludgeoning: 1, piercing: 1, slashing: 1,
+}) as string[];
+
+export const DND_CLASSES = [
+  'artificer', 'barbarian', 'bard', 'cleric', 'druid',
+  'fighter', 'monk', 'paladin', 'ranger', 'rogue',
+  'sorcerer', 'warlock', 'wizard',
+] as const;
+
+export type DndClass = typeof DND_CLASSES[number];
+
+export const SPELL_TAGS = [
+  'damage', 'aoe', 'utility', 'crowd_control', 'healing',
+  'summoning', 'buff', 'debuff',
+] as const;
 
 /** Look up school colors, falling back to the default neutral palette. */
 export function getSchoolColors(school: string): SchoolColors {

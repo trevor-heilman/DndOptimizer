@@ -61,16 +61,6 @@ class Spellbook(models.Model):
     def __str__(self):
         return f"{self.name} ({self.owner.username})"
 
-    @property
-    def spell_count(self):
-        """Return the total number of spells in this spellbook."""
-        return self.spells.count()
-
-    @property
-    def prepared_spell_count(self):
-        """Return the number of prepared spells."""
-        return self.prepared_spells.filter(prepared=True).count()
-
 
 class PreparedSpell(models.Model):
     """

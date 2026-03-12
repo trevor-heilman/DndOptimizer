@@ -100,3 +100,20 @@ export function useSpellSources() {
     staleTime: 60_000, // sources change infrequently
   });
 }
+
+export function useNeedsReview() {
+  return useQuery({
+    queryKey: ['spellsNeedsReview'],
+    queryFn: () => spellService.getNeedsReview(),
+  });
+}
+
+export function useMarkReviewed() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (id: string) => spellService.markReviewed(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['spellsNeedsReview'] });
+    },
+  });
+}

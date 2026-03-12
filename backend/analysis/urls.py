@@ -12,6 +12,7 @@ analysis_urls = [
     path('analyze/', AnalysisViewSet.as_view({'post': 'analyze'}), name='analysis-analyze'),
     path('efficiency/', AnalysisViewSet.as_view({'post': 'efficiency'}), name='analysis-efficiency'),
     path('breakeven/', AnalysisViewSet.as_view({'post': 'breakeven'}), name='analysis-breakeven'),
+    path('compare_growth/', AnalysisViewSet.as_view({'post': 'compare_growth'}), name='analysis-compare-growth'),
 ]
 
 urlpatterns = [

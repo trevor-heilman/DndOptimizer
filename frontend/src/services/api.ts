@@ -19,6 +19,20 @@ class APIClient {
       headers: {
         'Content-Type': 'application/json',
       },
+      // Serialize array params as repeated keys: ?school=a&school=b (no brackets)
+      // so Django's request.query_params.getlist() picks them up correctly.
+      paramsSerializer: (params: Record<string, unknown>) => {
+        const usp = new URLSearchParams();
+        for (const [key, val] of Object.entries(params)) {
+          if (val === undefined || val === null) continue;
+          if (Array.isArray(val)) {
+            val.forEach((v) => usp.append(key, String(v)));
+          } else {
+            usp.append(key, String(val));
+          }
+        }
+        return usp.toString();
+      },
     });
 
     this.setupInterceptors();

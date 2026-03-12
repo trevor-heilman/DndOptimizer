@@ -25,7 +25,7 @@ export function Layout() {
     <div className="min-h-screen bg-smoke-950">
       {/* Navigation */}
       <nav className="bg-smoke-900 border-b border-gold-900/40 shadow-lg shadow-black/40">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+        <div className="mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex justify-between h-16">
             {/* Logo + Nav Links */}
             <div className="flex items-center gap-6">
@@ -35,7 +35,7 @@ export function Layout() {
               >
                 <span className="text-gold-400 text-xl" aria-hidden="true">⚔️</span>
                 <span className="font-display font-bold text-lg text-gold-300 group-hover:text-gold-200 transition-colors tracking-wide">
-                  DndOptimizer
+                  Spellwright
                 </span>
               </Link>
 
@@ -49,6 +49,11 @@ export function Layout() {
                 <NavLink to="/compare" className={navLinkClass}>
                   <span aria-hidden="true">⚖️</span> Compare
                 </NavLink>
+                {user?.is_staff && (
+                  <NavLink to="/admin/review" className={navLinkClass}>
+                    <span aria-hidden="true">🛡️</span> Review
+                  </NavLink>
+                )}
               </div>
             </div>
 
@@ -73,7 +78,7 @@ export function Layout() {
       </nav>
 
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+      <main className="mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Outlet />
       </main>
     </div>

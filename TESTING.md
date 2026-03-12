@@ -2,7 +2,7 @@
 
 ## Overview
 
-The DndOptimizer project maintains a minimum of **80% test coverage** across all backend code. This document outlines the testing strategy, test organization, and how to run tests.
+The Spellwright project maintains a minimum of **80% test coverage** across all backend code. This document outlines the testing strategy, test organization, and how to run tests.
 
 ## Test Stack
 
@@ -346,7 +346,7 @@ podman compose exec backend pytest -m "not slow"
 
 ### Database errors
 - Run migrations: `make migrate`
-- Clear test database: `podman compose exec postgres psql -U testuser -c "DROP DATABASE dndoptimizer_test; CREATE DATABASE dndoptimizer_test;"`
+- Clear test database: `podman compose exec postgres psql -U testuser -c "DROP DATABASE spellwright_test; CREATE DATABASE spellwright_test;"`
 
 ### Coverage not updating
 - Delete `.coverage` file: `rm backend/.coverage`

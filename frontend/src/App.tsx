@@ -14,6 +14,7 @@ import { SpellDetailPage } from './pages/SpellDetailPage';
 import { SpellbooksPage } from './pages/SpellbooksPage';
 import { SpellbookDetailPage } from './pages/SpellbookDetailPage';
 import { ComparePage } from './pages/ComparePage';
+import { AdminReviewPage } from './pages/AdminReviewPage';
 
 // Create React Query client
 const queryClient = new QueryClient({
@@ -45,6 +46,7 @@ function App() {
                 <Route path="/spellbooks" element={<SpellbooksPage />} />
                 <Route path="/spellbooks/:id" element={<SpellbookDetailPage />} />
                 <Route path="/compare" element={<ComparePage />} />
+                <Route path="/admin/review" element={<AdminReviewPage />} />
               </Route>
             </Route>
 

@@ -1,6 +1,6 @@
 ﻿<#
 .SYNOPSIS
-    Sync the project to WSL2 and start the DndOptimizer stack.
+    Sync the project to WSL2 and start the Spellwright stack.
 
 .DESCRIPTION
     Rsyncs the latest source from Windows to the Ubuntu-24.04 WSL2 filesystem,
