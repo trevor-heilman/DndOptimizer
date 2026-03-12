@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+﻿#!/usr/bin/env bash
 # Rebuild and restart the Spellwright stack from WSL2.
 #
 # Usage (called by rebuild.ps1 which passes UbuntuPW via WSL_SUDO_PASS):

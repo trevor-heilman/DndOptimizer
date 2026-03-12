@@ -1,4 +1,4 @@
-#!/usr/bin/env bash
+﻿#!/usr/bin/env bash
 # Start the Spellwright stack (all containers).
 # Run from inside WSL2: bash ~/projects/DndOptimizer/scripts/start.sh
 set -euo pipefail
