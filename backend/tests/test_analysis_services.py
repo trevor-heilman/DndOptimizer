@@ -545,8 +545,8 @@ class TestBreakevenAnalysis:
         )
         result = SpellAnalysisService.breakeven_analysis(spell_a, spell_b, ctx)
         assert len(result['ac_profile']) == 30
-        assert result['ac_profile'][0]['target_ac'] == 1
-        assert result['ac_profile'][-1]['target_ac'] == 30
+        assert result['ac_profile'][0]['value'] == 1
+        assert result['ac_profile'][-1]['value'] == 30
 
     def test_save_profile_covers_full_range(self):
         """Save bonus profile has one entry per integer from -5 to +15."""
@@ -559,8 +559,8 @@ class TestBreakevenAnalysis:
         )
         result = SpellAnalysisService.breakeven_analysis(spell_a, spell_b, ctx)
         assert len(result['save_profile']) == 21
-        assert result['save_profile'][0]['target_save_bonus'] == -5
-        assert result['save_profile'][-1]['target_save_bonus'] == 15
+        assert result['save_profile'][0]['value'] == -5
+        assert result['save_profile'][-1]['value'] == 15
 
     def test_attack_damage_decreases_as_ac_rises(self):
         """Attack roll spell expected damage monotonically decreases with AC."""

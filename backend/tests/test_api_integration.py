@@ -36,8 +36,8 @@ def authenticated_client(test_user):
 
 
 @pytest.fixture
-def test_spell(db):
-    """Fixture for test spell."""
+def test_spell(test_user):
+    """Fixture for test spell, owned by test_user so update/delete are permitted."""
     spell = Spell.objects.create(
         name='Fireball',
         level=3,
@@ -48,7 +48,9 @@ def test_spell(db):
         description='A bright streak flashes from your pointing finger to a point you choose.',
         is_saving_throw=True,
         save_type='DEX',
-        half_damage_on_save=True
+        half_damage_on_save=True,
+        created_by=test_user,
+        is_custom=True,
     )
     
     DamageComponent.objects.create(
@@ -347,9 +349,9 @@ class TestAnalysisAPI:
         response = authenticated_client.post('/api/analysis/compare/', data, format='json')
 
         assert response.status_code == status.HTTP_200_OK
-        assert 'spell_a' in response.data
-        assert 'spell_b' in response.data
         assert 'results' in response.data
+        assert 'spell_a' in response.data['results']
+        assert 'spell_b' in response.data['results']
     
     def test_efficiency_analysis(self, authenticated_client, test_spell):
         """Test spell efficiency across slot levels."""
@@ -406,7 +408,7 @@ class TestAnalysisAPI:
         assert len(response.data['ac_profile']) == 30
         # Each entry has the three expected keys
         entry = response.data['ac_profile'][0]
-        assert 'target_ac' in entry
+        assert 'value' in entry
         assert 'spell_a_damage' in entry
         assert 'spell_b_damage' in entry
         # Save profile covers -5 to +15 (21 entries)
