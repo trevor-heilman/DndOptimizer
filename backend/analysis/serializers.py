@@ -212,29 +212,19 @@ class BreakevenRequestSerializer(ContextParametersMixin):
         return value
 
 
-class CompareGrowthRequestSerializer(serializers.Serializer):
+class CompareGrowthRequestSerializer(ContextParametersMixin):
     """
     Serializer for the compare_growth endpoint.
-    Like SpellComparisonRequestSerializer but without spell_slot_level —
+    Extends ContextParametersMixin so all advanced context fields (crit_type,
+    lucky, elemental_adept_type, save_penalty_die) are present for
+    AnalysisContext.from_data(). spell_slot_level is accepted but ignored —
     the service sweeps all character levels / slot levels internally.
     """
     spell_a_id = serializers.UUIDField(required=True)
     spell_b_id = serializers.UUIDField(required=True)
-    target_ac = serializers.IntegerField(default=15, min_value=1, max_value=30)
-    target_save_bonus = serializers.IntegerField(default=0, min_value=-5, max_value=15)
-    spell_save_dc = serializers.IntegerField(default=15, min_value=1, max_value=30)
-    caster_attack_bonus = serializers.IntegerField(default=5, min_value=-5, max_value=20)
-    number_of_targets = serializers.IntegerField(default=1, min_value=1, max_value=20)
-    advantage = serializers.BooleanField(default=False)
-    disadvantage = serializers.BooleanField(default=False)
-    crit_enabled = serializers.BooleanField(default=True)
-    half_damage_on_save = serializers.BooleanField(default=True)
-    evasion_enabled = serializers.BooleanField(default=False)
-    resistance = serializers.BooleanField(default=False)
 
     def validate(self, attrs):
-        if attrs.get('advantage') and attrs.get('disadvantage'):
-            raise serializers.ValidationError("Cannot have both advantage and disadvantage.")
+        attrs = super().validate(attrs)
         if attrs['spell_a_id'] == attrs['spell_b_id']:
             raise serializers.ValidationError("Cannot compare a spell with itself.")
         return attrs
