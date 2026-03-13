@@ -20,14 +20,17 @@ import {
   useUpdateSpellbook,
   useRemoveSpellFromSpellbook,
   useUpdatePreparedSpell,
+  useSpellbookCopyCost,
 } from '../hooks/useSpellbooks';
 import { useBatchAnalyzeSpells, useGetSpellEfficiency } from '../hooks/useAnalysis';
+import { useCharacter } from '../hooks/useCharacters';
 import { getSchoolColors } from '../constants/spellColors';
 import { AddSpellPicker } from '../components/AddSpellPicker';
 import { AnalysisContextForm } from '../components/AnalysisContextForm';
 import { LoadingSpinner, AlertMessage, EmptyState, ChartCard } from '../components/ui';
+import { BookColorPicker } from '../components/BookColorPicker';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LineChart, Line, Legend } from 'recharts';
-import type { PreparedSpell, Spell, AnalysisContext } from '../types/api';
+import type { PreparedSpell, Spell, AnalysisContext, BookColor } from '../types/api';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -41,74 +44,6 @@ const SCHOOLS = [
   'abjuration', 'conjuration', 'divination', 'enchantment',
   'evocation', 'illusion', 'necromancy', 'transmutation',
 ] as const;
-
-const CLASS_CHOICES = [
-  { value: 'artificer', label: 'Artificer' },
-  { value: 'bard',      label: 'Bard' },
-  { value: 'cleric',    label: 'Cleric' },
-  { value: 'druid',     label: 'Druid' },
-  { value: 'paladin',   label: 'Paladin' },
-  { value: 'ranger',    label: 'Ranger' },
-  { value: 'sorcerer',  label: 'Sorcerer' },
-  { value: 'warlock',   label: 'Warlock' },
-  { value: 'wizard',    label: 'Wizard' },
-];
-
-// D&D 5e spell slots by character level (index = spell level 1-9)
-// Full caster table (Bard, Cleric, Druid, Sorcerer, Wizard)
-const FULL_CASTER_SLOTS: Record<number, number[]> = {
-   1: [2,0,0,0,0,0,0,0,0],  2: [3,0,0,0,0,0,0,0,0],
-   3: [4,2,0,0,0,0,0,0,0],  4: [4,3,0,0,0,0,0,0,0],
-   5: [4,3,2,0,0,0,0,0,0],  6: [4,3,3,0,0,0,0,0,0],
-   7: [4,3,3,1,0,0,0,0,0],  8: [4,3,3,2,0,0,0,0,0],
-   9: [4,3,3,3,1,0,0,0,0], 10: [4,3,3,3,2,0,0,0,0],
-  11: [4,3,3,3,2,1,0,0,0], 12: [4,3,3,3,2,1,0,0,0],
-  13: [4,3,3,3,2,1,1,0,0], 14: [4,3,3,3,2,1,1,0,0],
-  15: [4,3,3,3,2,1,1,1,0], 16: [4,3,3,3,2,1,1,1,0],
-  17: [4,3,3,3,2,1,1,1,1], 18: [4,3,3,3,3,1,1,1,1],
-  19: [4,3,3,3,3,2,1,1,1], 20: [4,3,3,3,3,2,2,1,1],
-};
-// Half caster (Paladin, Ranger, Artificer)
-const HALF_CASTER_SLOTS: Record<number, number[]> = {
-   1: [0,0,0,0,0,0,0,0,0],  2: [2,0,0,0,0,0,0,0,0],
-   3: [3,0,0,0,0,0,0,0,0],  4: [3,0,0,0,0,0,0,0,0],
-   5: [4,2,0,0,0,0,0,0,0],  6: [4,2,0,0,0,0,0,0,0],
-   7: [4,3,0,0,0,0,0,0,0],  8: [4,3,0,0,0,0,0,0,0],
-   9: [4,3,2,0,0,0,0,0,0], 10: [4,3,2,0,0,0,0,0,0],
-  11: [4,3,3,0,0,0,0,0,0], 12: [4,3,3,0,0,0,0,0,0],
-  13: [4,3,3,1,0,0,0,0,0], 14: [4,3,3,1,0,0,0,0,0],
-  15: [4,3,3,2,0,0,0,0,0], 16: [4,3,3,2,0,0,0,0,0],
-  17: [4,3,3,3,1,0,0,0,0], 18: [4,3,3,3,1,0,0,0,0],
-  19: [4,3,3,3,2,0,0,0,0], 20: [4,3,3,3,2,0,0,0,0],
-};
-// Warlock (Pact Magic) — all slots are the same level
-const WARLOCK_SLOTS: Record<number, { slots: number; slotLevel: number }> = {
-   1: { slots: 1, slotLevel: 1 },  2: { slots: 2, slotLevel: 1 },
-   3: { slots: 2, slotLevel: 2 },  4: { slots: 2, slotLevel: 2 },
-   5: { slots: 2, slotLevel: 3 },  6: { slots: 2, slotLevel: 3 },
-   7: { slots: 2, slotLevel: 4 },  8: { slots: 2, slotLevel: 4 },
-   9: { slots: 2, slotLevel: 5 }, 10: { slots: 2, slotLevel: 5 },
-  11: { slots: 3, slotLevel: 5 }, 12: { slots: 3, slotLevel: 5 },
-  13: { slots: 3, slotLevel: 5 }, 14: { slots: 3, slotLevel: 5 },
-  15: { slots: 3, slotLevel: 5 }, 16: { slots: 3, slotLevel: 5 },
-  17: { slots: 4, slotLevel: 5 }, 18: { slots: 4, slotLevel: 5 },
-  19: { slots: 4, slotLevel: 5 }, 20: { slots: 4, slotLevel: 5 },
-};
-const HALF_CASTER_CLASSES = new Set(['paladin', 'ranger', 'artificer']);
-
-function getSpellSlots(characterClass: string, level: number): number[] | null {
-  if (!level || !characterClass) return null;
-  if (characterClass === 'warlock') {
-    const wl = WARLOCK_SLOTS[level];
-    if (!wl) return null;
-    const arr = [0,0,0,0,0,0,0,0,0];
-    arr[wl.slotLevel - 1] = wl.slots;
-    return arr;
-  }
-  const table = HALF_CASTER_CLASSES.has(characterClass) ? HALF_CASTER_SLOTS : FULL_CASTER_SLOTS;
-  return table[level] ?? null;
-}
-
 
 const TAG_STYLES: Record<string, { color: string; bg: string; border: string }> = {
   damage:        { color: '#fca5a5', bg: '#450a0a55', border: '#7f1d1d' },
@@ -174,10 +109,15 @@ interface PreparedSpellRowProps {
   onRemove: (spellId: string) => void;
   isUpdating: boolean;
   isEditMode: boolean;
+  spellbookId: string;
+  spellbookName: string;
+  saveDC?: number;
+  atkBonus?: number;
 }
 
 function PreparedSpellRow({
   ps, onTogglePrepared, onRemove, isUpdating, isEditMode,
+  spellbookId, spellbookName, saveDC, atkBonus,
 }: PreparedSpellRowProps) {
   const { spell } = ps;
   const schoolColor = getSchoolColors(spell.school);
@@ -209,6 +149,7 @@ function PreparedSpellRow({
         <div className="flex items-center gap-2 flex-wrap">
           <Link
             to={`/spells/${spell.id}`}
+            state={{ spellbookId, spellbookName, saveDC, atkBonus }}
             className="font-display text-sm text-parchment-100 hover:text-gold-300 transition-colors"
           >
             {spell.name}
@@ -280,10 +221,15 @@ interface LevelSectionProps {
   onRemove: (spellId: string) => void;
   updatingIds: Set<string>;
   isEditMode: boolean;
+  spellbookId: string;
+  spellbookName: string;
+  saveDC?: number;
+  atkBonus?: number;
 }
 
 function LevelSection({
   level, preparedSpells, onTogglePrepared, onRemove, updatingIds, isEditMode,
+  spellbookId, spellbookName, saveDC, atkBonus,
 }: LevelSectionProps) {
   const [open, setOpen] = useState(true);
   const preparedCount = preparedSpells.filter(ps => ps.prepared).length;
@@ -325,12 +271,113 @@ function LevelSection({
               onRemove={onRemove}
               isUpdating={updatingIds.has(ps.spell.id)}
               isEditMode={isEditMode}
+              spellbookId={spellbookId}
+              spellbookName={spellbookName}
+              saveDC={saveDC}
+              atkBonus={atkBonus}
             />
           ))}
         </div>
       )}
       {!open && <div className="mb-4" />}
     </section>
+  );
+}
+
+// ─── CopyCostSection ─────────────────────────────────────────────────────────
+
+function CopyCostSection({ spellbookId, characterId }: { spellbookId: string; characterId?: string }) {
+  const [open, setOpen] = useState(false);
+  const { data: cost, isLoading, error } = useSpellbookCopyCost(spellbookId, characterId, open);
+
+  return (
+    <div className="mt-8">
+      <button
+        onClick={() => setOpen(v => !v)}
+        className="font-display text-sm flex items-center gap-2 text-gold-400 hover:text-gold-300 transition-colors mb-3"
+      >
+        <svg
+          className={`w-4 h-4 transition-transform ${open ? 'rotate-90' : ''}`}
+          fill="none" stroke="currentColor" viewBox="0 0 24 24"
+        >
+          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+        </svg>
+        📜 Spellbook Copy Cost
+      </button>
+
+      {open && (
+        <div className="dnd-card p-6 border-l-4 border-gold-700">
+          <h2 className="font-display text-xl font-semibold text-gold-300 mb-4">Copy Cost Estimate</h2>
+
+          {isLoading && <LoadingSpinner />}
+          {error && (
+            <AlertMessage variant="error" title="Could not calculate cost" message="An error occurred fetching copy cost." />
+          )}
+
+          {cost && (
+            <>
+              {/* Summary row */}
+              <div className="flex gap-6 mb-5">
+                <div className="text-center">
+                  <div className="font-display text-2xl font-bold text-gold-300">{cost.total_gold} gp</div>
+                  <div className="font-display text-[10px] uppercase tracking-widest text-smoke-500 mt-0.5">Total Gold</div>
+                </div>
+                <div className="text-center">
+                  <div className="font-display text-2xl font-bold text-parchment-200">{cost.total_hours} hr</div>
+                  <div className="font-display text-[10px] uppercase tracking-widest text-smoke-500 mt-0.5">Total Hours</div>
+                </div>
+                {cost.scribes_discount_applied && (
+                  <div className="flex items-center">
+                    <span
+                      className="font-display text-xs px-2 py-1 rounded"
+                      style={{ background: 'rgba(109,40,217,0.3)', color: '#c4b5fd', border: '1px solid rgba(139,92,246,0.4)' }}
+                    >
+                      Order of Scribes −50%
+                    </span>
+                  </div>
+                )}
+                {Object.keys(cost.school_discounts_applied).length > 0 && (
+                  <div className="flex items-center flex-wrap gap-1">
+                    {Object.keys(cost.school_discounts_applied).map(s => (
+                      <span
+                        key={s}
+                        className="font-display text-[10px] px-1.5 py-0.5 rounded capitalize"
+                        style={{ background: 'rgba(6,78,59,0.4)', color: '#6ee7b7', border: '1px solid rgba(52,211,153,0.3)' }}
+                      >
+                        {s} −{cost.school_discounts_applied[s]}%
+                      </span>
+                    ))}
+                  </div>
+                )}
+              </div>
+
+              {/* Per-spell breakdown */}
+              <div className="border-t border-smoke-700 pt-4">
+                <p className="font-display text-[10px] uppercase tracking-widest text-smoke-500 mb-2">Per-Spell Breakdown</p>
+                <div className="space-y-1">
+                  {cost.spell_entries.map((entry, i) => (
+                    <div key={i} className="flex items-center gap-3 font-body text-sm">
+                      <span className="flex-1 text-parchment-300 truncate">{entry.name}</span>
+                      <span className="text-smoke-500 capitalize text-xs">{entry.school}</span>
+                      <span className="text-gold-400 w-16 text-right">{entry.gold_cost} gp</span>
+                      <span className="text-smoke-400 w-14 text-right">{entry.time_hours} hr</span>
+                      {entry.discount_pct > 0 && (
+                        <span
+                          className="font-display text-[9px] px-1 rounded"
+                          style={{ background: 'rgba(109,40,217,0.25)', color: '#c4b5fd', border: '1px solid rgba(139,92,246,0.3)' }}
+                        >
+                          −{entry.discount_pct}%
+                        </span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </>
+          )}
+        </div>
+      )}
+    </div>
   );
 }
 
@@ -343,13 +390,14 @@ export function SpellbookDetailPage() {
   const updateSpellbook = useUpdateSpellbook(id!);
   const removeSpell     = useRemoveSpellFromSpellbook(id!);
   const updatePrepared  = useUpdatePreparedSpell(id!);
+  const { data: linkedCharacter } = useCharacter(spellbook?.character ?? '', !!spellbook?.character);
 
   // Edit mode
   const [isEditMode,        setIsEditMode]        = useState(false);
   const [editedName,        setEditedName]        = useState('');
   const [editedDescription, setEditedDescription] = useState('');
-  const [editedClass,       setEditedClass]       = useState('');
-  const [editedLevel,       setEditedLevel]       = useState('');
+  const [editedColor,       setEditedColor]       = useState<BookColor>('violet');
+  const [editedLabelColor,  setEditedLabelColor]  = useState('');
 
   // Damage comparison
   const batchAnalyze = useBatchAnalyzeSpells();
@@ -466,8 +514,8 @@ export function SpellbookDetailPage() {
   const handleEnterEditMode = () => {
     setEditedName(spellbook.name);
     setEditedDescription(spellbook.description ?? '');
-    setEditedClass(spellbook.character_class ?? '');
-    setEditedLevel(spellbook.character_level != null ? String(spellbook.character_level) : '');
+    setEditedColor((spellbook.book_color ?? 'violet') as BookColor);
+    setEditedLabelColor(spellbook.label_color ?? '');
     setIsEditMode(true);
   };
 
@@ -477,11 +525,10 @@ export function SpellbookDetailPage() {
       updates.name = editedName.trim();
     if (editedDescription !== (spellbook.description ?? ''))
       updates.description = editedDescription.trim();
-    if (editedClass !== (spellbook.character_class ?? ''))
-      updates.character_class = editedClass;
-    const lvlNum = editedLevel ? parseInt(editedLevel, 10) : null;
-    if (lvlNum !== (spellbook.character_level ?? null))
-      updates.character_level = lvlNum;
+    if (editedColor !== (spellbook.book_color ?? 'violet'))
+      updates.book_color = editedColor;
+    if (editedLabelColor !== (spellbook.label_color ?? ''))
+      updates.label_color = editedLabelColor;
     if (Object.keys(updates).length > 0)
       await updateSpellbook.mutateAsync(updates as any);
     setIsEditMode(false);
@@ -629,51 +676,48 @@ export function SpellbookDetailPage() {
           )
         )}
 
-        {/* Class + Level selectors — edit mode */}
+        {/* Book color + spine text color — edit mode */}
         {isEditMode && (
-          <div className="mt-3 flex items-center gap-4 flex-wrap">
-            <div className="flex items-center gap-2">
-              <label className="font-display text-xs uppercase tracking-widest text-smoke-400">
-                Class
+          <div className="mt-4 space-y-3">
+            <div>
+              <label className="font-display text-xs uppercase tracking-widest text-smoke-400 block mb-1.5">
+                Book Color
               </label>
-              <select
-                value={editedClass}
-                onChange={e => setEditedClass(e.target.value)}
-                className="dnd-input font-body text-sm py-1 max-w-[140px]"
-              >
-                <option value="">— No class —</option>
-                {CLASS_CHOICES.map(c => (
-                  <option key={c.value} value={c.value}>{c.label}</option>
-                ))}
-              </select>
+              <BookColorPicker value={editedColor} onChange={setEditedColor} />
             </div>
-            <div className="flex items-center gap-2">
-              <label className="font-display text-xs uppercase tracking-widest text-smoke-400">
-                Level
+            <div>
+              <label className="font-display text-xs uppercase tracking-widest text-smoke-400 block mb-1.5">
+                Spine Text Color
               </label>
-              <input
-                type="number"
-                value={editedLevel}
-                onChange={e => setEditedLevel(e.target.value)}
-                className="dnd-input font-body text-sm py-1 w-[80px]"
-                placeholder="1–20"
-                min={1}
-                max={20}
-              />
+              <div className="flex items-center gap-2 flex-wrap">
+                {[{value: '', label: 'Auto'}, {value: '#ffffff', label: 'White'}, {value: '#0f172a', label: 'Dark'}, {value: '#fbbf24', label: 'Gold'}, {value: '#e2e8f0', label: 'Silver'}, {value: '#ef4444', label: 'Red'}].map(opt => (
+                  <button
+                    key={opt.value}
+                    type="button"
+                    title={opt.label}
+                    onClick={() => setEditedLabelColor(opt.value)}
+                    className={`flex items-center gap-1.5 px-2.5 py-1 rounded font-body text-xs border transition-all ${
+                      editedLabelColor === opt.value
+                        ? 'border-gold-500 ring-1 ring-gold-500/60 bg-smoke-800'
+                        : 'border-smoke-600 bg-smoke-900 hover:border-smoke-400'
+                    }`}
+                  >
+                    {opt.value && (
+                      <span
+                        className="inline-block w-3 h-3 rounded-full border border-smoke-600"
+                        style={{ background: opt.value }}
+                      />
+                    )}
+                    <span style={{ color: opt.value || '#94a3b8' }}>{opt.label}</span>
+                  </button>
+                ))}
+              </div>
             </div>
           </div>
         )}
 
-        {/* Class badge + stats — view mode */}
+        {/* Stats — view mode */}
         <div className="flex items-center gap-3 mt-3 flex-wrap">
-          {spellbook.character_class && (
-            <span
-              className="font-display text-xs px-2 py-0.5 rounded-full capitalize"
-              style={{ color: '#c4b5fd', background: '#2e1a5f55', border: '1px solid #5b21b6' }}
-            >
-              {spellbook.character_class}
-            </span>
-          )}
           <span className="font-body text-sm text-parchment-400">
             <span className="font-semibold text-parchment-200">{preparedSpells.length}</span>{' '}
             spell{preparedSpells.length !== 1 ? 's' : ''}
@@ -684,39 +728,6 @@ export function SpellbookDetailPage() {
             </span>
           )}
         </div>
-
-        {/* Spell slots display */}
-        {!isEditMode && spellbook.character_class && spellbook.character_level && (() => {
-          const slots = getSpellSlots(spellbook.character_class, spellbook.character_level);
-          if (!slots) return null;
-          const nonzero = slots
-            .map((n, i) => [i + 1, n] as [number, number])
-            .filter(([, n]) => n > 0);
-          if (nonzero.length === 0) return null;
-          const className = spellbook.character_class.charAt(0).toUpperCase() + spellbook.character_class.slice(1);
-          return (
-            <div className="mt-3">
-              <p className="font-display text-[10px] uppercase tracking-widest text-smoke-500 mb-1.5">
-                Spell Slots — Lvl {spellbook.character_level} {className}
-                {spellbook.character_class === 'warlock' ? ' (Pact Magic)' : ''}
-              </p>
-              <div className="flex flex-wrap gap-1.5">
-                {nonzero.map(([slotLevel, count]) => {
-                  const suffix = slotLevel === 1 ? 'st' : slotLevel === 2 ? 'nd' : slotLevel === 3 ? 'rd' : 'th';
-                  return (
-                    <span
-                      key={slotLevel}
-                      className="font-display text-[10px] px-2 py-0.5 rounded"
-                      style={{ color: '#c4b5fd', background: '#2e1a5f55', border: '1px solid #5b21b655' }}
-                    >
-                      {slotLevel}{suffix}: <span style={{ color: '#e2e8f0' }}>{count}</span>
-                    </span>
-                  );
-                })}
-              </div>
-            </div>
-          );
-        })()}
 
         {/* Level breakdown */}
         {levelCounts.length > 0 && (
@@ -819,6 +830,10 @@ export function SpellbookDetailPage() {
               onRemove={handleRemoveSpell}
               updatingIds={updatingIds}
               isEditMode={isEditMode}
+              spellbookId={spellbook.id}
+              spellbookName={spellbook.name}
+              saveDC={linkedCharacter?.spell_save_dc}
+              atkBonus={linkedCharacter?.spell_attack_bonus}
             />
           ))}
         </div>
@@ -1061,6 +1076,11 @@ export function SpellbookDetailPage() {
             </div>
           )}
         </div>
+      )}
+
+      {/* ── Copy Cost Calculator ─────────────────────────────────────── */}
+      {preparedSpells.length > 0 && (
+        <CopyCostSection spellbookId={id!} characterId={spellbook.character ?? undefined} />
       )}
 
       {/* ── Add Spell Picker modal ──────────────────────────────────────── */}

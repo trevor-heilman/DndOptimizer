@@ -22,6 +22,15 @@ export function useSpellbook(id: string, enabled = true) {
   });
 }
 
+export function useSpellbookCopyCost(id: string, characterId?: string, enabled = true) {
+  return useQuery({
+    queryKey: ['spellbook-copy-cost', id, characterId ?? null],
+    queryFn: () => spellbookService.getCopyCost(id, characterId),
+    staleTime: 5 * 60 * 1000,
+    enabled,
+  });
+}
+
 export function useCreateSpellbook() {
   const queryClient = useQueryClient();
   
@@ -95,6 +104,18 @@ export function useDuplicateSpellbook() {
   
   return useMutation({
     mutationFn: (id: string) => spellbookService.duplicateSpellbook(id),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['spellbooks'] });
+    },
+  });
+}
+
+export function useReorderSpellbooks() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (items: { id: string; sort_order: number }[]) =>
+      spellbookService.reorderSpellbooks(items),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['spellbooks'] });
     },

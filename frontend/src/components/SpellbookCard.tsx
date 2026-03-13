@@ -4,28 +4,25 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { Spellbook } from '../types/api';
-
-const BOOK_PALETTES = [
-  { grad: 'linear-gradient(180deg, #3b0764 0%, #1e0533 100%)', accent: '#a78bfa', label: '#e9d5ff', border: 'rgba(167,139,250,0.45)' },
-  { grad: 'linear-gradient(180deg, #881337 0%, #4c0519 100%)', accent: '#fb7185', label: '#fecdd3', border: 'rgba(251,113,133,0.45)' },
-  { grad: 'linear-gradient(180deg, #14532d 0%, #052e16 100%)', accent: '#6ee7b7', label: '#d1fae5', border: 'rgba(110,231,183,0.4)' },
-  { grad: 'linear-gradient(180deg, #1e3a5f 0%, #0c1d33 100%)', accent: '#93c5fd', label: '#dbeafe', border: 'rgba(147,197,253,0.45)' },
-  { grad: 'linear-gradient(180deg, #7c2d12 0%, #3b1005 100%)', accent: '#fca553', label: '#ffedd5', border: 'rgba(252,165,83,0.45)' },
-  { grad: 'linear-gradient(180deg, #134e4a 0%, #042f2e 100%)', accent: '#2dd4bf', label: '#ccfbf1', border: 'rgba(45,212,191,0.4)' },
-  { grad: 'linear-gradient(180deg, #1e1b4b 0%, #0b0921 100%)', accent: '#a5b4fc', label: '#e0e7ff', border: 'rgba(165,180,252,0.45)' },
-  { grad: 'linear-gradient(180deg, #713f12 0%, #2d1a05 100%)', accent: '#fde68a', label: '#fef9c3', border: 'rgba(253,230,138,0.45)' },
-] as const;
+import { getBookPalette } from '../constants/bookColors';
 
 interface SpellbookCardProps {
   spellbook: Spellbook;
+  /** Fallback color index used only when spellbook.book_color is absent (legacy). */
   colorIndex?: number;
   onDelete?: (id: string) => void;
   onDuplicate?: (id: string) => void;
 }
 
+/** Legacy fallback palette list (same order as before, indexed by colorIndex). */
+const LEGACY_PALETTE_KEYS = [
+  'violet','ruby','emerald','sapphire','amber','teal','indigo','gold',
+] as const;
+
 export function SpellbookCard({ spellbook, colorIndex = 0, onDelete, onDuplicate }: SpellbookCardProps) {
   const [hovered, setHovered] = useState(false);
-  const palette = BOOK_PALETTES[colorIndex % BOOK_PALETTES.length];
+  const colorKey = spellbook.book_color ?? LEGACY_PALETTE_KEYS[colorIndex % LEGACY_PALETTE_KEYS.length];
+  const palette = getBookPalette(colorKey);
   const preparedCount = spellbook.prepared_spell_count ?? spellbook.prepared_spells?.length ?? 0;
   const totalSpells = spellbook.spell_count ?? 0;
 
@@ -49,7 +46,7 @@ export function SpellbookCard({ spellbook, colorIndex = 0, onDelete, onDuplicate
           pointerEvents: hovered ? 'auto' : 'none',
         }}
       >
-        <p className="font-display text-sm font-bold mb-1 leading-snug" style={{ color: palette.label }}>
+        <p className="font-display text-sm font-bold mb-1 leading-snug" style={{ color: spellbook.label_color || palette.label }}>
           {spellbook.name}
         </p>
         {spellbook.character_class && (
@@ -140,7 +137,7 @@ export function SpellbookCard({ spellbook, colorIndex = 0, onDelete, onDuplicate
           <span
             className="font-display text-[11px] font-bold uppercase tracking-wide"
             style={{
-              color: palette.label,
+              color: spellbook.label_color || palette.label,
               textShadow: `0 0 10px ${palette.accent}55`,
               maxHeight: '130px',
               overflow: 'hidden',

@@ -2,7 +2,7 @@
  * Spell Detail Page
  */
 import { useState, useEffect } from 'react';
-import { useParams, Link, useNavigate } from 'react-router-dom';
+import { useParams, Link, useNavigate, useLocation } from 'react-router-dom';
 import { useSpell, useDuplicateSpell, useDeleteSpell } from '../hooks/useSpells';
 import { useAnalyzeSpell, useGetSpellEfficiency } from '../hooks/useAnalysis';
 import { DamageChart } from '../components/DamageChart';
@@ -17,6 +17,13 @@ import type { AnalysisContext } from '../types/api';
 export function SpellDetailPage() {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
+  const location = useLocation();
+  const fromSpellbook = (location.state ?? null) as {
+    spellbookId?: string;
+    spellbookName?: string;
+    saveDC?: number;
+    atkBonus?: number;
+  } | null;
   const { data: spell, isLoading, error } = useSpell(id!);
   const { user } = useAuth();
   const duplicateSpell = useDuplicateSpell();
@@ -41,8 +48,8 @@ export function SpellDetailPage() {
   const getEfficiency = useGetSpellEfficiency();
   const [analysisContext, setAnalysisContext] = useState<AnalysisContext>({
     target_ac: 15,
-    caster_attack_bonus: 5,
-    spell_save_dc: 15,
+    caster_attack_bonus: fromSpellbook?.atkBonus ?? 5,
+    spell_save_dc: fromSpellbook?.saveDC ?? 15,
     target_save_bonus: 0,
     number_of_targets: 1,
     advantage: false,
@@ -105,9 +112,16 @@ export function SpellDetailPage() {
     <div>
       {/* Header */}
       <div className="mb-6">
-        <Link to="/spells" className="font-display text-gold-700 hover:text-gold-500 text-xs uppercase tracking-widest mb-4 inline-flex items-center gap-1 transition-colors" onClick={(e) => { e.preventDefault(); navigate(-1); }}>
-          ← Back to Spells
-        </Link>
+      <Link
+        to={fromSpellbook?.spellbookId ? `/spellbooks/${fromSpellbook.spellbookId}` : '/spells'}
+        className="font-display text-gold-700 hover:text-gold-500 text-xs uppercase tracking-widest mb-4 inline-flex items-center gap-1 transition-colors"
+        onClick={(e) => { if (!fromSpellbook?.spellbookId) { e.preventDefault(); navigate(-1); } }}
+      >
+        {fromSpellbook?.spellbookId
+          ? `← Back to ${fromSpellbook.spellbookName ?? 'Spellbook'}`
+          : '← Back to Spells'
+        }
+      </Link>
         <div className="flex items-start justify-between gap-4 mt-3 mb-3">
           <h1 className="font-display text-4xl font-extrabold tracking-wide text-gold-300">{spell.name}</h1>
           {user && (

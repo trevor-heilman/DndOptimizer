@@ -1,35 +1,30 @@
-/**
+﻿/**
  * Create Spellbook Modal Component
  */
 import { useState } from 'react';
-import type { SpellbookCreate } from '../types/api';
+import type { SpellbookCreate, Character, BookColor } from '../types/api';
 import { ModalShell, AlertMessage } from './ui';
-
-const CLASS_CHOICES = [
-  { value: 'artificer', label: 'Artificer' },
-  { value: 'bard',      label: 'Bard' },
-  { value: 'cleric',    label: 'Cleric' },
-  { value: 'druid',     label: 'Druid' },
-  { value: 'paladin',   label: 'Paladin' },
-  { value: 'ranger',    label: 'Ranger' },
-  { value: 'sorcerer',  label: 'Sorcerer' },
-  { value: 'warlock',   label: 'Warlock' },
-  { value: 'wizard',    label: 'Wizard' },
-];
+import { BookColorPicker } from './BookColorPicker';
 
 interface CreateSpellbookModalProps {
   isOpen: boolean;
   onClose: () => void;
   onCreate: (data: SpellbookCreate) => Promise<void>;
+  /** Available characters to assign the new spellbook to. */
+  characters?: Character[];
+  /** Pre-select a character when opening from a character shelf. */
+  defaultCharacterId?: string;
 }
 
-export function CreateSpellbookModal({ isOpen, onClose, onCreate }: CreateSpellbookModalProps) {
-  const [name,            setName]            = useState('');
-  const [description,     setDescription]     = useState('');
-  const [characterClass,  setCharacterClass]  = useState('');
-  const [characterLevel,  setCharacterLevel]  = useState('');
-  const [isSubmitting,    setIsSubmitting]     = useState(false);
-  const [error,           setError]           = useState('');
+export function CreateSpellbookModal({
+  isOpen, onClose, onCreate, characters = [], defaultCharacterId,
+}: CreateSpellbookModalProps) {
+  const [name,           setName]           = useState('');
+  const [description,    setDescription]    = useState('');
+  const [characterId,    setCharacterId]    = useState(defaultCharacterId ?? '');
+  const [bookColor,      setBookColor]      = useState<BookColor>('violet');
+  const [isSubmitting,   setIsSubmitting]   = useState(false);
+  const [error,          setError]          = useState('');
 
   if (!isOpen) return null;
 
@@ -37,22 +32,16 @@ export function CreateSpellbookModal({ isOpen, onClose, onCreate }: CreateSpellb
     e.preventDefault();
     if (!name.trim()) { setError('Name is required'); return; }
 
-    const lvl = parseInt(characterLevel, 10);
-    if (characterLevel && (isNaN(lvl) || lvl < 1 || lvl > 20)) {
-      setError('Character level must be between 1 and 20');
-      return;
-    }
-
     setIsSubmitting(true);
     setError('');
     try {
       await onCreate({
         name: name.trim(),
         description: description.trim() || undefined,
-        character_class: characterClass || undefined,
-        character_level: characterLevel ? lvl : undefined,
+        character: characterId || undefined,
+        book_color: bookColor,
       });
-      setName(''); setDescription(''); setCharacterClass(''); setCharacterLevel('');
+      setName(''); setDescription(''); setCharacterId(defaultCharacterId ?? ''); setBookColor('violet');
       onClose();
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to create spellbook');
@@ -63,7 +52,7 @@ export function CreateSpellbookModal({ isOpen, onClose, onCreate }: CreateSpellb
 
   const handleClose = () => {
     if (!isSubmitting) {
-      setName(''); setDescription(''); setCharacterClass(''); setCharacterLevel('');
+      setName(''); setDescription(''); setCharacterId(defaultCharacterId ?? ''); setBookColor('violet');
       setError('');
       onClose();
     }
@@ -88,42 +77,28 @@ export function CreateSpellbookModal({ isOpen, onClose, onCreate }: CreateSpellb
           />
         </div>
 
-        {/* Class + Level on one row */}
-        <div className="grid grid-cols-2 gap-3">
+        {/* Assign to character */}
+        {characters.length > 0 && (
           <div>
-            <label htmlFor="sb-class" className="block text-sm font-display font-medium text-parchment-300 mb-2">
-              Class
+            <label htmlFor="sb-character" className="block text-sm font-display font-medium text-parchment-300 mb-2">
+              Character
             </label>
             <select
-              id="sb-class"
-              value={characterClass}
-              onChange={(e) => setCharacterClass(e.target.value)}
+              id="sb-character"
+              value={characterId}
+              onChange={(e) => setCharacterId(e.target.value)}
               className="dnd-input font-body"
               disabled={isSubmitting}
             >
-              <option value="">— None —</option>
-              {CLASS_CHOICES.map(c => (
-                <option key={c.value} value={c.value}>{c.label}</option>
+              <option value="">â€” Unassigned â€”</option>
+              {characters.map(c => (
+                <option key={c.id} value={c.id}>
+                  {c.name}{c.character_class ? ` (${c.character_class})` : ''}
+                </option>
               ))}
             </select>
           </div>
-          <div>
-            <label htmlFor="sb-level" className="block text-sm font-display font-medium text-parchment-300 mb-2">
-              Level <span className="text-smoke-500 font-body font-normal">(1–20)</span>
-            </label>
-            <input
-              type="number"
-              id="sb-level"
-              value={characterLevel}
-              onChange={(e) => setCharacterLevel(e.target.value)}
-              className="dnd-input font-body"
-              placeholder="—"
-              min={1}
-              max={20}
-              disabled={isSubmitting}
-            />
-          </div>
-        </div>
+        )}
 
         <div>
           <label htmlFor="sb-description" className="block text-sm font-display font-medium text-parchment-300 mb-2">
@@ -140,6 +115,14 @@ export function CreateSpellbookModal({ isOpen, onClose, onCreate }: CreateSpellb
           />
         </div>
 
+        {/* Book color */}
+        <div>
+          <label className="block text-sm font-display font-medium text-parchment-300 mb-2">
+            Book Color
+          </label>
+          <BookColorPicker value={bookColor} onChange={setBookColor} disabled={isSubmitting} />
+        </div>
+
         {error && <AlertMessage variant="error" message={error} />}
 
         <div className="flex gap-3 pt-2">
@@ -148,7 +131,7 @@ export function CreateSpellbookModal({ isOpen, onClose, onCreate }: CreateSpellb
             disabled={isSubmitting}
             className="btn-gold flex-1 disabled:opacity-50 disabled:cursor-not-allowed"
           >
-            {isSubmitting ? 'Inscribing...' : 'Create'}
+            {isSubmitting ? 'Inscribingâ€¦' : 'Create'}
           </button>
           <button
             type="button"

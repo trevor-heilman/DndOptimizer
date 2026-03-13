@@ -121,7 +121,73 @@ export interface SpellListParams {
   has_m?: boolean;
 }
 
-// Spellbook types
+// ─── Character types ─────────────────────────────────────────────────────────
+
+export type BookColor =
+  | 'violet' | 'crimson' | 'emerald' | 'sapphire' | 'amber'
+  | 'teal'   | 'indigo'  | 'gold'    | 'ruby'     | 'forest'
+  | 'slate'  | 'rose'    | 'copper'  | 'midnight' | 'ivory' | 'obsidian' | 'white';
+
+export interface Character {
+  id: string;
+  owner: string;
+  owner_username: string;
+  name: string;
+  character_class: string;
+  character_level: number;
+  subclass: string;
+  portrait_color: BookColor;
+  ruleset: '2014' | '2024';
+  spellcasting_ability_modifier: number;
+  dc_bonus: number;
+  attack_bonus_extra: number;
+  spell_slots_used: number[];     // 9 elements
+  school_copy_discounts: Record<string, number>;
+  // computed
+  spell_save_dc: number;
+  spell_attack_bonus: number;
+  proficiency_bonus: number;
+  max_prepared_spells: number | null;
+  spellbook_count: number;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface CharacterCreate {
+  name: string;
+  character_class?: string;
+  character_level?: number;
+  subclass?: string;
+  portrait_color?: BookColor;
+  ruleset?: '2014' | '2024';
+  spellcasting_ability_modifier?: number;
+  dc_bonus?: number;
+  attack_bonus_extra?: number;
+  spell_slots_used?: number[];
+  school_copy_discounts?: Record<string, number>;
+}
+
+export interface CharacterUpdate extends Partial<CharacterCreate> {}
+
+export interface SpellbookCopyCostEntry {
+  name: string;
+  level: number;
+  school: string;
+  gold_cost: number;
+  time_hours: number;
+  discount_pct: number;
+}
+
+export interface SpellbookCopyCost {
+  total_gold: number;
+  total_hours: number;
+  scribes_discount_applied: boolean;
+  school_discounts_applied: Record<string, number>;
+  spell_entries: SpellbookCopyCostEntry[];
+}
+
+// ─── Spellbook types ─────────────────────────────────────────────────────────
+
 export interface PreparedSpell {
   id: string;
   spell: Spell;
@@ -139,6 +205,12 @@ export interface Spellbook {
   description?: string;
   character_class?: string;
   character_level?: number;
+  character?: string | null;       // Character UUID
+  character_name?: string | null;
+  book_color?: BookColor;
+  /** Optional override for the spine text color (empty string = use palette default). */
+  label_color?: string;
+  sort_order: number;
   /**
    * Only present on detail endpoint (SpellbookDetailSerializer).
    * Use prepared_spells[n].spell to access spell data.
@@ -161,6 +233,9 @@ export interface SpellbookCreate {
   description?: string;
   character_class?: string;
   character_level?: number;
+  character?: string | null;
+  book_color?: BookColor;
+  label_color?: string;
 }
 
 export interface SpellbookUpdate {
@@ -168,6 +243,10 @@ export interface SpellbookUpdate {
   description?: string;
   character_class?: string;
   character_level?: number;
+  character?: string | null;
+  book_color?: BookColor;
+  label_color?: string;
+  sort_order?: number;
 }
 
 // Analysis types
