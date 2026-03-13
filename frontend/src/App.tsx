@@ -13,6 +13,7 @@ import { SpellsPage } from './pages/SpellsPage';
 import { SpellDetailPage } from './pages/SpellDetailPage';
 import { SpellbooksPage } from './pages/SpellbooksPage';
 import { SpellbookDetailPage } from './pages/SpellbookDetailPage';
+import { CharacterSpellsPage } from './pages/CharacterSpellsPage';
 import { ComparePage } from './pages/ComparePage';
 import { AdminReviewPage } from './pages/AdminReviewPage';
 
@@ -45,6 +46,7 @@ function App() {
                 <Route path="/spells/:id" element={<SpellDetailPage />} />
                 <Route path="/spellbooks" element={<SpellbooksPage />} />
                 <Route path="/spellbooks/:id" element={<SpellbookDetailPage />} />
+                <Route path="/characters/:id/spells" element={<CharacterSpellsPage />} />
                 <Route path="/compare" element={<ComparePage />} />
                 <Route path="/admin/review" element={<AdminReviewPage />} />
               </Route>

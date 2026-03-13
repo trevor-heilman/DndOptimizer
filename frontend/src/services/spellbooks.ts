@@ -6,6 +6,7 @@ import type {
   Spellbook,
   SpellbookCreate,
   SpellbookUpdate,
+  SpellbookCopyCost,
   PaginatedResponse,
 } from '../types/api';
 
@@ -101,6 +102,26 @@ export async function duplicateSpellbook(id: string): Promise<Spellbook> {
  */
 export async function exportSpellbook(id: string): Promise<any> {
   const response = await apiClient.get(`/spellbooks/${id}/export/`);
+  return response.data;
+}
+
+/**
+ * Reorder spellbooks by updating sort_order in bulk.
+ */
+export async function reorderSpellbooks(
+  items: { id: string; sort_order: number }[]
+): Promise<{ updated: number }> {
+  const response = await apiClient.post<{ updated: number }>('/spellbooks/reorder/', { items });
+  return response.data;
+}
+
+/**
+ * Get spellbook copy cost (gp + time).
+ * Pass an optional characterId to apply that character's discounts.
+ */
+export async function getCopyCost(id: string, characterId?: string): Promise<SpellbookCopyCost> {
+  const params = characterId ? { character_id: characterId } : {};
+  const response = await apiClient.get<SpellbookCopyCost>(`/spellbooks/${id}/copy_cost/`, { params });
   return response.data;
 }
 
