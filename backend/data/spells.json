@@ -26,7 +26,7 @@
         "type": "Conjuration cantrip"
     },
     {
-        "casting_time": "1 action",
+        "casting_time": "1 minute",
         "classes": [
             "ranger",
             "wizard"
@@ -1776,7 +1776,7 @@
         "level": "1",
         "name": "Purify Food and Drink",
         "range": "10 feet",
-        "ritual": false,
+        "ritual": true,
         "school": "transmutation",
         "tags": [
             "cleric",
@@ -2615,7 +2615,7 @@
         "level": "2",
         "name": "Hold Person",
         "range": "60 feet",
-        "ritual": true,
+        "ritual": false,
         "school": "enchantment",
         "tags": [
             "bard",
@@ -2626,7 +2626,7 @@
             "wizard",
             "level2"
         ],
-        "type": "2nd-level enchantment (ritual)"
+        "type": "2nd-level enchantment"
     },
     {
         "casting_time": "1 action",
@@ -3953,7 +3953,7 @@
             "verbal": true
         },
         "description": "For the duration, the willing creature you touch has resistance to one damage type of your choice: acid, cold, fire, lightning, or thunder.",
-        "duration": "Concentration, up to 1 minute",
+        "duration": "Concentration, up to 1 hour",
         "level": "3",
         "name": "Protection from Energy",
         "range": "Touch",
@@ -6747,7 +6747,7 @@
         "duration": "Until dispelled",
         "level": "2",
         "name": "Continual Flame",
-        "range": "Self",
+        "range": "Touch",
         "ritual": false,
         "school": "evocation",
         "tags": [
@@ -11024,7 +11024,7 @@
         "type": "3th-level evocation"
     },
     {
-        "casting_time": "1 minute",
+        "casting_time": "1 action",
         "classes": [
             "wizard"
         ],
@@ -11042,7 +11042,7 @@
         "higher_levels": "When you cast this spell using a spell slot of 3rd Level or higher, the damage (both initial and later) increases by 1d4 for each slot level above 2nd.",
         "level": "2",
         "name": "Acid Arrow",
-        "range": "Self (10-foot-radius hemisphere)",
+        "range": "90 feet",
         "ritual": false,
         "school": "evocation",
         "tags": [
@@ -11181,7 +11181,7 @@
         "description": "You place an Illusion on a creature or an object you touch so that Divination Spells reveal false information about it. The target can be a willing creature or an object that isn’t being carried or worn by another creature.\n\nWhen you cast the spell, choose one or both of the following Effects. The Effect lasts for the Duration. If you cast this spell on the same creature or object every day for 30 days, placing the same Effect on it each time, the i⁠llusion lasts until it is dispelled.\n\nFalse Aura. You change the way the target appears to Spells and Magical Effects, such as Detect Magic, that detect Magical auras. You can make a nonmagical object appear Magical, a Magical object appear nonmagical, or change the object’s Magical aura so that it appears to belong to a specific School of Magic that you choose. When you use this Effect on an object, you can make the false magic apparent to any creature that handles the item.\n\nMask. You change the way the target appears to Spells and Magical Effects that detect Creature Types, such as a paladin’s Divine Sense or the trigger of a sym⁠bol spell. You choose a Creature Type and other Spells and Magical Effects treat the target as if it were a creature of that type or of that Alignment.",
         "duration": "24 hours",
         "level": "2",
-        "name": "Arcanist’s Magic Aura",
+        "name": "Arcanist's Magic Aura",
         "range": "Touch",
         "ritual": false,
         "school": "illusion",
@@ -11189,7 +11189,7 @@
             "wizard",
             "level2"
         ],
-        "type": "2th-level illusion"
+        "type": "2nd-level illusion"
     },
     {
         "casting_time": "1 action",

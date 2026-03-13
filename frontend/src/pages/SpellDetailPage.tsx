@@ -1,13 +1,14 @@
 /**
  * Spell Detail Page
  */
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import { useSpell, useDuplicateSpell, useDeleteSpell } from '../hooks/useSpells';
 import { useAnalyzeSpell, useGetSpellEfficiency } from '../hooks/useAnalysis';
 import { DamageChart } from '../components/DamageChart';
 import { AnalysisContextForm } from '../components/AnalysisContextForm';
 import { EfficiencyChart } from '../components/EfficiencyChart';
+import { HitChanceHeatmap } from '../components/HitChanceHeatmap';
 import { LoadingSpinner, AlertMessage } from '../components/ui';
 import { CreateSpellModal } from '../components/CreateSpellModal';
 import { useAuth } from '../contexts/AuthContext';
@@ -50,7 +51,19 @@ export function SpellDetailPage() {
     crit_enabled: true,
     half_damage_on_save: true,
     evasion_enabled: false,
+    resistance: false,
+    crit_type: 'double_dice',
+    lucky: 'none',
+    elemental_adept_type: null,
+    save_penalty_die: 'none',
   });
+
+  // Initialize spell_slot_level to the spell's base level when spell data loads
+  useEffect(() => {
+    if (spell && spell.level > 0) {
+      setAnalysisContext(prev => ({ ...prev, spell_slot_level: spell.level }));
+    }
+  }, [spell?.id]);
 
   if (isLoading) {
     return <LoadingSpinner />;
@@ -69,6 +82,18 @@ export function SpellDetailPage() {
 
   const levelText = spell.level === 0 ? 'Cantrip' : `Level ${spell.level}`;
   const schoolText = spell.school.charAt(0).toUpperCase() + spell.school.slice(1);
+
+  const TIMING_LABEL: Record<string, string> = {
+    on_hit: 'on hit',
+    on_fail: 'on failed save',
+    on_success: 'on save',
+    end_of_turn: 'end of turn',
+    per_round: 'per round',
+    delayed: 'delayed',
+  };
+
+  const isDelayedTiming = (timing: string) =>
+    timing === 'end_of_turn' || timing === 'per_round' || timing === 'delayed';
   
   // Calculate average damage
   const totalAverageDamage = spell.damage_components?.reduce((sum, dc) => {
@@ -238,9 +263,18 @@ export function SpellDetailPage() {
                 Average: <span className="text-gold-400 font-semibold">{totalAverageDamage.toFixed(1)}</span> damage
               </span>
               {spell.damage_components.map((dc, index) => (
-                <span key={index} className="font-body text-xs px-2 py-0.5 rounded bg-smoke-700 text-parchment-300 capitalize">
+                <span
+                  key={index}
+                  className={`font-body text-xs px-2 py-0.5 rounded capitalize ${
+                    isDelayedTiming(dc.timing)
+                      ? 'bg-amber-900/40 text-amber-300 border border-amber-700/40'
+                      : 'bg-smoke-700 text-parchment-300'
+                  }`}
+                >
                   {dc.dice_count}d{dc.die_size}{dc.flat_modifier ? ` + ${dc.flat_modifier}` : ''} {dc.damage_type}
-                  <span className="text-smoke-500 ml-1">· {dc.timing.replace(/_/g, ' ')}</span>
+                  <span className={`ml-1 ${isDelayedTiming(dc.timing) ? 'text-amber-500' : 'text-smoke-500'}`}>
+                    · {TIMING_LABEL[dc.timing] ?? dc.timing.replace(/_/g, ' ')}
+                  </span>
                 </span>
               ))}
               {spell.level === 0 && (
@@ -357,104 +391,291 @@ export function SpellDetailPage() {
       {/* Damage Distribution */}
       {spell.damage_components && spell.damage_components.length > 0 && (
         <div className="mb-5">
-          <DamageChart damageComponents={spell.damage_components} spell={spell} title="Damage Distribution" />
+          <DamageChart
+            damageComponents={spell.damage_components}
+            spell={spell}
+            title="Damage Distribution"
+            selectedSlot={analysisContext.spell_slot_level ?? spell.level}
+            onSlotChange={(slot) => setAnalysisContext(prev => ({ ...prev, spell_slot_level: slot }))}
+            critType={analysisContext.crit_type}
+            resistance={analysisContext.resistance}
+            elementalAdeptType={analysisContext.elemental_adept_type ?? null}
+          />
         </div>
       )}
 
       </div>{/* end right col */}
       </div>{/* end 2-col grid */}
 
-      {/* Expected Damage Analysis — full width below the two-column split */}
+      {/* Combat Parameters — full width */}
       {(spell.is_attack_roll || spell.is_saving_throw || spell.is_auto_hit) &&
         spell.damage_components &&
         spell.damage_components.length > 0 && (
-          <div className="mt-6 rounded-xl p-6"
-            style={{ background: 'linear-gradient(155deg, #130408 0%, #1a0510 100%)', border: '1px solid rgba(190,18,60,0.2)', borderLeft: '3px solid rgba(190,18,60,0.55)' }}>
-            <h2 className="dnd-section-title text-xl mb-4">Expected Damage Analysis</h2>
-            <div className="xl:grid xl:grid-cols-2 xl:gap-8">
-              <div>
-                <AnalysisContextForm context={analysisContext} onChange={setAnalysisContext} spells={spell ? [spell] : []} />
+          <>
+            <div className="mt-6 rounded-xl p-6"
+              style={{ background: 'linear-gradient(155deg, #0e0b18 0%, #130a1e 100%)', border: '1px solid rgba(109,40,217,0.2)', borderLeft: '3px solid rgba(109,40,217,0.5)' }}>
+              <h2 className="dnd-section-title text-xl mb-4">⚔️ Combat Parameters</h2>
+              <AnalysisContextForm context={analysisContext} onChange={setAnalysisContext} spells={spell ? [spell] : []} />
 
-                <div className="mt-4 flex flex-wrap gap-3">
-                  <button
-                    onClick={() =>
-                      analyzeSpell.mutate({ spellId: spell.id, context: { ...analysisContext, spell_slot_level: analysisContext.spell_slot_level ?? (spell.level > 0 ? spell.level : 1) } })
+              <div className="mt-4 flex flex-wrap gap-3">
+                <button
+                  onClick={() => {
+                    const ctx = { ...analysisContext, spell_slot_level: analysisContext.spell_slot_level ?? (spell.level > 0 ? spell.level : 1) };
+                    analyzeSpell.mutate({ spellId: spell.id, context: ctx });
+                    if (spell.level > 0) {
+                      getEfficiency.mutate({ spellId: spell.id, context: analysisContext, minLevel: spell.level, maxLevel: 9 });
                     }
-                    disabled={analyzeSpell.isPending}
-                    className="btn-primary text-sm disabled:opacity-50"
-                  >
-                    {analyzeSpell.isPending ? 'Analyzing…' : '⚡ Analyze'}
-                  </button>
-                  {spell.level > 0 && (
-                    <button
-                      onClick={() =>
-                        getEfficiency.mutate({
-                          spellId: spell.id,
-                          context: analysisContext,
-                          minLevel: spell.level,
-                          maxLevel: 9,
-                        })
-                      }
-                      disabled={getEfficiency.isPending}
-                      className="btn-secondary text-sm disabled:opacity-50"
-                    >
-                      {getEfficiency.isPending ? 'Loading…' : '📈 Upcast Efficiency'}
-                    </button>
-                  )}
+                  }}
+                  disabled={analyzeSpell.isPending || getEfficiency.isPending}
+                  className="btn-primary text-sm disabled:opacity-50"
+                >
+                  {(analyzeSpell.isPending || getEfficiency.isPending) ? 'Analyzing…' : '⚡ Analyze'}
+                </button>
+              </div>
+
+              {analyzeSpell.isError && (
+                <div className="mt-4">
+                  <AlertMessage variant="error" message="Analysis failed. This spell may have no parsed damage components yet." />
+                </div>
+              )}
+            </div>
+
+            {/* Analysis Results — shown after Analyze is clicked */}
+            {analyzeSpell.data && (
+              <div className="mt-4 rounded-xl p-6"
+                style={{ background: 'linear-gradient(155deg, #130408 0%, #1a0510 100%)', border: '1px solid rgba(190,18,60,0.2)', borderLeft: '3px solid rgba(190,18,60,0.55)' }}>
+                <h2 className="dnd-section-title text-xl mb-4">📊 Analysis Results</h2>
+
+                {/* Expected Damage + Efficiency stat cards */}
+                <div className="grid grid-cols-2 gap-4 mb-6">
+                  <div className="rounded-lg p-4 text-center"
+                       style={{ background: 'linear-gradient(145deg, #0e0a18 0%, #120d22 100%)', border: '1px solid rgba(109,40,217,0.18)', borderTop: '2px solid rgba(217,162,31,0.5)' }}>
+                    <div className="font-display text-xs text-smoke-400 uppercase tracking-widest mb-1">Expected Damage</div>
+                    <div className="font-display text-2xl font-bold text-gold-400">
+                      {analyzeSpell.data.results.expected_damage.toFixed(2)}
+                    </div>
+                  </div>
+                  <div className="rounded-lg p-4 text-center"
+                       style={{ background: 'linear-gradient(145deg, #0e0a18 0%, #120d22 100%)', border: '1px solid rgba(109,40,217,0.18)' }}>
+                    <div className="font-display text-xs text-smoke-400 uppercase tracking-widest mb-1">Efficiency</div>
+                    <div className="font-display text-xl font-bold text-parchment-100">
+                      {analyzeSpell.data.results.efficiency.toFixed(2)}
+                    </div>
+                    <div className="font-body text-xs text-smoke-400">dmg / slot level</div>
+                  </div>
                 </div>
 
-                {analyzeSpell.isError && (
-                  <div className="mt-4">
-                    <AlertMessage variant="error" message="Analysis failed. This spell may have no parsed damage components yet." />
-                  </div>
-                )}
+                {/* Math Breakdown + Upcast Efficiency side by side */}
+                <div className="xl:grid xl:grid-cols-2 xl:gap-8">
+                  <div>
+                    {(() => {
+                      const { spell_type, math_breakdown: mb, average_damage, expected_damage } = analyzeSpell.data.results;
+                      const isAttack = spell_type === 'attack_roll';
+                      const isSave = spell_type === 'saving_throw';
+                      if (!isAttack && !isSave) return null;
 
-                {analyzeSpell.data && (
-                  <div className="mt-4 grid grid-cols-3 gap-4">
-                    <div className="rounded-lg p-4 text-center"
-                         style={{ background: 'linear-gradient(145deg, #0e0a18 0%, #120d22 100%)', border: '1px solid rgba(109,40,217,0.18)' }}>
-                      <div className="font-display text-xs text-smoke-400 uppercase tracking-widest mb-1">Type</div>
-                      <div className="font-body font-semibold text-parchment-200 capitalize">
-                        {analyzeSpell.data.results.spell_type.replace(/_/g, ' ')}
-                      </div>
-                    </div>
-                    <div className="rounded-lg p-4 text-center"
-                         style={{ background: 'linear-gradient(145deg, #0e0a18 0%, #120d22 100%)', border: '1px solid rgba(109,40,217,0.18)', borderTop: '2px solid rgba(217,162,31,0.5)' }}>
-                      <div className="font-display text-xs text-smoke-400 uppercase tracking-widest mb-1">Expected Damage</div>
-                      <div className="font-display text-2xl font-bold text-gold-400">
-                        {analyzeSpell.data.results.expected_damage.toFixed(2)}
-                      </div>
-                    </div>
-                    <div className="rounded-lg p-4 text-center"
-                         style={{ background: 'linear-gradient(145deg, #0e0a18 0%, #120d22 100%)', border: '1px solid rgba(109,40,217,0.18)' }}>
-                      <div className="font-display text-xs text-smoke-400 uppercase tracking-widest mb-1">Efficiency</div>
-                      <div className="font-display text-xl font-bold text-parchment-100">
-                        {analyzeSpell.data.results.efficiency.toFixed(2)}
-                      </div>
-                      <div className="font-body text-xs text-smoke-400">dmg / slot level</div>
-                    </div>
+                      return (
+                        <div className="rounded-xl p-5"
+                          style={{ background: 'linear-gradient(155deg, #0a0e1a 0%, #0e1222 100%)', border: '1px solid rgba(99,102,241,0.2)', borderLeft: '3px solid rgba(99,102,241,0.5)' }}>
+                          <h3 className="dnd-section-title text-base mb-4 flex items-center gap-2">
+                            <span aria-hidden="true">📐</span> Math Breakdown
+                          </h3>
+
+                          {isAttack && (() => {
+                              const attacks = mb.number_of_attacks ?? 1;
+                              const avgPerAtk = average_damage / attacks;
+                              const baseExpPerAtk = (expected_damage / attacks) / (mb.resistance_applied ? 0.5 : 1);
+                              const nonCritHitProb = Math.max(0, (mb.hit_probability ?? 0) - (mb.crit_probability ?? 0));
+                              const missContrib = mb.half_on_miss ? (mb.miss_probability ?? 0) * avgPerAtk / 2 : 0;
+                              const hitContrib = nonCritHitProb * avgPerAtk;
+                              const critContrib = Math.max(0, baseExpPerAtk - hitContrib - missContrib);
+                              return (
+                                <div className="space-y-3 font-body text-sm">
+                                  {[
+                                    { label: 'Hit', color: '#4ade80', prob: mb.hit_probability ?? 0 },
+                                    { label: 'Crit', color: '#fbbf24', prob: mb.crit_probability ?? 0 },
+                                    { label: 'Miss', color: '#f87171', prob: mb.miss_probability ?? 0 },
+                                  ].map(({ label, color, prob }) => (
+                                    <div key={label}>
+                                      <div className="flex justify-between text-xs mb-1">
+                                        <span className="text-parchment-300 font-display">{label}</span>
+                                        <span style={{ color }}>{(prob * 100).toFixed(0)}%</span>
+                                      </div>
+                                      <div className="h-2 rounded-full overflow-hidden" style={{ background: '#1e1e2e' }}>
+                                        <div className="h-full rounded-full transition-all" style={{ width: `${prob * 100}%`, background: color }} />
+                                      </div>
+                                    </div>
+                                  ))}
+
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <div className="rounded-lg p-2.5" style={{ background: '#0e0a18', border: '1px solid rgba(99,102,241,0.15)' }}>
+                                      <p className="text-xs text-smoke-400 mb-0.5">Attacks</p>
+                                      <p className="text-lg font-bold text-parchment-100">{attacks}</p>
+                                    </div>
+                                    <div className="rounded-lg p-2.5" style={{ background: '#0e0a18', border: '1px solid rgba(99,102,241,0.15)' }}>
+                                      <p className="text-xs text-smoke-400 mb-0.5">Avg / Hit</p>
+                                      <p className="text-lg font-bold text-parchment-100">{avgPerAtk.toFixed(1)}</p>
+                                    </div>
+                                  </div>
+
+                                  <div className="rounded-lg p-3" style={{ background: '#0e0a18', border: '1px solid rgba(99,102,241,0.15)' }}>
+                                    <p className="font-display text-xs text-smoke-400 uppercase tracking-widest mb-2">Per-Attack Breakdown</p>
+                                    {[
+                                      { label: `Hit, no Crit (${(nonCritHitProb * 100).toFixed(0)}%) × ${avgPerAtk.toFixed(1)}`, contrib: hitContrib, color: '#4ade80' },
+                                      { label: `Crit Bonus (${((mb.crit_probability ?? 0) * 100).toFixed(0)}%) × extra`, contrib: critContrib, color: '#fbbf24' },
+                                      { label: `Miss (${((mb.miss_probability ?? 0) * 100).toFixed(0)}%) × ${mb.half_on_miss ? (avgPerAtk / 2).toFixed(1) : '0'}`, contrib: missContrib, color: '#f87171' },
+                                    ].map(({ label, contrib, color }) => (
+                                      <div key={label} className="flex justify-between text-xs py-0.5">
+                                        <span style={{ color }}>{label}</span>
+                                        <span className="text-parchment-300 font-semibold">{contrib.toFixed(2)}</span>
+                                      </div>
+                                    ))}
+                                    <div className="mt-1.5 pt-1.5 border-t border-smoke-700 flex justify-between text-xs font-bold">
+                                      <span className="text-parchment-300">Sub-total / attack</span>
+                                      <span className="text-parchment-100">{baseExpPerAtk.toFixed(2)}</span>
+                                    </div>
+                                  </div>
+
+                                  <div className="rounded-lg p-3" style={{ background: '#0e0a18', border: '1px solid rgba(99,102,241,0.15)' }}>
+                                    <p className="font-display text-xs text-smoke-400 uppercase tracking-widest mb-2">Total Expected</p>
+                                    <p className="font-body text-xs text-parchment-300 leading-relaxed">
+                                      {baseExpPerAtk.toFixed(2)} / atk × {attacks} attack{attacks !== 1 ? 's' : ''}
+                                      {mb.resistance_applied && <> ÷ 2 <span className="text-orange-400">(resistance)</span></>}
+                                    </p>
+                                    <p className="font-display text-sm font-semibold text-gold-400 mt-2">
+                                      = {expected_damage.toFixed(2)} expected
+                                    </p>
+                                  </div>
+
+                                  {mb.resistance_applied && (
+                                    <p className="font-body text-xs text-orange-400 italic">⚔️ Target resistance applied — all damage halved</p>
+                                  )}
+                                  {mb.half_on_miss && (
+                                    <p className="font-body text-xs text-parchment-400 italic">✦ Includes half damage on a missed attack</p>
+                                  )}
+                                </div>
+                              );
+                            })()}
+
+                          {isSave && (() => {
+                              const targets = mb.number_of_targets ?? 1;
+                              const failP = mb.save_failure_probability ?? 0;
+                              const successP = mb.save_success_probability ?? 0;
+                              const fullDmg = mb.full_damage_avg ?? 0;
+                              const halfDmg = mb.half_damage_avg ?? 0;
+                              const failContrib = failP * fullDmg;
+                              const successContrib = mb.half_on_success ? successP * halfDmg : 0;
+                              const perTarget = failContrib + successContrib;
+                              return (
+                                <div className="space-y-3 font-body text-sm">
+                                  {[
+                                    { label: 'Save Fails', color: '#f87171', prob: failP },
+                                    { label: 'Save Succeeds', color: '#4ade80', prob: successP },
+                                  ].map(({ label, color, prob }) => (
+                                    <div key={label}>
+                                      <div className="flex justify-between text-xs mb-1">
+                                        <span className="text-parchment-300 font-display">{label}</span>
+                                        <span style={{ color }}>{(prob * 100).toFixed(0)}%</span>
+                                      </div>
+                                      <div className="h-2 rounded-full overflow-hidden" style={{ background: '#1e1e2e' }}>
+                                        <div className="h-full rounded-full transition-all" style={{ width: `${prob * 100}%`, background: color }} />
+                                      </div>
+                                    </div>
+                                  ))}
+
+                                  {mb.save_penalty_die && mb.save_penalty_die !== 'none' && (
+                                    <div className="rounded-lg p-2.5" style={{ background: '#0e0a18', border: '1px solid rgba(251,191,36,0.3)' }}>
+                                      <p className="text-xs text-amber-400">
+                                        ⚡ Penalty: −{mb.save_penalty_die.toUpperCase()} active
+                                        {' '}&mdash; Effective save bonus: <strong>{(mb.effective_save_bonus ?? 0).toFixed(1)}</strong>
+                                      </p>
+                                    </div>
+                                  )}
+
+                                  <div className="grid grid-cols-2 gap-2">
+                                    <div className="rounded-lg p-2.5" style={{ background: '#0e0a18', border: '1px solid rgba(99,102,241,0.15)' }}>
+                                      <p className="text-xs text-smoke-400 mb-0.5">Targets</p>
+                                      <p className="text-lg font-bold text-parchment-100">{targets}</p>
+                                    </div>
+                                    <div className="rounded-lg p-2.5" style={{ background: '#0e0a18', border: '1px solid rgba(99,102,241,0.15)' }}>
+                                      <p className="text-xs text-smoke-400 mb-0.5">Full Dmg / Target</p>
+                                      <p className="text-lg font-bold text-parchment-100">{fullDmg.toFixed(1)}</p>
+                                    </div>
+                                  </div>
+
+                                  <div className="rounded-lg p-3" style={{ background: '#0e0a18', border: '1px solid rgba(99,102,241,0.15)' }}>
+                                    <p className="font-display text-xs text-smoke-400 uppercase tracking-widest mb-2">Per-Target Breakdown</p>
+                                    <div className="flex justify-between text-xs py-0.5">
+                                      <span className="text-red-400">Failed Save ({(failP * 100).toFixed(0)}%) × {fullDmg.toFixed(1)}</span>
+                                      <span className="text-parchment-300 font-semibold">{failContrib.toFixed(2)}</span>
+                                    </div>
+                                    {mb.half_on_success ? (
+                                      <div className="flex justify-between text-xs py-0.5">
+                                        <span className="text-green-400">Passed Save ({(successP * 100).toFixed(0)}%) × {halfDmg.toFixed(1)}</span>
+                                        <span className="text-parchment-300 font-semibold">{successContrib.toFixed(2)}</span>
+                                      </div>
+                                    ) : (
+                                      <div className="flex justify-between text-xs py-0.5">
+                                        <span className="text-green-400">Passed Save ({(successP * 100).toFixed(0)}%) × 0 (no half damage)</span>
+                                        <span className="text-parchment-300 font-semibold">0.00</span>
+                                      </div>
+                                    )}
+                                    <div className="mt-1.5 pt-1.5 border-t border-smoke-700 flex justify-between text-xs font-bold">
+                                      <span className="text-parchment-300">Sub-total / target</span>
+                                      <span className="text-parchment-100">{perTarget.toFixed(2)}</span>
+                                    </div>
+                                  </div>
+
+                                  <div className="rounded-lg p-3" style={{ background: '#0e0a18', border: '1px solid rgba(99,102,241,0.15)' }}>
+                                    <p className="font-display text-xs text-smoke-400 uppercase tracking-widest mb-2">Total Expected</p>
+                                    <p className="font-body text-xs text-parchment-300 leading-relaxed">
+                                      {perTarget.toFixed(2)} / target × {targets} target{targets !== 1 ? 's' : ''}
+                                      {mb.resistance_applied && <> ÷ 2 <span className="text-orange-400">(resistance)</span></>}
+                                    </p>
+                                    <p className="font-display text-sm font-semibold text-gold-400 mt-2">
+                                      = {expected_damage.toFixed(2)} expected
+                                    </p>
+                                  </div>
+
+                                  {mb.resistance_applied && (
+                                    <p className="font-body text-xs text-orange-400 italic">⚔️ Target resistance applied — all damage halved</p>
+                                  )}
+                                </div>
+                              );
+                            })()}
+                        </div>
+                      );
+                    })()}
                   </div>
+
+                  <div>
+                    {getEfficiency.isError && (
+                      <AlertMessage variant="error" message="Could not load efficiency data for this spell." />
+                    )}
+
+                    {getEfficiency.data && (
+                      <div className="mt-6 xl:mt-0">
+                        <EfficiencyChart
+                          data={getEfficiency.data.efficiency_by_slot}
+                          spellName={spell.name}
+                        />
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Hit Chance Heatmap */}
+                {(spell.is_attack_roll || spell.is_saving_throw) && (
+                  <HitChanceHeatmap context={analysisContext} spell={spell} />
                 )}
               </div>
+            )}
 
-              <div>
-                {getEfficiency.isError && (
-                  <div className="mt-4 xl:mt-0">
-                    <AlertMessage variant="error" message="Could not load efficiency data for this spell." />
-                  </div>
-                )}
-
-                {getEfficiency.data && (
-                  <div className="mt-6 xl:mt-0">
-                    <EfficiencyChart
-                      data={getEfficiency.data.efficiency_by_slot}
-                      spellName={spell.name}
-                    />
-                  </div>
-                )}
-              </div>
-            </div>
-          </div>
+            {/* Hit Chance Heatmap — pure client-side, visible before first Analyze */}
+            {!analyzeSpell.data && (spell.is_attack_roll || spell.is_saving_throw) && (
+              <HitChanceHeatmap context={analysisContext} spell={spell} />
+            )}
+          </>
         )}
 
       {/* Action Buttons */}

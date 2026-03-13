@@ -50,7 +50,23 @@ class AnalysisViewSet(viewsets.ViewSet):
 
         context = AnalysisContext.from_data(data)
 
-        results = SpellAnalysisService.compare_spells(spell_a, spell_b, context)
+        # Build per-spell contexts, applying any per-spell overrides for
+        # number_of_targets and resistance (fall back to shared values if None).
+        overrides_a = {}
+        if data.get('number_of_targets_a') is not None:
+            overrides_a['number_of_targets'] = data['number_of_targets_a']
+        if data.get('resistance_a') is not None:
+            overrides_a['resistance'] = data['resistance_a']
+        overrides_b = {}
+        if data.get('number_of_targets_b') is not None:
+            overrides_b['number_of_targets'] = data['number_of_targets_b']
+        if data.get('resistance_b') is not None:
+            overrides_b['resistance'] = data['resistance_b']
+
+        context_a = SpellAnalysisService._clone_context(context, **overrides_a) if overrides_a else context
+        context_b = SpellAnalysisService._clone_context(context, **overrides_b) if overrides_b else context
+
+        results = SpellAnalysisService.compare_spells(spell_a, spell_b, context_a, context_b)
 
         response_data = {'results': results}
         cache.set(ck, response_data, ANALYSIS_TTL)

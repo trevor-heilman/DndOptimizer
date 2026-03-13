@@ -56,26 +56,30 @@ class Command(BaseCommand):
             if not description:
                 description = spell.description or ''
 
-            # Expected number of components = dice expressions in description only
+            # How many times each (dice_count, die_size) appears in the description
             expected_dice = DamageExtractionService.extract_dice_expressions(description)
-            expected_count = len(expected_dice)
+            from collections import Counter
+            expected_counts: Counter = Counter(expected_dice)
 
-            components = list(spell.damage_components.order_by('id'))
-            actual_count = len(components)
+            components = list(spell.damage_components.order_by('created_at', 'id'))
+            upcast_key = (spell.upcast_dice_increment, spell.upcast_die_size)
 
-            if actual_count <= expected_count:
-                continue  # Nothing extra to remove
+            # How many of the upcast-shaped component exist in the description?
+            desc_upcast_count = expected_counts.get(upcast_key, 0)
+            # How many exist in the DB?
+            db_upcast_comps = [
+                c for c in components
+                if (c.dice_count, c.die_size) == upcast_key and not c.is_verified
+            ]
+            db_upcast_count = len(db_upcast_comps)
 
-            # Identify candidates for removal: components beyond expected_count
-            # that match the upcast (dice_count, die_size).
-            to_remove = []
-            for comp in components[expected_count:]:
-                if (
-                    comp.dice_count == spell.upcast_dice_increment
-                    and comp.die_size == spell.upcast_die_size
-                    and not comp.is_verified
-                ):
-                    to_remove.append(comp)
+            extra_count = db_upcast_count - desc_upcast_count
+            if extra_count <= 0:
+                continue
+
+            # Remove the trailing `extra_count` unverified upcast-shaped components
+            # (sorted by created_at/id so we remove the most recently added ones)
+            to_remove = db_upcast_comps[-extra_count:]
 
             if not to_remove:
                 continue
@@ -93,6 +97,12 @@ class Command(BaseCommand):
                 self.stdout.write(msg)
                 if not dry_run:
                     comp.delete()
+
+            # Bump updated_at so the Redis cache key (which includes the
+            # timestamp) is invalidated — without this, stale spell detail
+            # responses are served until the TTL naturally expires.
+            if not dry_run:
+                spell.save()
 
         action = 'Would remove' if dry_run else 'Removed'
         self.stdout.write(

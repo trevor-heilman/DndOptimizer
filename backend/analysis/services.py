@@ -4,6 +4,12 @@ Core mathematical engine for D&D 5e spell optimization.
 """
 from typing import Dict, Any
 
+# Average value subtracted from a target's saving throw by penalty-die effects
+# (Mind Sliver / Bane → d4, Synaptic Static → d6).
+_PENALTY_DIE_AVG: Dict[str, float] = {
+    'none': 0.0, 'd4': 2.5, 'd6': 3.5, 'd8': 4.5, 'd10': 5.5, 'd12': 6.5,
+}
+
 
 class DiceCalculator:
     """
@@ -35,39 +41,62 @@ class AttackRollCalculator:
     """
     
     @staticmethod
-    def hit_probability(attack_bonus: int, target_ac: int, advantage: bool = False, disadvantage: bool = False) -> float:
+    def hit_probability(
+        attack_bonus: int,
+        target_ac: int,
+        advantage: bool = False,
+        disadvantage: bool = False,
+        lucky: str = 'none',
+    ) -> float:
         """
         Calculate hit probability.
         Base formula: (21 - (AC - attack_bonus)) / 20
         Clamped between 0.05 and 0.95 (natural 1 and 20).
+
+        Lucky Feat: mathematically equivalent to advantage (reroll any miss).
+        Halfling Lucky: reroll natural 1s only → P(hit) * 1.05 (capped at 0.95).
         """
         base_roll_needed = target_ac - attack_bonus
         base_prob = max(0.05, min(0.95, (21 - base_roll_needed) / 20))
-        
-        if advantage:
+
+        if advantage or lucky == 'lucky_feat':
             # P(at least one success) = 1 - P(both fail)
-            return 1 - (1 - base_prob) ** 2
+            return min(0.95, 1 - (1 - base_prob) ** 2)
         elif disadvantage:
-            # P(at least one success) = P(both succeed)
+            # P(both succeed)
             return base_prob ** 2
-        
+
+        if lucky == 'halfling':
+            # Reroll natural 1s: natural 1 always misses, reroll gives another shot.
+            # P(hit with halfling lucky) = P(hit) + P(nat1) * P(hit on reroll) = P(hit) * 1.05
+            return min(0.95, base_prob * 1.05)
+
         return base_prob
-    
+
     @staticmethod
-    def crit_probability(advantage: bool = False, disadvantage: bool = False) -> float:
+    def crit_probability(
+        advantage: bool = False,
+        disadvantage: bool = False,
+        lucky: str = 'none',
+    ) -> float:
         """
         Calculate critical hit probability.
         Base: 1/20 = 0.05
+
+        Lucky Feat (reroll misses = advantage) also applies to crits.
+        Halfling Lucky only re-rolls natural 1s, not all misses, so crit
+        probability is unchanged (the nat-1 reroll contributes ≈0.0025 extra,
+        which we treat as negligible).
         """
         base_crit = 0.05
-        
-        if advantage:
+
+        if advantage or lucky == 'lucky_feat':
             return 1 - (1 - base_crit) ** 2
         elif disadvantage:
             return base_crit ** 2
-        
+
         return base_crit
-    
+
     @classmethod
     def expected_damage(
         cls,
@@ -79,24 +108,46 @@ class AttackRollCalculator:
         advantage: bool = False,
         disadvantage: bool = False,
         crit_enabled: bool = True,
-        number_of_attacks: int = 1
+        crit_type: str = 'double_dice',
+        lucky: str = 'none',
+        number_of_attacks: int = 1,
+        half_on_miss: bool = False,
     ) -> Dict[str, float]:
         """
         Calculate expected damage for an attack roll spell.
+
+        crit_type controls how crit damage is computed:
+          'double_dice'   – roll the damage dice twice, add modifier once (standard 5e)
+          'double_damage' – double the full damage total including modifier
+          'max_plus_roll' – maximise first die roll then add a normal roll
+
+        When half_on_miss is True (e.g. Acid Arrow) the spell deals half the
+        average base damage on a missed attack in addition to full damage on a hit.
         """
-        hit_prob = cls.hit_probability(attack_bonus, target_ac, advantage, disadvantage)
-        crit_prob = cls.crit_probability(advantage, disadvantage) if crit_enabled else 0
-        
+        hit_prob = cls.hit_probability(attack_bonus, target_ac, advantage, disadvantage, lucky)
+        crit_prob = cls.crit_probability(advantage, disadvantage, lucky) if crit_enabled else 0
+
         avg_damage = DiceCalculator.average(dice_count, die_size, modifier)
         max_damage = DiceCalculator.maximum(dice_count, die_size, modifier)
-        
-        # On crit, double the dice (not the modifier)
-        crit_damage = DiceCalculator.average(dice_count * 2, die_size, modifier)
-        
+
+        # Crit damage (expected value) based on table rule
+        if crit_type == 'double_damage':
+            # Total damage is doubled, including modifier
+            crit_damage = avg_damage * 2
+        elif crit_type == 'max_plus_roll':
+            # First roll maximised; second roll is normal expectation; modifier added once
+            crit_damage = DiceCalculator.maximum(dice_count, die_size) + DiceCalculator.average(dice_count, die_size) + modifier
+        else:
+            # double_dice (standard 5e): dice doubled, modifier added once
+            crit_damage = DiceCalculator.average(dice_count * 2, die_size, modifier)
+
         # Expected damage = P(hit) * avg + P(crit) * extra_crit_damage
+        # + P(miss) * avg/2  (only when half_on_miss is True)
         expected = (hit_prob * avg_damage) + (crit_prob * (crit_damage - avg_damage))
+        if half_on_miss:
+            expected += (1 - hit_prob) * (avg_damage / 2)
         expected *= number_of_attacks
-        
+
         return {
             'hit_probability': hit_prob,
             'crit_probability': crit_prob,
@@ -113,22 +164,33 @@ class SavingThrowCalculator:
     """
     
     @staticmethod
-    def save_failure_probability(spell_dc: int, save_bonus: int, advantage: bool = False, disadvantage: bool = False) -> float:
+    def save_failure_probability(
+        spell_dc: int,
+        save_bonus: int,
+        advantage: bool = False,
+        disadvantage: bool = False,
+        save_penalty_die: str = 'none',
+    ) -> float:
         """
         Calculate probability of failing a save.
-        Failure formula: (DC - save_bonus - 1) / 20
+        Failure formula: (DC - effective_bonus - 1) / 20
         Clamped between 0.05 and 0.95.
+
+        save_penalty_die models effects like Mind Sliver or Bane that force the
+        target to subtract a die from their saving throw roll. The average value
+        of the die (e.g. 2.5 for d4) is deducted from the effective save bonus.
         """
-        roll_needed = spell_dc - save_bonus
+        effective_bonus = save_bonus - _PENALTY_DIE_AVG.get(save_penalty_die, 0.0)
+        roll_needed = spell_dc - effective_bonus
         base_prob = max(0.05, min(0.95, (roll_needed - 1) / 20))
-        
+
         if advantage:
             # Advantage on saves means harder to fail
             return base_prob ** 2
         elif disadvantage:
             # Disadvantage on saves means easier to fail
             return 1 - (1 - base_prob) ** 2
-        
+
         return base_prob
     
     @classmethod
@@ -143,12 +205,13 @@ class SavingThrowCalculator:
         advantage: bool = False,
         disadvantage: bool = False,
         evasion: bool = False,
-        number_of_targets: int = 1
+        number_of_targets: int = 1,
+        save_penalty_die: str = 'none',
     ) -> Dict[str, float]:
         """
         Calculate expected damage for a saving throw spell.
         """
-        fail_prob = cls.save_failure_probability(spell_dc, save_bonus, advantage, disadvantage)
+        fail_prob = cls.save_failure_probability(spell_dc, save_bonus, advantage, disadvantage, save_penalty_die)
         success_prob = 1 - fail_prob
         
         full_damage = DiceCalculator.average(dice_count, die_size, modifier)
@@ -231,6 +294,44 @@ class SpellAnalysisService:
                 else 'saving_throw' if spell.is_saving_throw
                 else 'non_damage'
             )
+            _cantrip_save_penalty = getattr(context, 'save_penalty_die', 'none') or 'none'
+            _cantrip_resistance = getattr(context, 'resistance', False)
+            _cantrip_ea = getattr(context, 'elemental_adept_type', None) or ''
+            _cantrip_bypass_res = bool(_cantrip_ea and any(_cantrip_ea == c.damage_type for c in components))
+            if spell.is_attack_roll:
+                hit_p = AttackRollCalculator.hit_probability(
+                    context.caster_attack_bonus, context.target_ac,
+                    context.advantage, context.disadvantage
+                )
+                crit_p = AttackRollCalculator.crit_probability(context.advantage, context.disadvantage)
+                breakdown: Dict[str, Any] = {
+                    'hit_probability': round(hit_p, 4),
+                    'miss_probability': round(1 - hit_p, 4),
+                    'crit_probability': round(crit_p, 4),
+                    'half_on_miss': False,
+                    'number_of_attacks': spell.number_of_attacks,
+                    'resistance_applied': _cantrip_resistance and not _cantrip_bypass_res,
+                }
+            elif spell.is_saving_throw:
+                fail_p = SavingThrowCalculator.save_failure_probability(
+                    context.spell_save_dc, context.target_save_bonus,
+                    context.advantage, context.disadvantage,
+                    save_penalty_die=_cantrip_save_penalty,
+                )
+                full_avg = total_avg / multiplier if multiplier else total_avg
+                breakdown = {
+                    'save_failure_probability': round(fail_p, 4),
+                    'save_success_probability': round(1 - fail_p, 4),
+                    'full_damage_avg': round(total_avg, 2),
+                    'half_damage_avg': round(total_avg / 2, 2),
+                    'half_on_success': spell.half_damage_on_save,
+                    'number_of_targets': context.number_of_targets,
+                    'save_penalty_die': _cantrip_save_penalty,
+                    'effective_save_bonus': round(context.target_save_bonus - _PENALTY_DIE_AVG.get(_cantrip_save_penalty, 0.0), 2),
+                    'resistance_applied': _cantrip_resistance and not _cantrip_bypass_res,
+                }
+            else:
+                breakdown = {}
             return {
                 'spell_type': spell_type,
                 'average_damage': total_avg,
@@ -238,38 +339,78 @@ class SpellAnalysisService:
                 'expected_damage': expected,
                 'upcast_bonus_dice': 0,
                 'efficiency': expected,
+                'math_breakdown': breakdown,
             }
 
         components = list(spell.damage_components.all())
+
+        # Per-component upcast scaling (e.g. Acid Arrow: each component gains +1d4/slot separately).
+        # Compute levels_above once so each branch can use _effective_dice consistently.
+        upcast_base = spell.upcast_base_level if spell.upcast_base_level is not None else spell.level
+        levels_above = max(0, context.spell_slot_level - upcast_base)
+
+        def _effective_dice(c) -> int:
+            """Dice count for component c at the current slot, accounting for per-component upcast."""
+            return c.dice_count + (c.upcast_dice_increment or 0) * levels_above
+
         total_average = sum(
-            DiceCalculator.average(c.dice_count, c.die_size, c.flat_modifier) for c in components
+            DiceCalculator.average(_effective_dice(c), c.die_size, c.flat_modifier) for c in components
         )
         total_maximum = sum(
-            DiceCalculator.maximum(c.dice_count, c.die_size, c.flat_modifier) for c in components
+            DiceCalculator.maximum(_effective_dice(c), c.die_size, c.flat_modifier) for c in components
         )
 
-        # Upcast bonus dice (0 when not applicable)
-        extra_dice = SpellAnalysisService._upcast_extra_dice(spell, context.spell_slot_level)
+        # Spell-level upcast bonus dice: only applicable when no component handles its own scaling.
+        # Components with upcast_dice_increment take precedence over spell-level dice scaling.
+        any_component_upcast = any(c.upcast_dice_increment is not None for c in components)
+        extra_dice = (
+            0 if any_component_upcast
+            else SpellAnalysisService._upcast_extra_dice(spell, context.spell_slot_level)
+        )
         upcast_die_size = spell.upcast_die_size or 6  # fallback to d6 if not set
         # Upcast bonus attacks (e.g. Scorching Ray: +1 ray per slot above base)
         extra_attacks = SpellAnalysisService._upcast_extra_attacks(spell, context.spell_slot_level)
         total_attacks = spell.number_of_attacks + extra_attacks
 
+        # Advanced context modifiers (new fields are backward-compatible via getattr)
+        ctx_crit_type = getattr(context, 'crit_type', 'double_dice') or 'double_dice'
+        ctx_lucky = getattr(context, 'lucky', 'none') or 'none'
+        ctx_elemental_adept = getattr(context, 'elemental_adept_type', None) or ''
+        ctx_save_penalty = getattr(context, 'save_penalty_die', 'none') or 'none'
+        # Resistance is bypassed if every component's damage type is covered by Elemental Adept.
+        spell_damage_types = {c.damage_type for c in components}
+        bypass_resistance = bool(
+            ctx_elemental_adept and ctx_elemental_adept in spell_damage_types
+        )
+
         if spell.is_attack_roll:
             total_expected = 0
+            math_hit_prob: float | None = None
+            math_crit_prob: float | None = None
             for component in components:
+                # end_of_turn / delayed components trigger automatically after the
+                # attack hits, but they are NOT doubled on a critical hit and do NOT
+                # deal half damage on a miss.
+                no_crit = component.timing in ('end_of_turn', 'per_round', 'delayed')
+                half_on_miss = getattr(spell, 'half_damage_on_miss', False) and not no_crit
                 result = AttackRollCalculator.expected_damage(
-                    dice_count=component.dice_count,
+                    dice_count=_effective_dice(component),
                     die_size=component.die_size,
                     modifier=component.flat_modifier,
                     attack_bonus=context.caster_attack_bonus,
                     target_ac=context.target_ac,
                     advantage=context.advantage,
                     disadvantage=context.disadvantage,
-                    crit_enabled=context.crit_enabled,
-                    number_of_attacks=total_attacks
+                    crit_enabled=context.crit_enabled and not no_crit,
+                    crit_type=ctx_crit_type,
+                    lucky=ctx_lucky,
+                    number_of_attacks=total_attacks,
+                    half_on_miss=half_on_miss,
                 )
                 total_expected += result['expected_damage']
+                if math_hit_prob is None:
+                    math_hit_prob = result['hit_probability']
+                    math_crit_prob = result['crit_probability']
 
             # Add upcast dice — they also benefit from hit/crit probability
             if extra_dice > 0:
@@ -282,12 +423,21 @@ class SpellAnalysisService:
                     advantage=context.advantage,
                     disadvantage=context.disadvantage,
                     crit_enabled=context.crit_enabled,
-                    number_of_attacks=total_attacks
+                    crit_type=ctx_crit_type,
+                    lucky=ctx_lucky,
+                    number_of_attacks=total_attacks,
                 )
                 total_expected += upcast_result['expected_damage']
                 total_average += DiceCalculator.average(extra_dice, upcast_die_size)
                 total_maximum += DiceCalculator.maximum(extra_dice, upcast_die_size)
+                if math_hit_prob is None:
+                    math_hit_prob = upcast_result['hit_probability']
+                    math_crit_prob = upcast_result['crit_probability']
 
+            hit_prob_final = math_hit_prob if math_hit_prob is not None else 0.0
+            crit_prob_final = math_crit_prob if math_crit_prob is not None else 0.0
+            if getattr(context, 'resistance', False) and not bypass_resistance:
+                total_expected *= 0.5
             return {
                 'spell_type': 'attack_roll',
                 'average_damage': total_average,
@@ -295,13 +445,22 @@ class SpellAnalysisService:
                 'expected_damage': total_expected,
                 'upcast_bonus_dice': extra_dice,
                 'efficiency': total_expected / context.spell_slot_level if context.spell_slot_level > 0 else 0,
+                'math_breakdown': {
+                    'hit_probability': round(hit_prob_final, 4),
+                    'miss_probability': round(1 - hit_prob_final, 4),
+                    'crit_probability': round(crit_prob_final, 4),
+                    'half_on_miss': getattr(spell, 'half_damage_on_miss', False),
+                    'number_of_attacks': total_attacks,
+                    'resistance_applied': getattr(context, 'resistance', False) and not bypass_resistance,
+                },
             }
 
         elif spell.is_saving_throw:
             total_expected = 0
+            math_fail_prob: float | None = None
             for component in components:
                 result = SavingThrowCalculator.expected_damage(
-                    dice_count=component.dice_count,
+                    dice_count=_effective_dice(component),
                     die_size=component.die_size,
                     modifier=component.flat_modifier,
                     spell_dc=context.spell_save_dc,
@@ -310,9 +469,12 @@ class SpellAnalysisService:
                     advantage=context.advantage,
                     disadvantage=context.disadvantage,
                     evasion=context.evasion_enabled,
-                    number_of_targets=context.number_of_targets
+                    number_of_targets=context.number_of_targets,
+                    save_penalty_die=ctx_save_penalty,
                 )
                 total_expected += result['expected_total_damage']
+                if math_fail_prob is None:
+                    math_fail_prob = result['save_failure_probability']
 
             # Add upcast dice — they also go through the save probability
             if extra_dice > 0:
@@ -326,12 +488,18 @@ class SpellAnalysisService:
                     advantage=context.advantage,
                     disadvantage=context.disadvantage,
                     evasion=context.evasion_enabled,
-                    number_of_targets=context.number_of_targets
+                    number_of_targets=context.number_of_targets,
+                    save_penalty_die=ctx_save_penalty,
                 )
                 total_expected += upcast_result['expected_total_damage']
                 total_average += DiceCalculator.average(extra_dice, upcast_die_size)
                 total_maximum += DiceCalculator.maximum(extra_dice, upcast_die_size)
+                if math_fail_prob is None:
+                    math_fail_prob = upcast_result['save_failure_probability']
 
+            fail_prob_final = math_fail_prob if math_fail_prob is not None else 0.0
+            if getattr(context, 'resistance', False) and not bypass_resistance:
+                total_expected *= 0.5
             return {
                 'spell_type': 'saving_throw',
                 'average_damage': total_average,
@@ -339,13 +507,24 @@ class SpellAnalysisService:
                 'expected_damage': total_expected,
                 'upcast_bonus_dice': extra_dice,
                 'efficiency': total_expected / context.spell_slot_level if context.spell_slot_level > 0 else 0,
+                'math_breakdown': {
+                    'save_failure_probability': round(fail_prob_final, 4),
+                    'save_success_probability': round(1 - fail_prob_final, 4),
+                    'full_damage_avg': round(total_average, 2),
+                    'half_damage_avg': round(total_average / 2, 2),
+                    'half_on_success': spell.half_damage_on_save,
+                    'number_of_targets': context.number_of_targets,
+                    'save_penalty_die': ctx_save_penalty,
+                    'effective_save_bonus': round(context.target_save_bonus - _PENALTY_DIE_AVG.get(ctx_save_penalty, 0.0), 2),
+                    'resistance_applied': getattr(context, 'resistance', False) and not bypass_resistance,
+                },
             }
 
         elif spell.is_auto_hit:
             # Guaranteed-hit spells (e.g. Magic Missile): expected damage = avg_per_dart * total_attacks
             total_expected = 0.0
             for component in components:
-                avg = DiceCalculator.average(component.dice_count, component.die_size, component.flat_modifier)
+                avg = DiceCalculator.average(_effective_dice(component), component.die_size, component.flat_modifier)
                 total_expected += avg * total_attacks
 
             if extra_dice > 0:
@@ -354,6 +533,8 @@ class SpellAnalysisService:
                 total_average += DiceCalculator.average(extra_dice, upcast_die_size)
                 total_maximum += DiceCalculator.maximum(extra_dice, upcast_die_size)
 
+            if getattr(context, 'resistance', False) and not bypass_resistance:
+                total_expected *= 0.5
             return {
                 'spell_type': 'auto_hit',
                 'average_damage': total_average * total_attacks,
@@ -361,6 +542,7 @@ class SpellAnalysisService:
                 'expected_damage': total_expected,
                 'upcast_bonus_dice': extra_dice,
                 'efficiency': total_expected / context.spell_slot_level if context.spell_slot_level > 0 else 0,
+                'math_breakdown': {},
             }
 
         return {
@@ -370,15 +552,20 @@ class SpellAnalysisService:
             'expected_damage': 0,
             'upcast_bonus_dice': extra_dice,
             'efficiency': 0,
+            'math_breakdown': {},
         }
     
     @staticmethod
-    def compare_spells(spell_a, spell_b, context) -> Dict[str, Any]:
+    def compare_spells(spell_a, spell_b, context_a, context_b=None) -> Dict[str, Any]:
         """
-        Compare two spells in a given context.
+        Compare two spells. context_a and context_b may differ in number_of_targets
+        and resistance to model per-spell differences (e.g. AoE vs single-target).
+        If context_b is omitted, context_a is used for both spells.
         """
-        result_a = SpellAnalysisService.analyze_spell(spell_a, context)
-        result_b = SpellAnalysisService.analyze_spell(spell_b, context)
+        if context_b is None:
+            context_b = context_a
+        result_a = SpellAnalysisService.analyze_spell(spell_a, context_a)
+        result_b = SpellAnalysisService.analyze_spell(spell_b, context_b)
         
         return {
             'spell_a': {
@@ -401,6 +588,8 @@ class SpellAnalysisService:
     def _clone_context(base, **overrides):
         """
         Create a transient (unsaved) AnalysisContext from base, applying field overrides.
+        All advanced modifiers (crit_type, lucky, elemental_adept_type, save_penalty_die)
+        are propagated from base so efficiency/growth analysis inherits them.
         """
         from analysis.models import AnalysisContext
         return AnalysisContext(
@@ -408,13 +597,18 @@ class SpellAnalysisService:
             target_save_bonus=overrides.get('target_save_bonus', base.target_save_bonus),
             spell_save_dc=base.spell_save_dc,
             caster_attack_bonus=base.caster_attack_bonus,
-            number_of_targets=base.number_of_targets,
+            number_of_targets=overrides.get('number_of_targets', base.number_of_targets),
             advantage=base.advantage,
             disadvantage=base.disadvantage,
             spell_slot_level=overrides.get('spell_slot_level', base.spell_slot_level),
             crit_enabled=base.crit_enabled,
             half_damage_on_save=base.half_damage_on_save,
             evasion_enabled=base.evasion_enabled,
+            resistance=overrides.get('resistance', getattr(base, 'resistance', False)),
+            crit_type=getattr(base, 'crit_type', 'double_dice'),
+            lucky=getattr(base, 'lucky', 'none'),
+            elemental_adept_type=getattr(base, 'elemental_adept_type', None),
+            save_penalty_die=getattr(base, 'save_penalty_die', 'none'),
         )
 
     # Standard full-caster: character level → highest available spell slot
@@ -440,6 +634,12 @@ class SpellAnalysisService:
         multiplier = cls._cantrip_tier_multiplier(character_level)
         components = list(spell.damage_components.all())
 
+        ctx_crit_type = getattr(base_context, 'crit_type', 'double_dice') or 'double_dice'
+        ctx_lucky = getattr(base_context, 'lucky', 'none') or 'none'
+        ctx_elemental_adept = getattr(base_context, 'elemental_adept_type', None) or ''
+        spell_damage_types = {c.damage_type for c in components}
+        bypass_resistance = bool(ctx_elemental_adept and ctx_elemental_adept in spell_damage_types)
+
         if spell.is_attack_roll:
             total = 0.0
             for c in components:
@@ -452,11 +652,16 @@ class SpellAnalysisService:
                     advantage=base_context.advantage,
                     disadvantage=base_context.disadvantage,
                     crit_enabled=base_context.crit_enabled,
+                    crit_type=ctx_crit_type,
+                    lucky=ctx_lucky,
                     number_of_attacks=spell.number_of_attacks,
                 )
                 total += r['expected_damage']
+            if getattr(base_context, 'resistance', False) and not bypass_resistance:
+                total *= 0.5
             return total
         elif spell.is_saving_throw:
+            ctx_save_penalty = getattr(base_context, 'save_penalty_die', 'none') or 'none'
             total = 0.0
             for c in components:
                 r = SavingThrowCalculator.expected_damage(
@@ -470,14 +675,19 @@ class SpellAnalysisService:
                     disadvantage=base_context.disadvantage,
                     evasion=base_context.evasion_enabled,
                     number_of_targets=base_context.number_of_targets,
+                    save_penalty_die=ctx_save_penalty,
                 )
                 total += r['expected_total_damage']
+            if getattr(base_context, 'resistance', False) and not bypass_resistance:
+                total *= 0.5
             return total
         elif spell.is_auto_hit:
             total = 0.0
             for c in components:
                 avg = DiceCalculator.average(c.dice_count * multiplier, c.die_size, c.flat_modifier)
                 total += avg * spell.number_of_attacks
+            if getattr(base_context, 'resistance', False) and not bypass_resistance:
+                total *= 0.5
             return total
         return 0.0
 

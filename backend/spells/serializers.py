@@ -12,8 +12,8 @@ class DamageComponentSerializer(serializers.ModelSerializer):
         model = DamageComponent
         fields = [
             'id', 'dice_count', 'die_size', 'flat_modifier', 'damage_type',
-            'timing', 'on_crit_extra', 'scales_with_slot', 'is_verified',
-            'average_damage', 'created_at', 'updated_at'
+            'timing', 'on_crit_extra', 'scales_with_slot', 'upcast_dice_increment',
+            'is_verified', 'average_damage', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_at', 'updated_at', 'average_damage']
 

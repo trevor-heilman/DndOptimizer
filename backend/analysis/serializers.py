@@ -12,8 +12,9 @@ class AnalysisContextSerializer(serializers.ModelSerializer):
         fields = [
             'id', 'target_ac', 'target_save_bonus', 'spell_save_dc',
             'caster_attack_bonus', 'number_of_targets', 'advantage',
-            'disadvantage', 'spell_slot_level', 'crit_enabled',
-            'half_damage_on_save', 'evasion_enabled', 'created_by', 'created_at'
+            'disadvantage', 'spell_slot_level', 'crit_enabled', 'crit_type',
+            'half_damage_on_save', 'evasion_enabled', 'resistance',
+            'lucky', 'elemental_adept_type', 'created_by', 'created_at'
         ]
         read_only_fields = ['id', 'created_by', 'created_at']
 
@@ -68,6 +69,22 @@ class ContextParametersMixin(serializers.Serializer):
     crit_enabled = serializers.BooleanField(default=True)
     half_damage_on_save = serializers.BooleanField(default=True)
     evasion_enabled = serializers.BooleanField(default=False)
+    resistance = serializers.BooleanField(default=False)
+    crit_type = serializers.ChoiceField(
+        choices=['double_dice', 'double_damage', 'max_plus_roll'],
+        default='double_dice',
+    )
+    lucky = serializers.ChoiceField(
+        choices=['none', 'halfling', 'lucky_feat'],
+        default='none',
+    )
+    elemental_adept_type = serializers.CharField(
+        max_length=50, required=False, allow_null=True, allow_blank=True, default=None,
+    )
+    save_penalty_die = serializers.ChoiceField(
+        choices=['none', 'd4', 'd6', 'd8'],
+        default='none',
+    )
 
     def validate(self, attrs):
         if attrs.get('advantage') and attrs.get('disadvantage'):
@@ -80,9 +97,17 @@ class ContextParametersMixin(serializers.Serializer):
 class SpellComparisonRequestSerializer(ContextParametersMixin):
     """
     Serializer for requesting a spell comparison.
+    Per-spell overrides for number_of_targets and resistance allow the caller
+    to set different values for each spell (e.g. AoE vs single-target).
+    If omitted they fall back to the shared context values.
     """
     spell_a_id = serializers.UUIDField(required=True)
     spell_b_id = serializers.UUIDField(required=True)
+    # Per-spell overrides (optional)
+    number_of_targets_a = serializers.IntegerField(default=None, required=False, allow_null=True, min_value=1, max_value=20)
+    number_of_targets_b = serializers.IntegerField(default=None, required=False, allow_null=True, min_value=1, max_value=20)
+    resistance_a = serializers.BooleanField(required=False, default=None, allow_null=True)
+    resistance_b = serializers.BooleanField(required=False, default=None, allow_null=True)
 
     def validate(self, attrs):
         """Validate comparison request."""
@@ -205,6 +230,7 @@ class CompareGrowthRequestSerializer(serializers.Serializer):
     crit_enabled = serializers.BooleanField(default=True)
     half_damage_on_save = serializers.BooleanField(default=True)
     evasion_enabled = serializers.BooleanField(default=False)
+    resistance = serializers.BooleanField(default=False)
 
     def validate(self, attrs):
         if attrs.get('advantage') and attrs.get('disadvantage'):

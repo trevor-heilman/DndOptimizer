@@ -47,6 +47,15 @@ class DamageExtractionService:
         r'(?:(\d+)d(\d+)|(\d+)\s+(?:additional|extra))',
         re.IGNORECASE
     )
+
+    # Phrases that indicate damage happens at the end/start of a turn (delayed or periodic)
+    _END_OF_TURN_PATTERN = re.compile(
+        r'\b(?:at\s+the\s+end\s+of\s+(?:its|the\s+target\'?s?|your)\s+next\s+turn'
+        r'|at\s+the\s+end\s+of\s+each\s+of\s+(?:its|the\s+target\'?s?|your)\s+turns?'
+        r'|at\s+the\s+start\s+of\s+each\s+of\s+(?:its|the\s+target\'?s?|your)\s+turns?'
+        r'|at\s+the\s+(?:start|end)\s+of\s+(?:its|your)\s+(?:next\s+)?turns?)\b',
+        re.IGNORECASE
+    )
     
     @classmethod
     def extract_dice_expressions(cls, text: str) -> List[Tuple[int, int]]:
@@ -56,6 +65,40 @@ class DamageExtractionService:
         """
         matches = cls.DICE_PATTERN.findall(text)
         return [(int(count), int(size)) for count, size in matches]
+
+    @classmethod
+    def extract_dice_with_timing(cls, description: str, is_attack_roll: bool) -> List[Tuple[int, int, str]]:
+        """
+        Extract dice expressions AND infer the timing of each damage component
+        based on surrounding context in the description.
+
+        Returns list of (dice_count, die_size, timing) tuples where timing is
+        one of the DamageComponent.TIMING_CHOICES values.
+
+        Strategy: for each dice match, look at the text in a 150-character window
+        after the match position. If a turn-end/start phrase appears in that
+        window, tag the component as end_of_turn; otherwise use on_hit / on_fail.
+        """
+        base_timing = 'on_hit' if is_attack_roll else 'on_fail'
+        results: List[Tuple[int, int, str]] = []
+
+        for m in cls.DICE_PATTERN.finditer(description):
+            dice_count = int(m.group(1))
+            die_size = int(m.group(2))
+
+            # Look ahead in a 150-char window for a turn-timing phrase
+            window_start = m.end()
+            window_end = min(len(description), window_start + 150)
+            context = description[window_start:window_end]
+
+            if cls._END_OF_TURN_PATTERN.search(context):
+                timing = 'end_of_turn'
+            else:
+                timing = base_timing
+
+            results.append((dice_count, die_size, timing))
+
+        return results
     
     @classmethod
     def extract_damage_types(cls, text: str) -> List[str]:
@@ -319,6 +362,9 @@ class SpellParsingService:
         # their attack/save mechanics across both fields.
         is_attack_roll = DamageExtractionService.detect_attack_spell(full_text)
         is_saving_throw = DamageExtractionService.detect_save_spell(full_text)
+
+        # Timing-aware extraction (requires is_attack_roll to determine base timing)
+        dice_with_timing = DamageExtractionService.extract_dice_with_timing(description, is_attack_roll)
         
         # Extract save information
         save_type = None
@@ -354,6 +400,7 @@ class SpellParsingService:
         # Build parsing data
         parsing_data = {
             'dice_expressions': dice_expressions,
+            'dice_with_timing': dice_with_timing,
             'damage_types': damage_types,
             'is_attack_roll': is_attack_roll,
             'is_saving_throw': is_saving_throw,
@@ -473,13 +520,18 @@ class SpellParsingService:
         
         # Create damage components
         dice_expressions = parsing_data.get('dice_expressions', [])
+        dice_with_timing = parsing_data.get('dice_with_timing', [])
         damage_types = parsing_data.get('damage_types', ['force'])  # default
-        
+
         for i, (dice_count, die_size) in enumerate(dice_expressions):
             damage_type = damage_types[i] if i < len(damage_types) else damage_types[0] if damage_types else 'force'
-            
-            timing = 'on_hit' if normalized['is_attack_roll'] else 'on_fail'
-            
+
+            # Use timing-aware data when available, otherwise fall back
+            if i < len(dice_with_timing):
+                timing = dice_with_timing[i][2]
+            else:
+                timing = 'on_hit' if normalized['is_attack_roll'] else 'on_fail'
+
             DamageComponent.objects.create(
                 spell=spell,
                 dice_count=dice_count,

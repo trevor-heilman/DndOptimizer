@@ -14,8 +14,28 @@ export function useAnalyzeSpell() {
 
 export function useCompareSpells() {
   return useMutation({
-    mutationFn: ({ spellAId, spellBId, context }: { spellAId: string; spellBId: string; context: AnalysisContext }) =>
-      analysisService.compareSpells({ spell_a_id: spellAId, spell_b_id: spellBId, ...context }),
+    mutationFn: ({
+      spellAId,
+      spellBId,
+      context,
+      overridesA,
+      overridesB,
+    }: {
+      spellAId: string;
+      spellBId: string;
+      context: AnalysisContext;
+      overridesA?: { number_of_targets?: number; resistance?: boolean };
+      overridesB?: { number_of_targets?: number; resistance?: boolean };
+    }) =>
+      analysisService.compareSpells({
+        spell_a_id: spellAId,
+        spell_b_id: spellBId,
+        ...context,
+        ...(overridesA?.number_of_targets !== undefined && { number_of_targets_a: overridesA.number_of_targets }),
+        ...(overridesA?.resistance !== undefined && { resistance_a: overridesA.resistance }),
+        ...(overridesB?.number_of_targets !== undefined && { number_of_targets_b: overridesB.number_of_targets }),
+        ...(overridesB?.resistance !== undefined && { resistance_b: overridesB.resistance }),
+      }),
   });
 }
 

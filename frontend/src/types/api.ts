@@ -39,7 +39,10 @@ export interface DamageComponent {
   die_size: number;
   flat_modifier?: number;
   damage_type: string;
-  timing: 'on_hit' | 'on_fail' | 'on_success' | 'end_of_turn' | 'start_of_turn' | 'automatic';
+  timing: 'on_hit' | 'on_fail' | 'on_success' | 'end_of_turn' | 'per_round' | 'delayed';
+  on_crit_extra: boolean;
+  scales_with_slot: boolean;
+  upcast_dice_increment?: number | null;
   is_verified: boolean;
 }
 
@@ -181,6 +184,12 @@ export interface AnalysisContext {
   crit_enabled?: boolean;
   half_damage_on_save?: boolean;
   evasion_enabled?: boolean;
+  resistance?: boolean;
+  crit_type?: 'double_dice' | 'double_damage' | 'max_plus_roll';
+  lucky?: 'none' | 'halfling' | 'lucky_feat';
+  elemental_adept_type?: string | null;
+  /** Die subtracted from target saving throws (Mind Sliver, Bane → d4; Synaptic Static → d6). */
+  save_penalty_die?: 'none' | 'd4' | 'd6' | 'd8';
 }
 
 export interface SpellAnalysisResult {
@@ -195,12 +204,36 @@ export interface SpellAnalysisResult {
 }
 
 /** Shape returned by POST /api/analysis/analyze/ */
+export interface MathBreakdown {
+  // attack roll fields
+  hit_probability?: number;
+  miss_probability?: number;
+  crit_probability?: number;
+  half_on_miss?: boolean;
+  number_of_attacks?: number;
+  // saving throw fields
+  save_failure_probability?: number;
+  save_success_probability?: number;
+  full_damage_avg?: number;
+  half_damage_avg?: number;
+  half_on_success?: boolean;
+  number_of_targets?: number;
+  save_penalty_die?: string;
+  effective_save_bonus?: number;
+  // shared
+  resistance_applied?: boolean;
+}
+
 export interface SpellAnalysisApiResult {
   spell: { id: string; name: string; level: number };
   results: {
-    spell_type: 'attack_roll' | 'saving_throw' | 'non_damage';
+    spell_type: 'attack_roll' | 'saving_throw' | 'auto_hit' | 'non_damage';
+    average_damage: number;
+    maximum_damage: number;
     expected_damage: number;
     efficiency: number;
+    upcast_bonus_dice: number;
+    math_breakdown: MathBreakdown;
   };
 }
 
@@ -220,6 +253,11 @@ export interface SpellEfficiencyResponse {
 export interface CompareSpellsRequest extends AnalysisContext {
   spell_a_id: string;
   spell_b_id: string;
+  /** Per-spell overrides — if provided, override the shared context for that spell only */
+  number_of_targets_a?: number;
+  number_of_targets_b?: number;
+  resistance_a?: boolean;
+  resistance_b?: boolean;
 }
 
 /** One spell's entry inside the compare results */
