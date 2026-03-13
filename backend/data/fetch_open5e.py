@@ -23,13 +23,12 @@ No external dependencies required.
 """
 
 import json
+import re
 import sys
 import time
-import re
 import urllib.request
-from pathlib import Path
 from collections import defaultdict
-
+from pathlib import Path
 
 # ── Source filter ────────────────────────────────────────────────────────────
 # 'srd' = D&D 5e SRD 5.1, CC BY 4.0 — safe to include in any project
@@ -94,9 +93,12 @@ def _normalize_components(raw) -> dict:
     mat_text = (raw.get('material') or '').strip()
 
     parts = []
-    if verbal:   parts.append('V')
-    if somatic:  parts.append('S')
-    if material: parts.append('M')
+    if verbal:
+        parts.append('V')
+    if somatic:
+        parts.append('S')
+    if material:
+        parts.append('M')
 
     raw_str = ', '.join(parts)
     if mat_text:
@@ -118,12 +120,12 @@ def _normalize_classes(raw) -> list:
     # spell_lists is the cleanest — already lowercase
     spell_lists = raw.get('spell_lists') or []
     if spell_lists:
-        return sorted(set(c.strip().lower() for c in spell_lists if c.strip().lower() in OFFICIAL_CLASS_NAMES))
+        return sorted({c.strip().lower() for c in spell_lists if c.strip().lower() in OFFICIAL_CLASS_NAMES})
 
     # Fall back to dnd_class comma string
     dnd_class = raw.get('dnd_class', '')
     if dnd_class:
-        return sorted(set(c.strip().lower() for c in dnd_class.split(',') if c.strip().lower() in OFFICIAL_CLASS_NAMES))
+        return sorted({c.strip().lower() for c in dnd_class.split(',') if c.strip().lower() in OFFICIAL_CLASS_NAMES})
 
     return []
 
@@ -180,8 +182,8 @@ def normalize_spell(raw: dict) -> dict:
 # ── API fetching ──────────────────────────────────────────────────────────────
 def _fetch_page(url: str) -> dict:
     """Fetch a single page, preferring curl subprocess (works reliably in WSL)."""
-    import subprocess
     import ssl
+    import subprocess
     try:
         result = subprocess.run(
             ['curl', '-s', '--max-time', '30', '-A', 'SpellwrightFetcher/1.0', url],
@@ -223,7 +225,7 @@ def compare_spells(srd_spells: list, existing_path: Path, verbose: bool = False)
     Cross-reference SRD spells against an existing spells.json.
     Returns a report dict.
     """
-    with open(existing_path, 'r', encoding='utf-8') as f:
+    with open(existing_path, encoding='utf-8') as f:
         existing = json.load(f)
 
     # Normalise apostrophes so names like "Arcanist\u2019s" == "Arcanist's"
@@ -237,7 +239,6 @@ def compare_spells(srd_spells: list, existing_path: Path, verbose: bool = False)
     in_existing_not_srd = sorted(set(existing_by_name) - set(srd_by_name))
     in_both = sorted(set(srd_by_name) & set(existing_by_name))
 
-    FIELDS_TO_CHECK = ['casting_time', 'range', 'duration', 'school', 'ritual', 'concentration']
     COMPARE_STRINGS = ['name', 'casting_time', 'range', 'duration', 'school']
 
     field_diffs = defaultdict(list)  # field → list of (name, existing_val, srd_val)
@@ -296,17 +297,17 @@ def print_report(report: dict, verbose: bool = False):
     print(f'Local only (non-SRD):       {len(extra)}')
 
     if srd_missing:
-        print(f'\n-- MISSING from your data (SRD spells not in spells.json) --')
+        print('\n-- MISSING from your data (SRD spells not in spells.json) --')
         for name in srd_missing:
             print(f'  + {name}')
 
     if extra:
-        print(f'\n-- LOCAL ONLY (not in SRD — may be non-SRD or custom) --')
+        print('\n-- LOCAL ONLY (not in SRD — may be non-SRD or custom) --')
         for name in extra:
             print(f'  ~ {name}')
 
     if diffs:
-        print(f'\n-- FIELD CORRECTIONS (existing → SRD authoritative) --')
+        print('\n-- FIELD CORRECTIONS (existing → SRD authoritative) --')
         for field, changes in sorted(diffs.items()):
             print(f'\n  {field.upper()} ({len(changes)} spell(s) differ):')
             for name, old, new in changes:
@@ -333,7 +334,7 @@ def merge_spells(report: dict) -> list:
     merged = []
 
     # SRD spells are authoritative
-    for name, spell in report['srd_by_name'].items():
+    for _name, spell in report['srd_by_name'].items():
         out = dict(spell)
         # Remove internal fetch metadata
         out.pop('_slug', None)

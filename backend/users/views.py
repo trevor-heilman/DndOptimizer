@@ -1,16 +1,13 @@
-from rest_framework import viewsets, status, permissions
+from django.contrib.auth import authenticate
+from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from django.contrib.auth import authenticate
 from rest_framework_simplejwt.tokens import RefreshToken
-from core.throttles import LoginRateThrottle, RegisterRateThrottle, PasswordChangeRateThrottle
+
+from core.throttles import LoginRateThrottle, PasswordChangeRateThrottle, RegisterRateThrottle
+
 from .models import User
-from .serializers import (
-    UserSerializer,
-    UserRegistrationSerializer,
-    UserLoginSerializer,
-    ChangePasswordSerializer
-)
+from .serializers import ChangePasswordSerializer, UserLoginSerializer, UserRegistrationSerializer, UserSerializer
 
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -37,10 +34,10 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = UserRegistrationSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         user = serializer.save()
-        
+
         # Generate tokens
         refresh = RefreshToken.for_user(user)
-        
+
         return Response({
             'user': UserSerializer(user).data,
             'access': str(refresh.access_token),
@@ -56,21 +53,21 @@ class UserViewSet(viewsets.ModelViewSet):
         """
         serializer = UserLoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        
+
         user = authenticate(
             username=serializer.validated_data['email'],
             password=serializer.validated_data['password']
         )
-        
+
         if not user:
             return Response(
                 {'error': 'Invalid credentials'},
                 status=status.HTTP_401_UNAUTHORIZED
             )
-        
+
         # Generate tokens
         refresh = RefreshToken.for_user(user)
-        
+
         return Response({
             'user': UserSerializer(user).data,
             'access': str(refresh.access_token),
@@ -94,18 +91,18 @@ class UserViewSet(viewsets.ModelViewSet):
         """
         serializer = ChangePasswordSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        
+
         user = request.user
-        
+
         # Check old password
         if not user.check_password(serializer.validated_data['old_password']):
             return Response(
                 {'error': 'Old password is incorrect'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         # Set new password
         user.set_password(serializer.validated_data['new_password'])
         user.save()
-        
+
         return Response({'message': 'Password changed successfully'})

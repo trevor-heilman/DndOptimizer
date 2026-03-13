@@ -3,10 +3,11 @@ Integration tests for API endpoints.
 """
 import pytest
 from django.contrib.auth import get_user_model
-from rest_framework.test import APIClient
 from rest_framework import status
-from spells.models import Spell, DamageComponent
+from rest_framework.test import APIClient
+
 from spellbooks.models import Spellbook
+from spells.models import DamageComponent, Spell
 
 User = get_user_model()
 
@@ -52,7 +53,7 @@ def test_spell(test_user):
         created_by=test_user,
         is_custom=True,
     )
-    
+
     DamageComponent.objects.create(
         spell=spell,
         dice_count=8,
@@ -60,14 +61,14 @@ def test_spell(test_user):
         damage_type='fire',
         timing='on_fail'
     )
-    
+
     return spell
 
 
 @pytest.mark.django_db
 class TestUserAuthentication:
     """Test user registration and authentication."""
-    
+
     def test_user_registration(self, api_client):
         """Test user can register."""
         data = {
@@ -76,62 +77,62 @@ class TestUserAuthentication:
             'password': 'newpass123',
             'password_confirm': 'newpass123'
         }
-        
+
         response = api_client.post('/api/users/register/', data)
-        
+
         assert response.status_code == status.HTTP_201_CREATED
         assert 'access' in response.data
         assert 'refresh' in response.data
         assert response.data['user']['email'] == 'newuser@example.com'
-    
+
     def test_user_login(self, api_client, test_user):
         """Test user can log in."""
         data = {
             'email': 'testuser@example.com',
             'password': 'testpass123'
         }
-        
+
         response = api_client.post('/api/users/login/', data)
-        
+
         assert response.status_code == status.HTTP_200_OK
         assert 'access' in response.data
         assert 'refresh' in response.data
-    
+
     def test_get_current_user(self, authenticated_client, test_user):
         """Test authenticated user can get their profile."""
         response = authenticated_client.get('/api/users/me/')
-        
+
         assert response.status_code == status.HTTP_200_OK
         assert response.data['email'] == test_user.email
-    
+
     def test_unauthenticated_access(self, api_client):
         """Test unauthenticated user cannot access protected endpoint."""
         response = api_client.get('/api/users/me/')
-        
+
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
 
 @pytest.mark.django_db
 class TestSpellAPI:
     """Test spell CRUD operations."""
-    
+
     def test_list_spells(self, authenticated_client, test_spell):
         """Test listing spells."""
         response = authenticated_client.get('/api/spells/spells/')
-        
+
         assert response.status_code == status.HTTP_200_OK
         assert response.data['count'] == 1
         assert response.data['results'][0]['name'] == 'Fireball'
-    
+
     def test_get_spell_detail(self, authenticated_client, test_spell):
         """Test getting spell details."""
         response = authenticated_client.get(f'/api/spells/spells/{test_spell.id}/')
-        
+
         assert response.status_code == status.HTTP_200_OK
         assert response.data['name'] == 'Fireball'
         assert response.data['level'] == 3
         assert len(response.data['damage_components']) == 1
-    
+
     def test_create_spell(self, authenticated_client):
         """Test creating a spell."""
         data = {
@@ -145,12 +146,12 @@ class TestSpellAPI:
             'is_attack_roll': False,
             'is_saving_throw': False
         }
-        
+
         response = authenticated_client.post('/api/spells/spells/', data)
-        
+
         assert response.status_code == status.HTTP_201_CREATED
         assert response.data['name'] == 'Magic Missile'
-    
+
     def test_update_spell(self, authenticated_client, test_spell):
         """Test updating a spell."""
         data = {
@@ -162,23 +163,23 @@ class TestSpellAPI:
             'duration': 'Instantaneous',
             'description': 'Updated description'
         }
-        
+
         response = authenticated_client.put(
             f'/api/spells/spells/{test_spell.id}/',
             data,
             format='json'
         )
-        
+
         assert response.status_code == status.HTTP_200_OK
         assert response.data['name'] == 'Fireball Updated'
-    
+
     def test_delete_spell(self, authenticated_client, test_spell):
         """Test deleting a spell."""
         response = authenticated_client.delete(f'/api/spells/spells/{test_spell.id}/')
-        
+
         assert response.status_code == status.HTTP_204_NO_CONTENT
         assert Spell.objects.filter(id=test_spell.id).count() == 0
-    
+
     def test_filter_spells_by_level(self, authenticated_client, test_spell):
         """Test filtering spells by level."""
         # Create another spell
@@ -191,17 +192,17 @@ class TestSpellAPI:
             duration='Instantaneous',
             description='Darts'
         )
-        
+
         response = authenticated_client.get('/api/spells/spells/?level=1')
-        
+
         assert response.status_code == status.HTTP_200_OK
         assert response.data['count'] == 1
         assert response.data['results'][0]['name'] == 'Magic Missile'
-    
+
     def test_filter_spells_by_school(self, authenticated_client, test_spell):
         """Test filtering spells by school."""
         response = authenticated_client.get('/api/spells/spells/?school=evocation')
-        
+
         assert response.status_code == status.HTTP_200_OK
         assert response.data['count'] == 1
 
@@ -209,19 +210,19 @@ class TestSpellAPI:
 @pytest.mark.django_db
 class TestSpellbookAPI:
     """Test spellbook operations."""
-    
+
     def test_create_spellbook(self, authenticated_client):
         """Test creating a spellbook."""
         data = {
             'name': 'My Wizard Spells',
             'description': 'Spells for my wizard character'
         }
-        
+
         response = authenticated_client.post('/api/spellbooks/', data)
-        
+
         assert response.status_code == status.HTTP_201_CREATED
         assert response.data['name'] == 'My Wizard Spells'
-    
+
     def test_list_spellbooks(self, authenticated_client, test_user):
         """Test listing spellbooks."""
         Spellbook.objects.create(
@@ -232,19 +233,19 @@ class TestSpellbookAPI:
             owner=test_user,
             name='Spellbook 2'
         )
-        
+
         response = authenticated_client.get('/api/spellbooks/')
-        
+
         assert response.status_code == status.HTTP_200_OK
         assert response.data['count'] == 2
-    
+
     def test_add_spell_to_spellbook(self, authenticated_client, test_user, test_spell):
         """Test adding a spell to a spellbook."""
         spellbook = Spellbook.objects.create(
             owner=test_user,
             name='My Spells'
         )
-        
+
         data = {
             'spell_id': str(test_spell.id),
             'prepared': True,
@@ -258,7 +259,7 @@ class TestSpellbookAPI:
 
         assert response.status_code == status.HTTP_201_CREATED
         assert spellbook.spells.count() == 1
-    
+
     def test_remove_spell_from_spellbook(self, authenticated_client, test_user, test_spell):
         """Test removing a spell from a spellbook."""
         spellbook = Spellbook.objects.create(
@@ -273,7 +274,7 @@ class TestSpellbookAPI:
 
         assert response.status_code == status.HTTP_204_NO_CONTENT
         assert spellbook.spells.count() == 0
-    
+
     def test_duplicate_spellbook(self, authenticated_client, test_user, test_spell):
         """Test duplicating a spellbook."""
         spellbook = Spellbook.objects.create(
@@ -295,7 +296,7 @@ class TestSpellbookAPI:
 @pytest.mark.django_db
 class TestAnalysisAPI:
     """Test analysis endpoints."""
-    
+
     def test_analyze_spell(self, authenticated_client, test_spell):
         """Test analyzing a single spell."""
         data = {
@@ -312,7 +313,7 @@ class TestAnalysisAPI:
         assert response.status_code == status.HTTP_200_OK
         assert 'results' in response.data
         assert 'expected_damage' in response.data['results']
-    
+
     def test_compare_spells(self, authenticated_client, test_spell):
         """Test comparing two spells."""
         spell2 = Spell.objects.create(
@@ -327,7 +328,7 @@ class TestAnalysisAPI:
             save_type='DEX',
             half_damage_on_save=True
         )
-        
+
         DamageComponent.objects.create(
             spell=spell2,
             dice_count=8,
@@ -335,7 +336,7 @@ class TestAnalysisAPI:
             damage_type='lightning',
             timing='on_fail'
         )
-        
+
         data = {
             'spell_a_id': str(test_spell.id),
             'spell_b_id': str(spell2.id),
@@ -352,7 +353,7 @@ class TestAnalysisAPI:
         assert 'results' in response.data
         assert 'spell_a' in response.data['results']
         assert 'spell_b' in response.data['results']
-    
+
     def test_efficiency_analysis(self, authenticated_client, test_spell):
         """Test spell efficiency across slot levels."""
         data = {
@@ -432,6 +433,7 @@ class TestCaching:
     def test_spell_detail_cached_on_second_request(self, authenticated_client, test_spell):
         """Second GET of the same spell detail is served from the cache."""
         from django.core.cache import cache
+
         from core.cache_utils import spell_detail_key
 
         cache.clear()
@@ -450,6 +452,7 @@ class TestCaching:
     def test_spell_counts_cached_on_second_request(self, authenticated_client, test_user):
         """Second GET of spell_counts is served from the cache."""
         from django.core.cache import cache
+
         from core.cache_utils import spell_counts_key
 
         cache.clear()
@@ -462,6 +465,7 @@ class TestCaching:
     def test_spell_counts_invalidated_after_delete(self, authenticated_client, test_user):
         """Deleting a spell clears the spell_counts cache for that user."""
         from django.core.cache import cache
+
         from core.cache_utils import spell_counts_key
 
         cache.clear()
@@ -484,8 +488,9 @@ class TestCaching:
 
     def test_analysis_result_cached_on_second_request(self, authenticated_client, test_spell):
         """The second call to /analyze/ with identical params returns identical results (cache hit)."""
-        from django.core.cache import cache
         from unittest.mock import patch
+
+        from django.core.cache import cache
 
         cache.clear()
         data = {
@@ -517,8 +522,9 @@ class TestCaching:
 
     def test_efficiency_result_cached(self, authenticated_client, test_spell):
         """Efficiency endpoint writes a cache entry on first call."""
-        from django.core.cache import cache
         from unittest.mock import patch
+
+        from django.core.cache import cache
 
         cache.clear()
         data = {
@@ -546,7 +552,7 @@ class TestCaching:
 @pytest.mark.django_db
 class TestPermissions:
     """Test API permissions."""
-    
+
     def test_cannot_delete_others_spellbook(self, test_user, test_spell):
         """Test user cannot delete another user's spellbook."""
         # Create another user and their spellbook
@@ -559,13 +565,13 @@ class TestPermissions:
             owner=other_user,
             name='Other Spellbook'
         )
-        
+
         # Try to delete as test_user
         client = APIClient()
         client.force_authenticate(user=test_user)
-        
+
         response = client.delete(f'/api/spellbooks/{other_spellbook.id}/')
-        
+
         assert response.status_code in [status.HTTP_403_FORBIDDEN, status.HTTP_404_NOT_FOUND]
 
 

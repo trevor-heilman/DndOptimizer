@@ -1,7 +1,8 @@
 from rest_framework import serializers
-from .models import Character, Spellbook, PreparedSpell
+
 from spells.serializers import SpellListSerializer
 
+from .models import Character, PreparedSpell, Spellbook
 
 # ─── Character serializers ───────────────────────────────────────────────────
 
@@ -144,10 +145,10 @@ class AddSpellToSpellbookSerializer(serializers.Serializer):
     def validate_spell_id(self, value):
         """Validate that the spell exists."""
         from spells.models import Spell
-        
+
         if not Spell.objects.filter(id=value).exists():
             raise serializers.ValidationError("Spell not found.")
-        
+
         return value
 
 
@@ -174,7 +175,7 @@ class SpellbookExportSerializer(serializers.ModelSerializer):
     def get_spells(self, obj):
         """Get all spells with their prepared status."""
         from spells.serializers import SpellExportSerializer
-        
+
         prepared_spells = obj.prepared_spells.select_related('spell').all()
         return [
             {

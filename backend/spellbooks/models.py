@@ -1,6 +1,7 @@
 import uuid
-from django.db import models
+
 from django.conf import settings
+from django.db import models
 
 CLASS_CHOICES = [
     ('artificer', 'Artificer'),
@@ -221,13 +222,13 @@ class Spellbook(models.Model):
         on_delete=models.CASCADE,
         related_name='spellbooks',
     )
-    
+
     spells = models.ManyToManyField(
         'spells.Spell',
         through='PreparedSpell',
         related_name='spellbooks'
     )
-    
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -263,7 +264,7 @@ class PreparedSpell(models.Model):
     )
     prepared = models.BooleanField(default=False)
     notes = models.TextField(blank=True)
-    
+
     added_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

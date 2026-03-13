@@ -1,7 +1,7 @@
 import uuid
-from django.db import models
-from django.conf import settings
 
+from django.conf import settings
+from django.db import models
 
 CRIT_TYPE_CHOICES = [
     ('double_dice', 'Double Dice (standard 5e)'),
@@ -29,19 +29,19 @@ class AnalysisContext(models.Model):
     Used for comparison, efficiency analysis, etc.
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    
+
     # Combat context
     target_ac = models.IntegerField(default=15)
     target_save_bonus = models.IntegerField(default=0)
     spell_save_dc = models.IntegerField(default=15)
     caster_attack_bonus = models.IntegerField(default=5)
-    
+
     # Tactical context
     number_of_targets = models.IntegerField(default=1)
     advantage = models.BooleanField(default=False)
     disadvantage = models.BooleanField(default=False)
     spell_slot_level = models.IntegerField(default=1)
-    
+
     # Special conditions
     crit_enabled = models.BooleanField(default=True)
     half_damage_on_save = models.BooleanField(default=True)
@@ -65,7 +65,7 @@ class AnalysisContext(models.Model):
         max_length=10, choices=SAVE_PENALTY_DIE_CHOICES, default='none',
         help_text='Die the target subtracts from saving throws (Mind Sliver, Bane, Synaptic Static).',
     )
-    
+
     # Metadata
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -80,6 +80,7 @@ class AnalysisContext(models.Model):
         db_table = 'analysis_contexts'
         verbose_name = 'Analysis Context'
         verbose_name_plural = 'Analysis Contexts'
+        ordering = ['-created_at']
 
     def __str__(self):
         return f"Analysis (AC:{self.target_ac}, Save DC:{self.spell_save_dc}, Targets:{self.number_of_targets})"
@@ -113,7 +114,7 @@ class SpellComparison(models.Model):
     Stores results of a spell comparison analysis.
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    
+
     spell_a = models.ForeignKey(
         'spells.Spell',
         on_delete=models.CASCADE,
@@ -129,10 +130,10 @@ class SpellComparison(models.Model):
         on_delete=models.CASCADE,
         related_name='comparisons'
     )
-    
+
     # Results
     results = models.JSONField(default=dict)
-    
+
     created_at = models.DateTimeField(auto_now_add=True)
 
     class Meta:

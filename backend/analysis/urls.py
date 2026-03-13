@@ -1,6 +1,7 @@
-from django.urls import path, include
+from django.urls import include, path
 from rest_framework.routers import DefaultRouter
-from .views import AnalysisViewSet, AnalysisContextViewSet, SpellComparisonViewSet
+
+from .views import AnalysisContextViewSet, AnalysisViewSet, SpellComparisonViewSet
 
 router = DefaultRouter()
 router.register(r'contexts', AnalysisContextViewSet, basename='analysis-context')

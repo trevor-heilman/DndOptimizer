@@ -5,7 +5,6 @@ as non-damage by the parser (e.g. Magic Missile).
 from django.core.management.base import BaseCommand
 from django.db import transaction
 
-
 # Each entry: (name, number_of_attacks, upcast_attacks_increment, upcast_base_level,
 #               dart_flat_modifier)
 # dart_flat_modifier: added to *every* DamageComponent on the spell.

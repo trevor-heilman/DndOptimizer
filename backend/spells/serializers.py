@@ -1,5 +1,6 @@
 from rest_framework import serializers
-from .models import Spell, DamageComponent, SpellParsingMetadata
+
+from .models import DamageComponent, Spell, SpellParsingMetadata
 
 
 class DamageComponentSerializer(serializers.ModelSerializer):
@@ -104,21 +105,21 @@ class SpellCreateUpdateSerializer(serializers.ModelSerializer):
         """Create spell with damage components."""
         damage_components_data = validated_data.pop('damage_components', [])
         spell = Spell.objects.create(**validated_data)
-        
+
         for component_data in damage_components_data:
             DamageComponent.objects.create(spell=spell, **component_data)
-        
+
         return spell
 
     def update(self, instance, validated_data):
         """Update spell and its damage components."""
         damage_components_data = validated_data.pop('damage_components', None)
-        
+
         # Update spell fields
         for attr, value in validated_data.items():
             setattr(instance, attr, value)
         instance.save()
-        
+
         # Update damage components if provided
         if damage_components_data is not None:
             # Remove old components
@@ -126,7 +127,7 @@ class SpellCreateUpdateSerializer(serializers.ModelSerializer):
             # Create new components
             for component_data in damage_components_data:
                 DamageComponent.objects.create(spell=instance, **component_data)
-        
+
         return instance
 
 

@@ -1,6 +1,7 @@
 import uuid
-from django.db import models
+
 from django.conf import settings
+from django.db import models
 
 
 class Spell(models.Model):
@@ -33,14 +34,14 @@ class Spell(models.Model):
     name = models.CharField(max_length=255, db_index=True)
     level = models.IntegerField(db_index=True)
     school = models.CharField(max_length=50, choices=SCHOOL_CHOICES, db_index=True)
-    
+
     # Casting properties
     casting_time = models.CharField(max_length=255, blank=True)
     range = models.CharField(max_length=255, blank=True)
     duration = models.CharField(max_length=255, blank=True)
     concentration = models.BooleanField(default=False)
     ritual = models.BooleanField(default=False)
-    
+
     # Combat properties
     is_attack_roll = models.BooleanField(default=False)
     is_saving_throw = models.BooleanField(default=False)
@@ -54,13 +55,13 @@ class Spell(models.Model):
         default=False,
         help_text='Spell deals half damage on a missed attack roll (e.g. Acid Arrow).',
     )
-    
+
     # Damage properties
     number_of_attacks = models.IntegerField(default=1)
     crit_enabled = models.BooleanField(default=True)
     aoe_radius = models.FloatField(null=True, blank=True)
     damage_type = models.CharField(max_length=50, blank=True)
-    
+
     # Upcast properties
     upcast_base_level = models.IntegerField(null=True, blank=True)
     upcast_dice_increment = models.IntegerField(null=True, blank=True)
@@ -69,7 +70,7 @@ class Spell(models.Model):
         null=True, blank=True,
         help_text='Additional attack rolls per slot level above upcast_base_level (e.g. Scorching Ray +1 ray/slot).'
     )
-    
+
     # Spell components
     components_v = models.BooleanField(default=False, help_text='Verbal component required.')
     components_s = models.BooleanField(default=False, help_text='Somatic component required.')
@@ -95,10 +96,10 @@ class Spell(models.Model):
         blank=True,
         help_text='Gameplay category tags for filtering and analysis.'
     )
-    
+
     # Flexible storage
     raw_data = models.JSONField(default=dict, blank=True)
-    
+
     # Ownership
     created_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
@@ -140,12 +141,12 @@ class DamageComponent(models.Model):
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     spell = models.ForeignKey(Spell, on_delete=models.CASCADE, related_name='damage_components')
-    
+
     dice_count = models.IntegerField()
     die_size = models.IntegerField()
     flat_modifier = models.IntegerField(default=0)
     damage_type = models.CharField(max_length=50)
-    
+
     timing = models.CharField(max_length=20, choices=TIMING_CHOICES, default='on_hit')
     on_crit_extra = models.BooleanField(default=True)
     scales_with_slot = models.BooleanField(default=False)
@@ -158,7 +159,7 @@ class DamageComponent(models.Model):
         ),
     )
     is_verified = models.BooleanField(default=False)
-    
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
@@ -183,12 +184,12 @@ class SpellParsingMetadata(models.Model):
     """
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     spell = models.OneToOneField(Spell, on_delete=models.CASCADE, related_name='parsing_metadata')
-    
+
     parsing_confidence = models.FloatField(default=0.0)
     requires_review = models.BooleanField(default=False)
     parsing_notes = models.JSONField(default=dict, blank=True)
     auto_extracted_components = models.JSONField(default=dict, blank=True)
-    
+
     reviewed_by = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.SET_NULL,
@@ -197,7 +198,7 @@ class SpellParsingMetadata(models.Model):
         related_name='reviewed_spells'
     )
     reviewed_at = models.DateTimeField(null=True, blank=True)
-    
+
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 

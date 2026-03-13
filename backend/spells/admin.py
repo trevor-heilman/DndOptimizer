@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import Spell, DamageComponent, SpellParsingMetadata
+
+from .models import DamageComponent, Spell, SpellParsingMetadata
 
 
 class DamageComponentInline(admin.TabularInline):
@@ -14,7 +15,7 @@ class SpellAdmin(admin.ModelAdmin):
     search_fields = ('name', 'description')
     readonly_fields = ('id', 'created_at', 'updated_at')
     inlines = [DamageComponentInline]
-    
+
     fieldsets = (
         ('Basic Information', {
             'fields': ('id', 'name', 'level', 'school', 'source', 'is_custom')

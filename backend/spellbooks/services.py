@@ -38,8 +38,8 @@ class SpellbookCopyCostResult:
 
 
 def calculate_copy_cost(
-    spellbook: "Spellbook",
-    character: "Character | None" = None,
+    spellbook: Spellbook,
+    character: Character | None = None,
 ) -> SpellbookCopyCostResult:
     """
     Calculate the gold and time cost to copy every non-cantrip spell in

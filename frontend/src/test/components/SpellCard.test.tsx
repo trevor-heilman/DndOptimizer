@@ -29,12 +29,12 @@ describe('SpellCard', () => {
 
   it('shows Concentration badge when spell is concentration', () => {
     renderWithProviders(<SpellCard spell={{ ...mockSpell, concentration: true } as any} />);
-    expect(screen.getByText('Concentration')).toBeInTheDocument();
+    expect(screen.getByText('◎ Conc')).toBeInTheDocument();
   });
 
   it('does not show Concentration badge for non-concentration spells', () => {
     renderWithProviders(<SpellCard spell={{ ...mockSpell, concentration: false } as any} />);
-    expect(screen.queryByText('Concentration')).not.toBeInTheDocument();
+    expect(screen.queryByText('◎ Conc')).not.toBeInTheDocument();
   });
 
   it('shows Ritual label when spell is a ritual', () => {
