@@ -102,7 +102,7 @@ class SpellViewSet(viewsets.ModelViewSet):
         # Multi-value damage_type filter: ?damage_type=fire&damage_type=cold
         damage_types = self.request.query_params.getlist('damage_type')
         if damage_types:
-            queryset = queryset.filter(damage_type__in=damage_types)
+            queryset = queryset.filter(damage_components__damage_type__in=damage_types).distinct()
 
         # Optional component filters: ?has_v=true, ?has_s=true, ?has_m=true
         for param, field in (('has_v', 'components_v'), ('has_s', 'components_s'), ('has_m', 'components_m')):

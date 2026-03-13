@@ -244,6 +244,9 @@ export function ComparePage() {
   });
   const [filterA, setFilterA] = useState<SpellFilter>(EMPTY_FILTER);
   const [filterB, setFilterB] = useState<SpellFilter>(EMPTY_FILTER);
+  // Per-spell overrides: number_of_targets and resistance can differ per spell
+  const [overridesA, setOverridesA] = useState<{ number_of_targets: number; resistance: boolean }>({ number_of_targets: 1, resistance: false });
+  const [overridesB, setOverridesB] = useState<{ number_of_targets: number; resistance: boolean }>({ number_of_targets: 1, resistance: false });
 
   const { data: allSpellsResponse } = useSpells({ page: 1, page_size: 1000 });
   const compareSpells = useCompareSpells();
@@ -262,7 +265,7 @@ export function ComparePage() {
     if (!spell1Id || !spell2Id) return;
     const { spell_slot_level: _omit, ...growthContext } = context;
     await Promise.all([
-      compareSpells.mutateAsync({ spellAId: spell1Id, spellBId: spell2Id, context }),
+      compareSpells.mutateAsync({ spellAId: spell1Id, spellBId: spell2Id, context, overridesA, overridesB }),
       breakeven.mutateAsync({ spell_a_id: spell1Id, spell_b_id: spell2Id, ...context }),
       growthAnalysis.mutateAsync({ spell_a_id: spell1Id, spell_b_id: spell2Id, ...growthContext }),
     ]);
@@ -308,6 +311,30 @@ export function ComparePage() {
                   <p><span className="font-semibold text-smoke-300">Damage:</span>{' '}{spell1.damage_components.map((dc) => `${dc.dice_count}d${dc.die_size} ${dc.damage_type}`).join(', ')}</p>
                 )}
               </div>
+              {/* Per-spell overrides */}
+              <div className="mt-3 pt-3 border-t border-smoke-700 grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-display font-medium text-parchment-400 mb-1">Enemies</label>
+                  <input
+                    type="number"
+                    value={overridesA.number_of_targets}
+                    onChange={(e) => setOverridesA((o) => ({ ...o, number_of_targets: Math.max(1, parseInt(e.target.value) || 1) }))}
+                    className="dnd-input font-body text-sm py-1"
+                    min="1" max="20"
+                  />
+                </div>
+                <div className="flex items-end pb-1">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={overridesA.resistance}
+                      onChange={(e) => setOverridesA((o) => ({ ...o, resistance: e.target.checked }))}
+                      className="w-4 h-4 rounded accent-gold-500"
+                    />
+                    <span className="font-body text-xs text-parchment-400">Has Resistance</span>
+                  </label>
+                </div>
+              </div>
             </div>
           )}
           <SpellFilterBar filter={filterA} onChange={setFilterA} />
@@ -332,6 +359,30 @@ export function ComparePage() {
                 {spell2.damage_components && spell2.damage_components.length > 0 && (
                   <p><span className="font-semibold text-smoke-300">Damage:</span>{' '}{spell2.damage_components.map((dc) => `${dc.dice_count}d${dc.die_size} ${dc.damage_type}`).join(', ')}</p>
                 )}
+              </div>
+              {/* Per-spell overrides */}
+              <div className="mt-3 pt-3 border-t border-smoke-700 grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block text-xs font-display font-medium text-parchment-400 mb-1">Enemies</label>
+                  <input
+                    type="number"
+                    value={overridesB.number_of_targets}
+                    onChange={(e) => setOverridesB((o) => ({ ...o, number_of_targets: Math.max(1, parseInt(e.target.value) || 1) }))}
+                    className="dnd-input font-body text-sm py-1"
+                    min="1" max="20"
+                  />
+                </div>
+                <div className="flex items-end pb-1">
+                  <label className="flex items-center gap-2 cursor-pointer">
+                    <input
+                      type="checkbox"
+                      checked={overridesB.resistance}
+                      onChange={(e) => setOverridesB((o) => ({ ...o, resistance: e.target.checked }))}
+                      className="w-4 h-4 rounded accent-gold-500"
+                    />
+                    <span className="font-body text-xs text-parchment-400">Has Resistance</span>
+                  </label>
+                </div>
               </div>
             </div>
           )}

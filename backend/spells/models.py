@@ -50,6 +50,10 @@ class Spell(models.Model):
     )
     save_type = models.CharField(max_length=3, choices=SAVE_TYPE_CHOICES, blank=True, null=True)
     half_damage_on_save = models.BooleanField(default=False)
+    half_damage_on_miss = models.BooleanField(
+        default=False,
+        help_text='Spell deals half damage on a missed attack roll (e.g. Acid Arrow).',
+    )
     
     # Damage properties
     number_of_attacks = models.IntegerField(default=1)
@@ -145,6 +149,14 @@ class DamageComponent(models.Model):
     timing = models.CharField(max_length=20, choices=TIMING_CHOICES, default='on_hit')
     on_crit_extra = models.BooleanField(default=True)
     scales_with_slot = models.BooleanField(default=False)
+    upcast_dice_increment = models.IntegerField(
+        null=True, blank=True,
+        help_text=(
+            'Per-component upcast dice increment. When set, this component gains this many '
+            'extra dice per slot level above the spell\'s upcast_base_level, instead of using '
+            'the spell-level upcast_dice_increment.'
+        ),
+    )
     is_verified = models.BooleanField(default=False)
     
     created_at = models.DateTimeField(auto_now_add=True)

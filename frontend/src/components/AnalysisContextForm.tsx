@@ -1,7 +1,13 @@
 /**
  * Analysis Context Form Component
  */
+import { useState } from 'react';
 import type { AnalysisContext, Spell } from '../types/api';
+
+const DAMAGE_TYPES = [
+  'acid', 'cold', 'fire', 'force', 'lightning',
+  'necrotic', 'poison', 'psychic', 'radiant', 'thunder',
+] as const;
 
 interface AnalysisContextFormProps {
   context: AnalysisContext;
@@ -11,6 +17,8 @@ interface AnalysisContextFormProps {
 }
 
 export function AnalysisContextForm({ context, onChange, spells }: AnalysisContextFormProps) {
+  const [showAdvanced, setShowAdvanced] = useState(false);
+
   const handleChange = (field: keyof AnalysisContext, value: any) => {
     onChange({ ...context, [field]: value });
   };
@@ -23,14 +31,16 @@ export function AnalysisContextForm({ context, onChange, spells }: AnalysisConte
   // Always show Number of Enemies — relevant whenever you're hitting multiple foes.
   // If every selected spell is a cantrip show Character Level (1–20) instead of Spell Slot Level.
   const isCantrip = hasSpells && spells!.every(s => s.level === 0);
+  // Minimum slot level = lowest spell level among non-cantrip spells (so the dropdown
+  // never shows options below the spell's base level).
+  const minSlotLevel = (hasSpells && !isCantrip)
+    ? Math.max(1, Math.min(...spells!.filter(s => s.level > 0).map(s => s.level)))
+    : 1;
   // Always show at least one group so the form is never empty for non-damage spells.
   const showBoth = showAttack && showSave;
 
   return (
     <div className="space-y-4">
-      <h3 className="dnd-section-title text-lg flex items-center gap-2">
-        <span aria-hidden="true">⚔️</span> Combat Parameters
-      </h3>
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
         {showAttack && (
@@ -157,7 +167,7 @@ export function AnalysisContextForm({ context, onChange, spells }: AnalysisConte
               onChange={(e) => handleChange('spell_slot_level', parseInt(e.target.value))}
               className="dnd-input font-body"
             >
-              {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((l) => (
+              {[1, 2, 3, 4, 5, 6, 7, 8, 9].filter(l => l >= minSlotLevel).map((l) => (
                 <option key={l} value={l}>Level {l}</option>
               ))}
             </select>
@@ -189,28 +199,164 @@ export function AnalysisContextForm({ context, onChange, spells }: AnalysisConte
         </div>
       </div>
 
-      <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 pt-1">
-        {[
-          { id: 'crit_enabled', label: 'Crits enabled', key: 'crit_enabled', default: true },
-          { id: 'half_dmg', label: 'Half damage on save', key: 'half_damage_on_save', default: true },
-          { id: 'evasion', label: 'Target has Evasion', key: 'evasion_enabled', default: false },
-        ].map(({ id, label, key, default: def }) => (
-          <label key={id} className="flex items-center gap-2 cursor-pointer group">
+      {/* ── Spell Conditions ───────────────────────────────────────────────── */}
+      <div>
+        <p className="text-xs font-display uppercase tracking-widest text-smoke-400 mb-2">Spell Conditions</p>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+          {showAttack && (
+            <label className="flex items-center gap-2 cursor-pointer group">
+              <input
+                type="checkbox"
+                checked={context.crit_enabled ?? true}
+                onChange={(e) => handleChange('crit_enabled', e.target.checked)}
+                className="w-4 h-4 rounded accent-gold-500"
+              />
+              <span className="font-body text-sm text-parchment-300 group-hover:text-parchment-200 transition-colors">
+                Crits enabled
+              </span>
+            </label>
+          )}
+          {showSave && (
+            <label className="flex items-center gap-2 cursor-pointer group">
+              <input
+                type="checkbox"
+                checked={context.half_damage_on_save ?? true}
+                onChange={(e) => handleChange('half_damage_on_save', e.target.checked)}
+                className="w-4 h-4 rounded accent-gold-500"
+              />
+              <span className="font-body text-sm text-parchment-300 group-hover:text-parchment-200 transition-colors">
+                Half damage on save
+              </span>
+            </label>
+          )}
+          {showSave && (
+            <label className="flex items-center gap-2 cursor-pointer group">
+              <input
+                type="checkbox"
+                checked={context.evasion_enabled ?? false}
+                onChange={(e) => handleChange('evasion_enabled', e.target.checked)}
+                className="w-4 h-4 rounded accent-gold-500"
+              />
+              <span className="font-body text-sm text-parchment-300 group-hover:text-parchment-200 transition-colors">
+                Target has Evasion
+              </span>
+            </label>
+          )}
+          <label className="flex items-center gap-2 cursor-pointer group">
             <input
               type="checkbox"
-              id={id}
-              checked={(context as any)[key] ?? def}
-              onChange={(e) => handleChange(key as keyof AnalysisContext, e.target.checked)}
+              checked={context.resistance ?? false}
+              onChange={(e) => handleChange('resistance', e.target.checked)}
               className="w-4 h-4 rounded accent-gold-500"
             />
             <span className="font-body text-sm text-parchment-300 group-hover:text-parchment-200 transition-colors">
-              {label}
+              Target has Resistance
             </span>
           </label>
-        ))}
+        </div>
+      </div>
+
+      {/* ── Advanced Section ───────────────────────────────────────────────── */}
+      <div>
+        <button
+          type="button"
+          onClick={() => setShowAdvanced((v) => !v)}
+          className="flex items-center gap-1.5 font-display text-xs uppercase tracking-widest text-smoke-400 hover:text-parchment-300 transition-colors"
+        >
+          <span
+            className="inline-block transition-transform duration-150"
+            style={{ transform: showAdvanced ? 'rotate(90deg)' : 'rotate(0deg)' }}
+          >
+            ▶
+          </span>
+          Advanced (Feats &amp; Traits)
+        </button>
+
+        {showAdvanced && (
+          <div className="mt-3 grid grid-cols-1 md:grid-cols-2 gap-4 pl-1 pt-1 border-l-2 border-smoke-700">
+            {/* Crit type — only relevant for attack-roll spells */}
+            {showAttack && (
+              <div>
+                <label htmlFor="crit_type" className="block text-sm font-display font-medium text-parchment-300 mb-1">
+                  Critical Hit Rule
+                </label>
+                <select
+                  id="crit_type"
+                  value={context.crit_type ?? 'double_dice'}
+                  onChange={(e) => handleChange('crit_type', e.target.value)}
+                  className="dnd-input font-body text-sm"
+                >
+                  <option value="double_dice">Double Dice (standard 5e)</option>
+                  <option value="double_damage">Double Total Damage</option>
+                  <option value="max_plus_roll">Max Dice + Roll Again</option>
+                </select>
+              </div>
+            )}
+
+            {/* Lucky / re-roll mechanic */}
+            <div>
+              <label htmlFor="lucky" className="block text-sm font-display font-medium text-parchment-300 mb-1">
+                Re-roll Mechanic
+              </label>
+              <select
+                id="lucky"
+                value={context.lucky ?? 'none'}
+                onChange={(e) => handleChange('lucky', e.target.value)}
+                className="dnd-input font-body text-sm"
+              >
+                <option value="none">None</option>
+                <option value="halfling">Halfling Lucky (reroll 1s)</option>
+                <option value="lucky_feat">Lucky Feat (reroll misses)</option>
+              </select>
+            </div>
+
+            {/* Elemental Adept — allows resistance bypass for one damage type */}
+            <div className="md:col-span-2">
+              <label htmlFor="elemental_adept_type" className="block text-sm font-display font-medium text-parchment-300 mb-1">
+                Elemental Adept — Damage Type
+                <span className="ml-2 font-body font-normal text-xs text-smoke-400">(bypasses resistance)</span>
+              </label>
+              <select
+                id="elemental_adept_type"
+                value={context.elemental_adept_type ?? ''}
+                onChange={(e) => handleChange('elemental_adept_type', e.target.value || null)}
+                className="dnd-input font-body text-sm"
+              >
+                <option value="">— None —</option>
+                {DAMAGE_TYPES.map((dt) => (
+                  <option key={dt} value={dt}>
+                    {dt.charAt(0).toUpperCase() + dt.slice(1)}
+                  </option>
+                ))}
+              </select>
+            </div>
+
+            {/* Save Penalty Die — Mind Sliver / Bane / Synaptic Static */}
+            {showSave && (
+              <div className="md:col-span-2">
+                <label htmlFor="save_penalty_die" className="block text-sm font-display font-medium text-parchment-300 mb-1">
+                  Saving Throw Penalty Die
+                  <span className="ml-2 font-body font-normal text-xs text-smoke-400">(Mind Sliver / Bane / Synaptic Static)</span>
+                </label>
+                <select
+                  id="save_penalty_die"
+                  value={context.save_penalty_die ?? 'none'}
+                  onChange={(e) => handleChange('save_penalty_die', e.target.value)}
+                  className="dnd-input font-body text-sm"
+                >
+                  <option value="none">None</option>
+                  <option value="d4">−1d4 (avg −2.5) — Mind Sliver / Bane</option>
+                  <option value="d6">−1d6 (avg −3.5) — Synaptic Static</option>
+                  <option value="d8">−1d8 (avg −4.5)</option>
+                </select>
+              </div>
+            )}
+          </div>
+        )}
       </div>
     </div>
   );
 }
 
 export default AnalysisContextForm;
+

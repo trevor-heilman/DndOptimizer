@@ -3,6 +3,26 @@ from django.db import models
 from django.conf import settings
 
 
+CRIT_TYPE_CHOICES = [
+    ('double_dice', 'Double Dice (standard 5e)'),
+    ('double_damage', 'Double Total Damage'),
+    ('max_plus_roll', 'Max Dice + Roll Again'),
+]
+
+LUCKY_CHOICES = [
+    ('none', 'None'),
+    ('halfling', 'Halfling Lucky (reroll 1s)'),
+    ('lucky_feat', 'Lucky Feat (reroll misses)'),
+]
+
+SAVE_PENALTY_DIE_CHOICES = [
+    ('none', 'None'),
+    ('d4', '-1d4 avg −2.5 (Mind Sliver / Bane)'),
+    ('d6', '-1d6 avg −3.5 (Synaptic Static)'),
+    ('d8', '-1d8 avg −4.5'),
+]
+
+
 class AnalysisContext(models.Model):
     """
     Stores parameters for a spell analysis run.
@@ -26,6 +46,25 @@ class AnalysisContext(models.Model):
     crit_enabled = models.BooleanField(default=True)
     half_damage_on_save = models.BooleanField(default=True)
     evasion_enabled = models.BooleanField(default=False)
+    resistance = models.BooleanField(default=False)
+
+    # Advanced combat modifiers
+    crit_type = models.CharField(
+        max_length=20, choices=CRIT_TYPE_CHOICES, default='double_dice',
+        help_text='How crit damage is calculated (table-specific house rules).',
+    )
+    lucky = models.CharField(
+        max_length=20, choices=LUCKY_CHOICES, default='none',
+        help_text='Re-roll mechanic granted by a feat or racial trait.',
+    )
+    elemental_adept_type = models.CharField(
+        max_length=50, blank=True, null=True,
+        help_text='Damage type for Elemental Adept (ignores resistance for this type).',
+    )
+    save_penalty_die = models.CharField(
+        max_length=10, choices=SAVE_PENALTY_DIE_CHOICES, default='none',
+        help_text='Die the target subtracts from saving throws (Mind Sliver, Bane, Synaptic Static).',
+    )
     
     # Metadata
     created_by = models.ForeignKey(
@@ -49,7 +88,8 @@ class AnalysisContext(models.Model):
     _CONTEXT_FIELDS = (
         'target_ac', 'target_save_bonus', 'spell_save_dc', 'caster_attack_bonus',
         'number_of_targets', 'advantage', 'disadvantage', 'spell_slot_level',
-        'crit_enabled', 'half_damage_on_save', 'evasion_enabled',
+        'crit_enabled', 'crit_type', 'half_damage_on_save', 'evasion_enabled', 'resistance',
+        'lucky', 'elemental_adept_type', 'save_penalty_die',
     )
 
     @classmethod
