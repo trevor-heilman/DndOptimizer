@@ -157,6 +157,6 @@ export const handlers = [
 
   // Analysis
   http.post(`${BASE}/analysis/analyze/`, () => HttpResponse.json(mockAnalysisResult)),
-  http.post(`${BASE}/analysis/compare/`, () => HttpResponse.json(mockComparisonResult)),
+  http.post(`${BASE}/analysis/compare/`, () => HttpResponse.json({ results: mockComparisonResult })),
   http.post(`${BASE}/analysis/efficiency/`, () => HttpResponse.json(mockEfficiencyResponse)),
 ];

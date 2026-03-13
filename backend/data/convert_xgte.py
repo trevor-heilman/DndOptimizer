@@ -142,7 +142,7 @@ def main():
     input_path = repo_root / 'documentation' / 'data' / 'XGtE Spells.JSON'
     output_path = repo_root / 'documentation' / 'data' / 'XGtE_Spells_converted.json'
 
-    with open(input_path, 'r', encoding='utf-8') as f:
+    with open(input_path, encoding='utf-8') as f:
         outer = json.load(f)
 
     spells = []

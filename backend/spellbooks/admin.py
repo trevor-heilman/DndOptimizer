@@ -1,5 +1,6 @@
 from django.contrib import admin
-from .models import Spellbook, PreparedSpell
+
+from .models import PreparedSpell, Spellbook
 
 
 class PreparedSpellInline(admin.TabularInline):
@@ -15,11 +16,11 @@ class SpellbookAdmin(admin.ModelAdmin):
     search_fields = ('name', 'owner__username', 'owner__email')
     readonly_fields = ('id', 'created_at', 'updated_at')
     inlines = [PreparedSpellInline]
-    
+
     def spell_count(self, obj):
         return obj.spell_count
     spell_count.short_description = 'Total Spells'
-    
+
     def prepared_spell_count(self, obj):
         return obj.prepared_spell_count
     prepared_spell_count.short_description = 'Prepared'

@@ -29,7 +29,7 @@ describe('AnalysisContextForm', () => {
     expect(screen.getByLabelText(/spell attack bonus/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/spell save dc/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/target save bonus/i)).toBeInTheDocument();
-    expect(screen.getByLabelText(/number of targets/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/number of enemies/i)).toBeInTheDocument();
     expect(screen.getByLabelText(/spell slot level/i)).toBeInTheDocument();
   });
 
@@ -40,7 +40,7 @@ describe('AnalysisContextForm', () => {
     expect(screen.getByLabelText(/target ac/i)).toHaveValue(15);
     expect(screen.getByLabelText(/spell attack bonus/i)).toHaveValue(5);
     expect(screen.getByLabelText(/spell save dc/i)).toHaveValue(15);
-    expect(screen.getByLabelText(/number of targets/i)).toHaveValue(1);
+    expect(screen.getByLabelText(/number of enemies/i)).toHaveValue(1);
   });
 
   it('calls onChange with updated target_ac when the field changes', async () => {
@@ -60,7 +60,7 @@ describe('AnalysisContextForm', () => {
     renderWithProviders(
       <AnalysisContextForm context={defaultContext} onChange={onChange} />
     );
-    const input = screen.getByLabelText(/number of targets/i);
+    const input = screen.getByLabelText(/number of enemies/i);
     fireEvent.change(input, { target: { value: '3' } });
     expect(onChange).toHaveBeenCalledWith(
       expect.objectContaining({ number_of_targets: 3 })

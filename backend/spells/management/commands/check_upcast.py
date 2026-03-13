@@ -1,5 +1,6 @@
 """Temporary diagnostic script."""
 from django.core.management.base import BaseCommand
+
 from spells.models import Spell
 
 

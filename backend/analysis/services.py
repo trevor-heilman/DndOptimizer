@@ -2,11 +2,11 @@
 Spell Analysis Service
 Core mathematical engine for D&D 5e spell optimization.
 """
-from typing import Dict, Any
+from typing import Any
 
 # Average value subtracted from a target's saving throw by penalty-die effects
 # (Mind Sliver / Bane → d4, Synaptic Static → d6).
-_PENALTY_DIE_AVG: Dict[str, float] = {
+_PENALTY_DIE_AVG: dict[str, float] = {
     'none': 0.0, 'd4': 2.5, 'd6': 3.5, 'd8': 4.5, 'd10': 5.5, 'd12': 6.5,
 }
 
@@ -15,7 +15,7 @@ class DiceCalculator:
     """
     Utility for dice probability calculations.
     """
-    
+
     @staticmethod
     def average(dice_count: int, die_size: int, modifier: int = 0) -> float:
         """
@@ -23,12 +23,12 @@ class DiceCalculator:
         Formula: N * (X + 1) / 2 + modifier
         """
         return (dice_count * (die_size + 1) / 2) + modifier
-    
+
     @staticmethod
     def maximum(dice_count: int, die_size: int, modifier: int = 0) -> int:
         """Calculate maximum damage."""
         return (dice_count * die_size) + modifier
-    
+
     @staticmethod
     def minimum(dice_count: int, die_size: int, modifier: int = 0) -> int:
         """Calculate minimum damage."""
@@ -39,7 +39,7 @@ class AttackRollCalculator:
     """
     Calculates expected damage for attack roll spells.
     """
-    
+
     @staticmethod
     def hit_probability(
         attack_bonus: int,
@@ -112,7 +112,7 @@ class AttackRollCalculator:
         lucky: str = 'none',
         number_of_attacks: int = 1,
         half_on_miss: bool = False,
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """
         Calculate expected damage for an attack roll spell.
 
@@ -162,7 +162,7 @@ class SavingThrowCalculator:
     """
     Calculates expected damage for saving throw spells.
     """
-    
+
     @staticmethod
     def save_failure_probability(
         spell_dc: int,
@@ -192,7 +192,7 @@ class SavingThrowCalculator:
             return 1 - (1 - base_prob) ** 2
 
         return base_prob
-    
+
     @classmethod
     def expected_damage(
         cls,
@@ -207,26 +207,26 @@ class SavingThrowCalculator:
         evasion: bool = False,
         number_of_targets: int = 1,
         save_penalty_die: str = 'none',
-    ) -> Dict[str, float]:
+    ) -> dict[str, float]:
         """
         Calculate expected damage for a saving throw spell.
         """
         fail_prob = cls.save_failure_probability(spell_dc, save_bonus, advantage, disadvantage, save_penalty_die)
         success_prob = 1 - fail_prob
-        
+
         full_damage = DiceCalculator.average(dice_count, die_size, modifier)
         max_damage = DiceCalculator.maximum(dice_count, die_size, modifier)
-        
+
         # Evasion: no damage on success
         if evasion:
             half_on_success = False
-        
+
         success_damage = (full_damage / 2) if half_on_success else 0
-        
+
         # Expected damage = P(fail) * full + P(success) * partial
         expected_single = (fail_prob * full_damage) + (success_prob * success_damage)
         expected_total = expected_single * number_of_targets
-        
+
         return {
             'save_failure_probability': fail_prob,
             'full_damage': full_damage,
@@ -267,7 +267,7 @@ class SpellAnalysisService:
         return levels_above * spell.upcast_attacks_increment
 
     @staticmethod
-    def analyze_spell(spell, context) -> Dict[str, Any]:
+    def analyze_spell(spell, context) -> dict[str, Any]:
         """
         Analyze a spell given a combat context.
         Cantrips scale by character level (via context.character_level).
@@ -304,7 +304,7 @@ class SpellAnalysisService:
                     context.advantage, context.disadvantage
                 )
                 crit_p = AttackRollCalculator.crit_probability(context.advantage, context.disadvantage)
-                breakdown: Dict[str, Any] = {
+                breakdown: dict[str, Any] = {
                     'hit_probability': round(hit_p, 4),
                     'miss_probability': round(1 - hit_p, 4),
                     'crit_probability': round(crit_p, 4),
@@ -318,7 +318,6 @@ class SpellAnalysisService:
                     context.advantage, context.disadvantage,
                     save_penalty_die=_cantrip_save_penalty,
                 )
-                full_avg = total_avg / multiplier if multiplier else total_avg
                 breakdown = {
                     'save_failure_probability': round(fail_p, 4),
                     'save_success_probability': round(1 - fail_p, 4),
@@ -554,9 +553,9 @@ class SpellAnalysisService:
             'efficiency': 0,
             'math_breakdown': {},
         }
-    
+
     @staticmethod
-    def compare_spells(spell_a, spell_b, context_a, context_b=None) -> Dict[str, Any]:
+    def compare_spells(spell_a, spell_b, context_a, context_b=None) -> dict[str, Any]:
         """
         Compare two spells. context_a and context_b may differ in number_of_targets
         and resistance to model per-spell differences (e.g. AoE vs single-target).
@@ -566,7 +565,7 @@ class SpellAnalysisService:
             context_b = context_a
         result_a = SpellAnalysisService.analyze_spell(spell_a, context_a)
         result_b = SpellAnalysisService.analyze_spell(spell_b, context_b)
-        
+
         return {
             'spell_a': {
                 'name': spell_a.name,
@@ -612,7 +611,7 @@ class SpellAnalysisService:
         )
 
     # Standard full-caster: character level → highest available spell slot
-    _CHAR_LEVEL_TO_SLOT: Dict[int, int] = {
+    _CHAR_LEVEL_TO_SLOT: dict[int, int] = {
         1: 1, 2: 1, 3: 2, 4: 2, 5: 3, 6: 3, 7: 4, 8: 4, 9: 5, 10: 5,
         11: 6, 12: 6, 13: 7, 14: 7, 15: 8, 16: 8, 17: 9, 18: 9, 19: 9, 20: 9,
     }
@@ -698,7 +697,7 @@ class SpellAnalysisService:
         return cls.analyze_spell(spell, ctx)['expected_damage']
 
     @classmethod
-    def compare_growth_analysis(cls, spell_a, spell_b, base_context) -> Dict[str, Any]:
+    def compare_growth_analysis(cls, spell_a, spell_b, base_context) -> dict[str, Any]:
         """
         Compute damage growth profiles for both spells across character levels 1-20.
 
@@ -806,7 +805,7 @@ class SpellAnalysisService:
         return profile, breakeven
 
     @staticmethod
-    def breakeven_analysis(spell_a, spell_b, base_context) -> Dict[str, Any]:
+    def breakeven_analysis(spell_a, spell_b, base_context) -> dict[str, Any]:
         """
         Find the target_ac and target_save_bonus crossover points where spell_a and
         spell_b deal equal expected damage. Returns full sweep profiles for charting.

@@ -1,6 +1,8 @@
 from rest_framework import serializers
-from .models import AnalysisContext, SpellComparison
+
 from spells.serializers import SpellListSerializer
+
+from .models import AnalysisContext, SpellComparison
 
 
 class AnalysisContextSerializer(serializers.ModelSerializer):
@@ -24,17 +26,17 @@ class AnalysisContextSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError(
                 "Cannot have both advantage and disadvantage."
             )
-        
+
         if attrs.get('spell_slot_level', 1) < 1 or attrs.get('spell_slot_level', 1) > 9:
             raise serializers.ValidationError(
                 "Spell slot level must be between 1 and 9."
             )
-        
+
         if attrs.get('number_of_targets', 1) < 1:
             raise serializers.ValidationError(
                 "Number of targets must be at least 1."
             )
-        
+
         return attrs
 
 
@@ -123,19 +125,19 @@ class SpellComparisonRequestSerializer(ContextParametersMixin):
     def validate_spell_a_id(self, value):
         """Validate that spell A exists."""
         from spells.models import Spell
-        
+
         if not Spell.objects.filter(id=value).exists():
             raise serializers.ValidationError("Spell A not found.")
-        
+
         return value
 
     def validate_spell_b_id(self, value):
         """Validate that spell B exists."""
         from spells.models import Spell
-        
+
         if not Spell.objects.filter(id=value).exists():
             raise serializers.ValidationError("Spell B not found.")
-        
+
         return value
 
 
@@ -148,10 +150,10 @@ class SpellAnalysisRequestSerializer(ContextParametersMixin):
     def validate_spell_id(self, value):
         """Validate that the spell exists."""
         from spells.models import Spell
-        
+
         if not Spell.objects.filter(id=value).exists():
             raise serializers.ValidationError("Spell not found.")
-        
+
         return value
 
 
@@ -177,10 +179,10 @@ class SpellEfficiencyRequestSerializer(ContextParametersMixin):
     def validate_spell_id(self, value):
         """Validate that the spell exists."""
         from spells.models import Spell
-        
+
         if not Spell.objects.filter(id=value).exists():
             raise serializers.ValidationError("Spell not found.")
-        
+
         return value
 
 

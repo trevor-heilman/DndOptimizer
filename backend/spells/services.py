@@ -3,7 +3,8 @@ Spell Parsing Service
 Extracts damage information, spell type, and scaling from spell descriptions.
 """
 import re
-from typing import Dict, List, Tuple, Optional, Any
+from typing import Any
+
 from django.db import transaction
 
 
@@ -12,7 +13,7 @@ class DamageExtractionService:
     Service for extracting damage information from spell descriptions.
     Uses regex patterns to identify dice expressions and damage types.
     """
-    
+
     # Regex patterns
     DICE_PATTERN = re.compile(r'(\d+)d(\d+)', re.IGNORECASE)
     DAMAGE_TYPE_PATTERN = re.compile(
@@ -56,9 +57,9 @@ class DamageExtractionService:
         r'|at\s+the\s+(?:start|end)\s+of\s+(?:its|your)\s+(?:next\s+)?turns?)\b',
         re.IGNORECASE
     )
-    
+
     @classmethod
-    def extract_dice_expressions(cls, text: str) -> List[Tuple[int, int]]:
+    def extract_dice_expressions(cls, text: str) -> list[tuple[int, int]]:
         """
         Extract all dice expressions from text.
         Returns list of (dice_count, die_size) tuples.
@@ -67,7 +68,7 @@ class DamageExtractionService:
         return [(int(count), int(size)) for count, size in matches]
 
     @classmethod
-    def extract_dice_with_timing(cls, description: str, is_attack_roll: bool) -> List[Tuple[int, int, str]]:
+    def extract_dice_with_timing(cls, description: str, is_attack_roll: bool) -> list[tuple[int, int, str]]:
         """
         Extract dice expressions AND infer the timing of each damage component
         based on surrounding context in the description.
@@ -80,7 +81,7 @@ class DamageExtractionService:
         window, tag the component as end_of_turn; otherwise use on_hit / on_fail.
         """
         base_timing = 'on_hit' if is_attack_roll else 'on_fail'
-        results: List[Tuple[int, int, str]] = []
+        results: list[tuple[int, int, str]] = []
 
         for m in cls.DICE_PATTERN.finditer(description):
             dice_count = int(m.group(1))
@@ -99,27 +100,27 @@ class DamageExtractionService:
             results.append((dice_count, die_size, timing))
 
         return results
-    
+
     @classmethod
-    def extract_damage_types(cls, text: str) -> List[str]:
+    def extract_damage_types(cls, text: str) -> list[str]:
         """Extract all damage types mentioned in text."""
         matches = cls.DAMAGE_TYPE_PATTERN.findall(text)
         return [match.lower() for match in matches]
-    
+
     @classmethod
     def detect_attack_spell(cls, text: str) -> bool:
         """Check if spell involves an attack roll."""
         text_lower = text.lower()
         return any(keyword in text_lower for keyword in cls.ATTACK_KEYWORDS)
-    
+
     @classmethod
     def detect_save_spell(cls, text: str) -> bool:
         """Check if spell involves a saving throw."""
         text_lower = text.lower()
         return any(keyword in text_lower for keyword in cls.SAVE_KEYWORDS)
-    
+
     @classmethod
-    def extract_save_type(cls, text: str) -> Optional[str]:
+    def extract_save_type(cls, text: str) -> str | None:
         """Extract the saving throw type (STR, DEX, CON, etc.)."""
         match = cls.SAVE_TYPE_PATTERN.search(text)
         if match:
@@ -135,15 +136,15 @@ class DamageExtractionService:
             }
             return mappings.get(save_type, save_type[:3])
         return None
-    
+
     @classmethod
     def detect_half_damage_on_save(cls, text: str) -> bool:
         """Check if spell does half damage on successful save."""
         text_lower = text.lower()
         return any(keyword in text_lower for keyword in cls.HALF_DAMAGE_KEYWORDS)
-    
+
     @classmethod
-    def extract_upcast_scaling(cls, text: str) -> Optional[Tuple[int, int]]:
+    def extract_upcast_scaling(cls, text: str) -> tuple[int, int] | None:
         """
         Extract upcast scaling information.
         Returns (dice_count, die_size) if found.
@@ -159,9 +160,9 @@ class ConfidenceScoringService:
     """
     Service for calculating confidence scores for parsed spell data.
     """
-    
+
     @staticmethod
-    def calculate_confidence(parsing_data: Dict[str, Any]) -> float:
+    def calculate_confidence(parsing_data: dict[str, Any]) -> float:
         """
         Calculate confidence score based on what was successfully extracted.
         Score ranges from 0.0 to 1.0.
@@ -243,9 +244,9 @@ class SpellParsingService:
         cls,
         description: str,
         higher_level: str,
-        dice_expressions: List[Tuple[int, int]],
-        damage_types: List[str],
-    ) -> List[str]:
+        dice_expressions: list[tuple[int, int]],
+        damage_types: list[str],
+    ) -> list[str]:
         """
         Infer gameplay-category tags from parsed spell data.
         A spell can receive multiple tags (e.g. damage + aoe).
@@ -310,14 +311,14 @@ class SpellParsingService:
     }
 
     @classmethod
-    def _normalize_raw(cls, raw_data: Dict[str, Any]) -> Dict[str, Any]:
+    def _normalize_raw(cls, raw_data: dict[str, Any]) -> dict[str, Any]:
         """
         Normalize a raw spell dict from any known schema into a consistent
         internal snake_case representation before further parsing.
         """
         # Detect PascalCase schema by presence of 'Name' (capital N)
         if 'Name' in raw_data and 'name' not in raw_data:
-            normalized: Dict[str, Any] = {}
+            normalized: dict[str, Any] = {}
             for pascal, snake in cls._PASCAL_FIELD_MAP.items():
                 if pascal in raw_data:
                     normalized[snake] = raw_data[pascal]
@@ -331,7 +332,7 @@ class SpellParsingService:
         return raw_data
 
     @classmethod
-    def parse_spell_data(cls, raw_data: Dict[str, Any]) -> Dict[str, Any]:
+    def parse_spell_data(cls, raw_data: dict[str, Any]) -> dict[str, Any]:
         """
         Parse spell data from raw JSON and extract normalized fields.
         Returns a dictionary with normalized spell data and confidence score.
@@ -349,7 +350,7 @@ class SpellParsingService:
         higher_level = raw_data.get('higher_level') or raw_data.get('higher_levels', '')
         if isinstance(higher_level, list):
             higher_level = ' '.join(higher_level)
-        
+
         full_text = f"{description} {higher_level}"
 
         # Damage components are extracted from description ONLY — not from higher_level.
@@ -365,14 +366,14 @@ class SpellParsingService:
 
         # Timing-aware extraction (requires is_attack_roll to determine base timing)
         dice_with_timing = DamageExtractionService.extract_dice_with_timing(description, is_attack_roll)
-        
+
         # Extract save information
         save_type = None
         half_damage_on_save = False
         if is_saving_throw:
             save_type = DamageExtractionService.extract_save_type(full_text)
             half_damage_on_save = DamageExtractionService.detect_half_damage_on_save(full_text)
-        
+
         # Extract spell level early (needed for cantrip detection below)
         raw_level = raw_data.get('level', 0)
         if isinstance(raw_level, str):
@@ -388,7 +389,7 @@ class SpellParsingService:
         if (
             raw_level == 0
             and len(dice_expressions) >= 2
-            and len(set(d[1] for d in dice_expressions)) == 1   # all same die size
+            and len({d[1] for d in dice_expressions}) == 1   # all same die size
             and any(kw in full_text.lower() for kw in _CANTRIP_TIER_KW)
         ):
             _ct_die_size = dice_expressions[0][1]
@@ -408,10 +409,10 @@ class SpellParsingService:
             'half_damage_on_save': half_damage_on_save,
             'upcast_scaling': upcast_scaling,
         }
-        
+
         # Calculate confidence
         confidence = ConfidenceScoringService.calculate_confidence(parsing_data)
-        
+
         # Build normalized spell data
         # casting_time: accept both 'casting_time' and 'castingTime'
         casting_time = raw_data.get('casting_time') or raw_data.get('castingTime', '')
@@ -445,7 +446,7 @@ class SpellParsingService:
             'raw_data': raw_data,
             'classes': classes,
         }
-        
+
         # Add upcast data if found
         if upcast_scaling:
             normalized_data['upcast_dice_increment'] = upcast_scaling[0]
@@ -462,62 +463,62 @@ class SpellParsingService:
             'confidence': confidence,
             'requires_review': confidence < 0.7
         }
-    
+
     @staticmethod
-    def _extract_school(raw_data: Dict[str, Any]) -> str:
+    def _extract_school(raw_data: dict[str, Any]) -> str:
         """Extract school from various schema formats."""
         school = raw_data.get('school', '')
-        
+
         # Handle nested school object
         if isinstance(school, dict):
             school = school.get('name', '')
-        
+
         # Normalize to lowercase
         if isinstance(school, str):
             school = school.lower().strip()
-        
+
         # Validate against known schools
         valid_schools = [
             'abjuration', 'conjuration', 'divination', 'enchantment',
             'evocation', 'illusion', 'necromancy', 'transmutation'
         ]
-        
+
         if school in valid_schools:
             return school
-        
+
         return 'evocation'  # Default
-    
+
     @staticmethod
-    def _detect_concentration(raw_data: Dict[str, Any]) -> bool:
+    def _detect_concentration(raw_data: dict[str, Any]) -> bool:
         """Detect if spell requires concentration."""
         # Check direct field
         if 'concentration' in raw_data:
             return bool(raw_data['concentration'])
-        
+
         # Check in duration
         duration = raw_data.get('duration', '')
         if isinstance(duration, str):
             return 'concentration' in duration.lower()
-        
+
         return False
-    
+
     @classmethod
     @transaction.atomic
-    def create_spell_from_parsed_data(cls, parsed_result: Dict[str, Any], created_by=None):
+    def create_spell_from_parsed_data(cls, parsed_result: dict[str, Any], created_by=None):
         """
         Create a Spell instance with DamageComponents and ParsingMetadata.
         """
-        from spells.models import Spell, DamageComponent, SpellParsingMetadata
-        
+        from spells.models import DamageComponent, Spell, SpellParsingMetadata
+
         normalized = parsed_result['normalized_data']
         parsing_data = parsed_result['parsing_data']
-        
+
         # Create spell
         spell = Spell.objects.create(
             created_by=created_by,
             **normalized
         )
-        
+
         # Create damage components
         dice_expressions = parsing_data.get('dice_expressions', [])
         dice_with_timing = parsing_data.get('dice_with_timing', [])
@@ -540,7 +541,7 @@ class SpellParsingService:
                 timing=timing,
                 is_verified=False
             )
-        
+
         # Create parsing metadata
         SpellParsingMetadata.objects.create(
             spell=spell,
@@ -552,5 +553,5 @@ class SpellParsingService:
                 'damage_types': damage_types
             }
         )
-        
+
         return spell

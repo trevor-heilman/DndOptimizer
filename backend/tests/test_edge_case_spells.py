@@ -12,6 +12,7 @@ Covers:
   - Summoning spells: no damage components, graceful degradation in analysis
 """
 import pytest
+
 from analysis.models import AnalysisContext
 from analysis.services import SpellAnalysisService
 from spells.models import DamageComponent, Spell
@@ -19,20 +20,20 @@ from spells.models import DamageComponent, Spell
 
 def _make_context(**overrides) -> AnalysisContext:
     """Return an unsaved AnalysisContext with sensible test defaults."""
-    defaults = dict(
-        target_ac=15,
-        target_save_bonus=0,
-        spell_save_dc=15,
-        caster_attack_bonus=5,
-        number_of_targets=1,
-        advantage=False,
-        disadvantage=False,
-        spell_slot_level=2,
-        crit_enabled=True,
-        half_damage_on_save=True,
-        evasion_enabled=False,
-        resistance=False,
-    )
+    defaults = {
+        'target_ac': 15,
+        'target_save_bonus': 0,
+        'spell_save_dc': 15,
+        'caster_attack_bonus': 5,
+        'number_of_targets': 1,
+        'advantage': False,
+        'disadvantage': False,
+        'spell_slot_level': 2,
+        'crit_enabled': True,
+        'half_damage_on_save': True,
+        'evasion_enabled': False,
+        'resistance': False,
+    }
     defaults.update(overrides)
     return AnalysisContext(**defaults)
 

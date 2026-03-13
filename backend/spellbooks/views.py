@@ -1,20 +1,21 @@
-from rest_framework import viewsets, status, permissions
+from django.db.models import Count, Q
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from django_filters.rest_framework import DjangoFilterBackend
-from django.db.models import Count, Q
-from .models import Character, Spellbook, PreparedSpell
+
+from .models import Character, PreparedSpell, Spellbook
 from .serializers import (
-    CharacterSerializer,
-    CharacterCreateUpdateSerializer,
-    UpdateSpellSlotsSerializer,
-    SpellbookListSerializer,
-    SpellbookDetailSerializer,
-    SpellbookCreateUpdateSerializer,
     AddSpellToSpellbookSerializer,
-    UpdatePreparedSpellSerializer,
-    SpellbookExportSerializer,
+    CharacterCreateUpdateSerializer,
+    CharacterSerializer,
     ReorderSpellbooksSerializer,
+    SpellbookCreateUpdateSerializer,
+    SpellbookDetailSerializer,
+    SpellbookExportSerializer,
+    SpellbookListSerializer,
+    UpdatePreparedSpellSerializer,
+    UpdateSpellSlotsSerializer,
 )
 from .services import calculate_copy_cost
 
@@ -31,8 +32,8 @@ class CharacterViewSet(viewsets.ModelViewSet):
             spellbook_count=Count('spellbooks', distinct=True),
         ).select_related('owner')
         if self.request.user.is_staff:
-            return qs
-        return qs.filter(owner=self.request.user)
+            return qs.order_by('-updated_at')
+        return qs.filter(owner=self.request.user).order_by('-updated_at')
 
     def get_serializer_class(self):
         if self.action in ('create', 'update', 'partial_update'):
@@ -119,8 +120,8 @@ class SpellbookViewSet(viewsets.ModelViewSet):
             )
         )
         if self.request.user.is_staff:
-            return qs
-        return qs.filter(owner=self.request.user)
+            return qs.order_by('sort_order', '-updated_at')
+        return qs.filter(owner=self.request.user).order_by('sort_order', '-updated_at')
 
     def perform_create(self, serializer):
         """Set owner to current user."""
@@ -135,7 +136,7 @@ class SpellbookViewSet(viewsets.ModelViewSet):
         spellbook = self.get_object()
         serializer = AddSpellToSpellbookSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        
+
         # Check if spell already in spellbook
         spell_id = serializer.validated_data['spell_id']
         if PreparedSpell.objects.filter(spellbook=spellbook, spell_id=spell_id).exists():
@@ -143,15 +144,15 @@ class SpellbookViewSet(viewsets.ModelViewSet):
                 {'error': 'Spell already in spellbook'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         # Add spell to spellbook
-        prepared_spell = PreparedSpell.objects.create(
+        PreparedSpell.objects.create(
             spellbook=spellbook,
             spell_id=spell_id,
             prepared=serializer.validated_data['prepared'],
             notes=serializer.validated_data['notes']
         )
-        
+
         return Response(
             SpellbookDetailSerializer(spellbook).data,
             status=status.HTTP_201_CREATED
@@ -165,13 +166,13 @@ class SpellbookViewSet(viewsets.ModelViewSet):
         """
         spellbook = self.get_object()
         spell_id = request.query_params.get('spell_id')
-        
+
         if not spell_id:
             return Response(
                 {'error': 'spell_id required'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         try:
             prepared_spell = PreparedSpell.objects.get(
                 spellbook=spellbook,
@@ -193,13 +194,13 @@ class SpellbookViewSet(viewsets.ModelViewSet):
         """
         spellbook = self.get_object()
         spell_id = request.query_params.get('spell_id')
-        
+
         if not spell_id:
             return Response(
                 {'error': 'spell_id required'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         try:
             prepared_spell = PreparedSpell.objects.get(
                 spellbook=spellbook,
@@ -210,7 +211,7 @@ class SpellbookViewSet(viewsets.ModelViewSet):
                 {'error': 'Spell not in spellbook'},
                 status=status.HTTP_404_NOT_FOUND
             )
-        
+
         serializer = UpdatePreparedSpellSerializer(
             prepared_spell,
             data=request.data,
@@ -218,7 +219,7 @@ class SpellbookViewSet(viewsets.ModelViewSet):
         )
         serializer.is_valid(raise_exception=True)
         serializer.save()
-        
+
         return Response(SpellbookDetailSerializer(spellbook).data)
 
     @action(detail=True, methods=['get'])
@@ -238,14 +239,14 @@ class SpellbookViewSet(viewsets.ModelViewSet):
         POST /api/spellbooks/{id}/duplicate/
         """
         original = self.get_object()
-        
+
         # Create new spellbook
         new_spellbook = Spellbook.objects.create(
             name=f"{original.name} (Copy)",
             description=original.description,
             owner=request.user
         )
-        
+
         # Copy all prepared spells
         for prepared_spell in original.prepared_spells.all():
             PreparedSpell.objects.create(
@@ -254,7 +255,7 @@ class SpellbookViewSet(viewsets.ModelViewSet):
                 prepared=prepared_spell.prepared,
                 notes=prepared_spell.notes
             )
-        
+
         return Response(
             SpellbookDetailSerializer(new_spellbook).data,
             status=status.HTTP_201_CREATED

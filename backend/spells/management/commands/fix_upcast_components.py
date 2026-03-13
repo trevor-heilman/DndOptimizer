@@ -15,6 +15,7 @@ This command:
   - Skips user-verified components (is_verified=True) to avoid deleting manual edits.
 """
 from django.core.management.base import BaseCommand
+
 from spells.services import DamageExtractionService
 
 

@@ -1,24 +1,28 @@
-from rest_framework import viewsets, status, permissions, filters
+from django.core.cache import cache
+from django.db import models, transaction
+from django_filters.rest_framework import DjangoFilterBackend
+from rest_framework import filters, permissions, status, viewsets
 from rest_framework.decorators import action
 from rest_framework.pagination import PageNumberPagination
 from rest_framework.response import Response
-from django_filters.rest_framework import DjangoFilterBackend
-from django.db import models, transaction
-from django.core.cache import cache
-from core.throttles import SpellImportRateThrottle
+
 from core.cache_utils import (
-    spell_detail_key, spell_counts_key,
-    invalidate_spell_counts, invalidate_spell_counts_and_detail,
-    SPELL_DETAIL_TTL, SPELL_COUNTS_TTL,
+    SPELL_COUNTS_TTL,
+    SPELL_DETAIL_TTL,
+    invalidate_spell_counts,
+    spell_counts_key,
+    spell_detail_key,
 )
-from .models import Spell, DamageComponent
+from core.throttles import SpellImportRateThrottle
+
+from .models import DamageComponent, Spell
 from .serializers import (
-    SpellListSerializer,
-    SpellDetailSerializer,
+    DamageComponentSerializer,
     SpellCreateUpdateSerializer,
-    SpellImportSerializer,
+    SpellDetailSerializer,
     SpellExportSerializer,
-    DamageComponentSerializer
+    SpellImportSerializer,
+    SpellListSerializer,
 )
 from .services import SpellParsingService
 
@@ -85,7 +89,7 @@ class SpellViewSet(viewsets.ModelViewSet):
         levels = self.request.query_params.getlist('level')
         if levels:
             try:
-                queryset = queryset.filter(level__in=[int(l) for l in levels])
+                queryset = queryset.filter(level__in=[int(level_str) for level_str in levels])
             except (ValueError, TypeError):
                 pass
 
@@ -200,7 +204,6 @@ class SpellViewSet(viewsets.ModelViewSet):
 
         spells_data = serializer.validated_data['spells']
         source = serializer.validated_data['source']
-        auto_parse = serializer.validated_data['auto_parse']
         is_system = bool(request.data.get('is_system', False))
 
         if is_system and not request.user.is_staff:
@@ -238,7 +241,7 @@ class SpellViewSet(viewsets.ModelViewSet):
         # Invalidate spell counts after bulk import
         if imported_spells and request.user.is_authenticated:
             invalidate_spell_counts(request.user.id)
-        
+
         return Response({
             'imported': len(imported_spells),
             'failed': len(failed_spells),
@@ -376,16 +379,16 @@ class SpellViewSet(viewsets.ModelViewSet):
         Body: { "spell_ids": ["uuid1", "uuid2", ...] }
         """
         spell_ids = request.data.get('spell_ids', [])
-        
+
         if not spell_ids:
             return Response(
                 {'error': 'spell_ids required'},
                 status=status.HTTP_400_BAD_REQUEST
             )
-        
+
         spells = self.get_queryset().filter(id__in=spell_ids)
         serializer = SpellExportSerializer(spells, many=True)
-        
+
         return Response({
             'spells': serializer.data,
             'count': len(serializer.data)
@@ -443,8 +446,8 @@ class DamageComponentViewSet(viewsets.ModelViewSet):
         """Filter damage components by spell if specified."""
         queryset = self.queryset
         spell_id = self.request.query_params.get('spell_id')
-        
+
         if spell_id:
             queryset = queryset.filter(spell_id=spell_id)
-        
+
         return queryset

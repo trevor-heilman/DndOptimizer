@@ -12,7 +12,6 @@ Run this after seed_spells to ensure corrected metadata is in the DB.
 """
 from django.core.management.base import BaseCommand
 
-
 RANGE_CORRECTIONS = {
     # spell_name: correct_range
     'Acid Arrow':       '90 feet',
@@ -113,7 +112,7 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        from spells.models import Spell, DamageComponent
+        from spells.models import Spell
 
         dry_run = options['dry_run']
         if dry_run:

@@ -9,12 +9,12 @@ Covers:
 """
 import pytest
 from django.contrib.auth import get_user_model
-from rest_framework.test import APIClient
 from rest_framework import status
+from rest_framework.test import APIClient
 
 from analysis.models import AnalysisContext
 from analysis.services import SpellAnalysisService
-from spells.models import Spell, DamageComponent
+from spells.models import DamageComponent, Spell
 
 User = get_user_model()
 

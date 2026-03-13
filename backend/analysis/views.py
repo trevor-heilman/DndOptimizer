@@ -1,21 +1,23 @@
-from rest_framework import viewsets, status, permissions
+from django.core.cache import cache
+from rest_framework import permissions, viewsets
 from rest_framework.decorators import action
 from rest_framework.response import Response
-from django.core.cache import cache
+
+from core.cache_utils import ANALYSIS_TTL, analysis_key
 from core.throttles import AnalysisRateThrottle
-from core.cache_utils import analysis_key, ANALYSIS_TTL
+from spells.models import Spell
+
 from .models import AnalysisContext, SpellComparison
-from .services import SpellAnalysisService
 from .serializers import (
     AnalysisContextSerializer,
-    SpellComparisonSerializer,
-    SpellComparisonRequestSerializer,
-    SpellAnalysisRequestSerializer,
-    SpellEfficiencyRequestSerializer,
     BreakevenRequestSerializer,
     CompareGrowthRequestSerializer,
+    SpellAnalysisRequestSerializer,
+    SpellComparisonRequestSerializer,
+    SpellComparisonSerializer,
+    SpellEfficiencyRequestSerializer,
 )
-from spells.models import Spell
+from .services import SpellAnalysisService
 
 
 class AnalysisViewSet(viewsets.ViewSet):
@@ -33,7 +35,7 @@ class AnalysisViewSet(viewsets.ViewSet):
         """
         serializer = SpellComparisonRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        
+
         data = serializer.validated_data
 
         _spells = Spell.objects.prefetch_related('damage_components')
@@ -80,7 +82,7 @@ class AnalysisViewSet(viewsets.ViewSet):
         """
         serializer = SpellAnalysisRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        
+
         data = serializer.validated_data
         spell = Spell.objects.prefetch_related('damage_components').get(id=data['spell_id'])
 
@@ -99,7 +101,7 @@ class AnalysisViewSet(viewsets.ViewSet):
         context.character_level = data.get('character_level', 1)
 
         results = SpellAnalysisService.analyze_spell(spell, context)
-        
+
         response_data = {
             'spell': {'id': str(spell.id), 'name': spell.name, 'level': spell.level},
             'context': AnalysisContextSerializer(context).data,
@@ -116,7 +118,7 @@ class AnalysisViewSet(viewsets.ViewSet):
         """
         serializer = SpellEfficiencyRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
-        
+
         data = serializer.validated_data
         spell = Spell.objects.prefetch_related('damage_components').get(id=data['spell_id'])
 
@@ -129,9 +131,9 @@ class AnalysisViewSet(viewsets.ViewSet):
 
         min_level = data['min_slot_level']
         max_level = data['max_slot_level']
-        
+
         efficiency_data = []
-        
+
         for slot_level in range(min_level, max_level + 1):
             context = AnalysisContext.from_data(data, slot_override=slot_level)
             results = SpellAnalysisService.analyze_spell(spell, context)
@@ -140,7 +142,7 @@ class AnalysisViewSet(viewsets.ViewSet):
                 'expected_damage': results['expected_damage'],
                 'efficiency': results['efficiency']
             })
-        
+
         response_data = {
             'spell': {'id': str(spell.id), 'name': spell.name, 'level': spell.level},
             'efficiency_by_slot': efficiency_data,
@@ -231,8 +233,8 @@ class AnalysisContextViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         """Users can only see their own contexts."""
         if self.request.user.is_staff:
-            return self.queryset
-        return self.queryset.filter(created_by=self.request.user)
+            return self.queryset.order_by('-created_at')
+        return self.queryset.filter(created_by=self.request.user).order_by('-created_at')
 
     def perform_create(self, serializer):
         """Set created_by to current user."""
