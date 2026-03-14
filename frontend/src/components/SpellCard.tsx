@@ -121,4 +121,23 @@ export function SpellCard({ spell, linkState }: SpellCardProps) {
   );
 }
 
+// ─── SpellCardGrid ───────────────────────────────────────────────────────────
+// Shared responsive grid used by both SpellsPage and SpellbookDetailPage.
+// Extract here so both Always Stay In Sync — never duplicate this class string.
+
+interface SpellCardGridProps {
+  children: React.ReactNode;
+  className?: string;
+}
+
+export function SpellCardGrid({ children, className }: SpellCardGridProps) {
+  return (
+    <div
+      className={`grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 min-[1920px]:grid-cols-7 gap-3${className ? ` ${className}` : ''}`}
+    >
+      {children}
+    </div>
+  );
+}
+
 export default SpellCard;

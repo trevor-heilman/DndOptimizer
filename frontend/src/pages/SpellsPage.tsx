@@ -3,7 +3,7 @@
  */
 import { useSearchParams } from 'react-router-dom';
 import { useSpells, useSpellSources } from '../hooks/useSpells';
-import { SpellCard } from '../components/SpellCard';
+import { SpellCard, SpellCardGrid } from '../components/SpellCard';
 import { ImportSpellsModal } from '../components/ImportSpellsModal';
 import { CreateSpellModal } from '../components/CreateSpellModal';
 import { ClearSpellsModal } from '../components/ClearSpellsModal';
@@ -311,11 +311,11 @@ export function SpellsPage() {
                 Showing {data.results.length} of {data.count} spells
               </div>
 
-              <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 min-[1920px]:grid-cols-7 gap-3 mb-6">
+              <SpellCardGrid className="mb-6">
                 {data.results.map((spell) => (
                   <SpellCard key={spell.id} spell={spell} />
                 ))}
-              </div>
+              </SpellCardGrid>
 
               {/* Pagination */}
               {data.count > PAGE_SIZE && (() => {

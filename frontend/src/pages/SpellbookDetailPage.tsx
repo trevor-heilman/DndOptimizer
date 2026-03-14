@@ -26,7 +26,7 @@ import { useSpellSources } from '../hooks/useSpells';
 import { useBatchAnalyzeSpells, useGetSpellEfficiency } from '../hooks/useAnalysis';
 import { useCharacter } from '../hooks/useCharacters';
 import { SPELL_SCHOOLS, DND_CLASSES, DAMAGE_TYPES, SPELL_TAGS } from '../constants/spellColors';
-import { SpellCard } from '../components/SpellCard';
+import { SpellCard, SpellCardGrid } from '../components/SpellCard';
 import { MultiSelect } from '../components/MultiSelect';
 import { AddSpellPicker } from '../components/AddSpellPicker';
 import { AnalysisContextForm } from '../components/AnalysisContextForm';
@@ -134,7 +134,7 @@ function LevelSection({
       </button>
       <div className="h-px bg-gradient-to-r from-smoke-700/60 via-smoke-700/20 to-transparent mb-2" />
       {open && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-5 min-[1920px]:grid-cols-6 gap-3 mb-6">
+        <SpellCardGrid className="mb-6">
           {preparedSpells.map(ps => (
             <SpellbookSpellCard
               key={ps.id}
@@ -146,7 +146,7 @@ function LevelSection({
               linkState={linkState}
             />
           ))}
-        </div>
+        </SpellCardGrid>
       )}
       {!open && <div className="mb-4" />}
     </section>
