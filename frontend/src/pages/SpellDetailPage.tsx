@@ -421,6 +421,103 @@ export function SpellDetailPage() {
       </div>{/* end right col */}
       </div>{/* end 2-col grid */}
 
+      {/* ── Summoning Stat Blocks (TCE-style spells) ──────────────────────── */}
+      {spell.summon_templates && spell.summon_templates.length > 0 && (
+        <div className="mt-6 rounded-xl p-6"
+          style={{ background: 'linear-gradient(155deg, #0a100e 0%, #0d1a12 100%)', border: '1px solid rgba(52,211,153,0.2)', borderLeft: '3px solid rgba(52,211,153,0.5)' }}>
+          <h2 className="font-display text-xl font-semibold text-emerald-300 mb-4">🧿 Summoned Creatures</h2>
+          <p className="font-body text-sm text-smoke-400 mb-5">
+            Stat blocks scale with the spell slot used to cast this spell.
+            All TCE summon spirits make <span className="text-parchment-300">⌊slot ÷ 2⌋</span> attacks per round using your spell attack modifier.
+          </p>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
+            {spell.summon_templates.map((tmpl) => {
+              const previewLevel = Math.max(spell.level, tmpl.hp_base_level + 1);
+              const hpAtBase   = tmpl.base_hp + tmpl.hp_per_level * Math.max(0, tmpl.hp_base_level);
+              const acAtPreview = tmpl.base_ac + tmpl.ac_per_level * previewLevel;
+              const hpAtPreview = tmpl.base_hp + tmpl.hp_per_level * Math.max(0, previewLevel - tmpl.hp_base_level);
+              const attacksAtPreview = Math.floor(previewLevel / 2);
+              return (
+                <div key={tmpl.id} className="rounded-lg border border-smoke-700 bg-smoke-900 p-4">
+                  <div className="flex items-start justify-between gap-2 mb-1">
+                    <h3 className="font-display text-base font-semibold text-parchment-100 leading-tight">{tmpl.name}</h3>
+                    <span className="font-body text-xs text-smoke-400 shrink-0 mt-0.5">{tmpl.source}</span>
+                  </div>
+                  {tmpl.creature_type && (
+                    <p className="font-body text-xs text-smoke-400 italic mb-3">{tmpl.creature_type}</p>
+                  )}
+
+                  {/* HP / AC / Attacks at preview level */}
+                  <div className="grid grid-cols-3 gap-2 mb-3">
+                    <div className="bg-smoke-800 rounded p-2 text-center border border-smoke-700">
+                      <div className="font-display text-xs text-smoke-400 mb-0.5">HP</div>
+                      <div className="font-display text-sm font-bold text-red-400">{hpAtPreview}</div>
+                      {tmpl.hp_per_level > 0 && (
+                        <div className="font-body text-xs text-smoke-500">+{tmpl.hp_per_level}/lvl</div>
+                      )}
+                    </div>
+                    <div className="bg-smoke-800 rounded p-2 text-center border border-smoke-700">
+                      <div className="font-display text-xs text-smoke-400 mb-0.5">AC</div>
+                      <div className="font-display text-sm font-bold text-blue-400">{acAtPreview}</div>
+                      {tmpl.ac_per_level > 0 && (
+                        <div className="font-body text-xs text-smoke-500">+{tmpl.ac_per_level}/lvl</div>
+                      )}
+                    </div>
+                    <div className="bg-smoke-800 rounded p-2 text-center border border-smoke-700">
+                      <div className="font-display text-xs text-smoke-400 mb-0.5">Attacks</div>
+                      <div className="font-display text-sm font-bold text-gold-400">{attacksAtPreview}</div>
+                      <div className="font-body text-xs text-smoke-500">⌊lvl÷2⌋</div>
+                    </div>
+                  </div>
+
+                  {/* Attack list */}
+                  {tmpl.attacks.length > 0 && (
+                    <div className="space-y-2">
+                      {tmpl.attacks.map((atk) => {
+                        const typeLabel = {
+                          melee_weapon: 'Melee',
+                          ranged_weapon: 'Ranged',
+                          melee_spell: 'Melee Spell',
+                          ranged_spell: 'Ranged Spell',
+                        }[atk.attack_type] ?? atk.attack_type;
+                        const perHitBase = `${atk.dice_count}d${atk.die_size}`;
+                        const flatParts: string[] = [];
+                        if (atk.flat_modifier > 0) flatParts.push(`+${atk.flat_modifier}`);
+                        if (atk.flat_per_level > 0) flatParts.push('+lvl');
+                        const secondaryPart = atk.secondary_dice_count > 0
+                          ? ` + ${atk.secondary_dice_count}d${atk.secondary_die_size} ${atk.secondary_damage_type}`
+                          : '';
+                        return (
+                          <div key={atk.id} className="bg-smoke-800/60 rounded p-2 border border-smoke-700/50">
+                            <div className="flex items-center justify-between gap-2">
+                              <span className="font-display text-xs font-semibold text-parchment-200">{atk.name}</span>
+                              <span className="font-body text-xs text-smoke-400">{typeLabel}</span>
+                            </div>
+                            <div className="font-body text-xs text-parchment-300 mt-0.5">
+                              <span className="text-gold-400 font-mono">{perHitBase}{flatParts.join('')}</span>
+                              {' '}<span className="text-smoke-400">{atk.damage_type}</span>
+                              {secondaryPart && (
+                                <span className="text-smoke-400">{secondaryPart}</span>
+                              )}
+                            </div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  )}
+
+                  {/* Stat-block scaling note */}
+                  <p className="font-body text-xs text-smoke-500 mt-3 italic">
+                    Stats shown at slot level {previewLevel} &mdash; base HP {hpAtBase} at level {tmpl.hp_base_level}
+                  </p>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      )}
+
       {/* Combat Parameters — full width */}
       {(spell.is_attack_roll || spell.is_saving_throw || spell.is_auto_hit) &&
         spell.damage_components &&

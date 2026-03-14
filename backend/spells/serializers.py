@@ -1,6 +1,6 @@
 from rest_framework import serializers
 
-from .models import DamageComponent, Spell, SpellParsingMetadata
+from .models import DamageComponent, Spell, SpellParsingMetadata, SummonAttack, SummonTemplate
 
 
 class DamageComponentSerializer(serializers.ModelSerializer):
@@ -33,6 +33,36 @@ class SpellParsingMetadataSerializer(serializers.ModelSerializer):
         read_only_fields = ['id', 'created_at', 'updated_at']
 
 
+class SummonAttackSerializer(serializers.ModelSerializer):
+    """Serializer for a single attack of a summoned creature."""
+
+    class Meta:
+        model = SummonAttack
+        fields = [
+            'id', 'name', 'attack_type',
+            'dice_count', 'die_size', 'flat_modifier', 'flat_per_level', 'damage_type',
+            'secondary_dice_count', 'secondary_die_size', 'secondary_flat', 'secondary_damage_type',
+        ]
+        read_only_fields = ['id']
+
+
+class SummonTemplateSerializer(serializers.ModelSerializer):
+    """Serializer for a summoned creature stat block."""
+
+    attacks = SummonAttackSerializer(many=True, read_only=True)
+
+    class Meta:
+        model = SummonTemplate
+        fields = [
+            'id', 'name', 'creature_type', 'source',
+            'base_hp', 'hp_per_level', 'hp_base_level',
+            'base_ac', 'ac_per_level',
+            'num_attacks_formula',
+            'attacks',
+        ]
+        read_only_fields = ['id']
+
+
 class SpellListSerializer(serializers.ModelSerializer):
     """
     Lightweight serializer for spell lists.
@@ -59,6 +89,7 @@ class SpellDetailSerializer(serializers.ModelSerializer):
     """
     damage_components = DamageComponentSerializer(many=True, read_only=True)
     parsing_metadata = SpellParsingMetadataSerializer(read_only=True)
+    summon_templates = SummonTemplateSerializer(many=True, read_only=True)
     created_by_username = serializers.CharField(
         source='created_by.username',
         read_only=True
@@ -75,7 +106,7 @@ class SpellDetailSerializer(serializers.ModelSerializer):
             'upcast_base_level', 'upcast_dice_increment', 'upcast_die_size', 'upcast_attacks_increment',
             'source', 'is_custom', 'description', 'higher_level', 'raw_data',
             'classes', 'tags',
-            'damage_components', 'parsing_metadata', 'created_by',
+            'damage_components', 'summon_templates', 'parsing_metadata', 'created_by',
             'created_by_username', 'created_at', 'updated_at'
         ]
         read_only_fields = ['id', 'created_by', 'created_at', 'updated_at']
