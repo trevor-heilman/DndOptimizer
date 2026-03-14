@@ -22,15 +22,18 @@ import {
   useUpdatePreparedSpell,
   useSpellbookCopyCost,
 } from '../hooks/useSpellbooks';
+import { useSpellSources } from '../hooks/useSpells';
 import { useBatchAnalyzeSpells, useGetSpellEfficiency } from '../hooks/useAnalysis';
 import { useCharacter } from '../hooks/useCharacters';
-import { getSchoolColors, getDamageColors } from '../constants/spellColors';
+import { SPELL_SCHOOLS, DND_CLASSES, DAMAGE_TYPES, SPELL_TAGS } from '../constants/spellColors';
+import { SpellCard } from '../components/SpellCard';
+import { MultiSelect } from '../components/MultiSelect';
 import { AddSpellPicker } from '../components/AddSpellPicker';
 import { AnalysisContextForm } from '../components/AnalysisContextForm';
 import { LoadingSpinner, AlertMessage, EmptyState, ChartCard } from '../components/ui';
 import { BookColorPicker } from '../components/BookColorPicker';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LineChart, Line, Legend } from 'recharts';
-import type { PreparedSpell, Spell, AnalysisContext, BookColor } from '../types/api';
+import type { PreparedSpell, AnalysisContext, BookColor } from '../types/api';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -40,104 +43,30 @@ const LEVEL_SECTION_NAME: Record<number, string> = {
   5: 'Level 5', 6: 'Level 6', 7: 'Level 7', 8: 'Level 8', 9: 'Level 9',
 };
 
-const SCHOOLS = [
-  'abjuration', 'conjuration', 'divination', 'enchantment',
-  'evocation', 'illusion', 'necromancy', 'transmutation',
-] as const;
-
-const TAG_STYLES: Record<string, { color: string; bg: string; border: string }> = {
-  damage:        { color: '#fca5a5', bg: '#450a0a55', border: '#7f1d1d' },
-  aoe:           { color: '#fdba74', bg: '#43150255', border: '#9a3412' },
-  healing:       { color: '#86efac', bg: '#05260d55', border: '#166534' },
-  concentration: { color: '#fcd34d', bg: '#3d2a0a55', border: '#92400e' },
-  ritual:        { color: '#c4b5fd', bg: '#2e1a5f55', border: '#5b21b6' },
-  crowd_control: { color: '#a5b4fc', bg: '#1e1b4b55', border: '#4338ca' },
-  utility:       { color: '#67e8f9', bg: '#08324455', border: '#0e7490' },
-};
-
 // ─── Sub-components ─────────────────────────────────────────────────────────
 
-function MechanicBadge({ spell }: { spell: Spell }) {
-  if (spell.is_attack_roll) {
-    return (
-      <span
-        className="shrink-0 text-[10px] px-1.5 py-0.5 rounded font-display"
-        style={{ color: '#fca5a5', background: '#450a0a55', border: '1px solid #7f1d1d' }}
-      >
-        ⚔ Atk Roll
-      </span>
-    );
-  }
-  if (spell.is_saving_throw) {
-    return (
-      <span
-        className="shrink-0 text-[10px] px-1.5 py-0.5 rounded font-display"
-        style={{ color: '#a5b4fc', background: '#1e1b4b55', border: '1px solid #4338ca' }}
-      >
-        {spell.save_type ? `${spell.save_type} Save` : 'Save'}
-      </span>
-    );
-  }
-  return null;
-}
-
-function TagPills({ tags }: { tags?: string[] }) {
-  if (!tags?.length) return null;
-  return (
-    <>
-      {tags.map(tag => {
-        const s = TAG_STYLES[tag] ?? { color: '#94a3b8', bg: '#0f172a55', border: '#334155' };
-        return (
-          <span
-            key={tag}
-            className="shrink-0 text-[9px] px-1.5 py-0.5 rounded font-display capitalize"
-            style={{ color: s.color, background: s.bg, border: `1px solid ${s.border}` }}
-          >
-            {tag.replace('_', ' ')}
-          </span>
-        );
-      })}
-    </>
-  );
-}
-
-// ─── PreparedSpellRow ────────────────────────────────────────────────────────
-
-interface PreparedSpellRowProps {
+interface SpellbookSpellCardProps {
   ps: PreparedSpell;
   onTogglePrepared: (spellId: string, prepared: boolean) => void;
   onRemove: (spellId: string) => void;
   isUpdating: boolean;
   isEditMode: boolean;
-  spellbookId: string;
-  spellbookName: string;
-  saveDC?: number;
-  atkBonus?: number;
+  linkState: object;
 }
 
-function PreparedSpellRow({
-  ps, onTogglePrepared, onRemove, isUpdating, isEditMode,
-  spellbookId, spellbookName, saveDC, atkBonus,
-}: PreparedSpellRowProps) {
-  const { spell } = ps;
-  const schoolColor = getSchoolColors(spell.school);
-  const levelText  = spell.level === 0 ? 'Cantrip' : `Level ${spell.level}`;
-  const schoolText = spell.school.charAt(0).toUpperCase() + spell.school.slice(1);
-
+function SpellbookSpellCard({
+  ps, onTogglePrepared, onRemove, isUpdating, isEditMode, linkState,
+}: SpellbookSpellCardProps) {
   return (
-    <div
-      className={`relative rounded-lg border bg-smoke-900 hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200 group ${
-        ps.prepared ? 'hover:border-opacity-80' : 'opacity-60 hover:opacity-85'
-      }`}
-      style={{ borderLeftColor: schoolColor.border, borderLeftWidth: 3 }}
-    >
-      {/* ── Overlay action buttons (absolute top-right) ── */}
-      <div className="absolute top-2.5 right-2.5 z-10 flex items-center gap-1.5">
+    <div className={`relative transition-opacity ${!ps.prepared ? 'opacity-55 hover:opacity-80' : ''}`}>
+      <SpellCard spell={ps.spell} linkState={linkState} />
+      {/* Action overlay — pointer-events-none so non-button areas still hit the SpellCard link */}
+      <div className="absolute top-0 right-0 z-10 p-2 flex items-center gap-1.5 pointer-events-none">
         {isEditMode && (
           <button
-            onClick={() => onRemove(spell.id)}
+            className="pointer-events-auto text-smoke-500 hover:text-crimson-400 transition-colors p-0.5"
             title="Remove from spellbook"
-            className="text-smoke-600 hover:text-crimson-400 transition-colors p-0.5"
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); onRemove(ps.spell.id); }}
           >
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
@@ -145,107 +74,16 @@ function PreparedSpellRow({
           </button>
         )}
         <button
-          onClick={() => onTogglePrepared(spell.id, ps.prepared)}
-          disabled={isUpdating}
-          title={ps.prepared ? 'Mark as unprepared' : 'Prepare this spell'}
-          className={`text-lg leading-none transition-all hover:scale-110 active:scale-95 ${
+          className={`pointer-events-auto text-base leading-none transition-all hover:scale-110 active:scale-95 ${
             isUpdating ? 'opacity-40 cursor-wait' : 'cursor-pointer'
-          } ${ps.prepared ? 'text-gold-400' : 'text-smoke-600 hover:text-smoke-400'}`}
+          } ${ps.prepared ? 'text-gold-400' : 'text-smoke-500 hover:text-smoke-300'}`}
+          title={ps.prepared ? 'Mark as unprepared' : 'Prepare this spell'}
+          disabled={isUpdating}
+          onClick={(e) => { e.preventDefault(); e.stopPropagation(); onTogglePrepared(ps.spell.id, ps.prepared); }}
         >
           {ps.prepared ? '★' : '☆'}
         </button>
       </div>
-
-      {/* ── Main card body — link to spell detail ── */}
-      <Link
-        to={`/spells/${spell.id}`}
-        state={{ spellbookId, spellbookName, saveDC, atkBonus }}
-        className="block p-4"
-      >
-        {/* Header: name + mechanic/conc badges (pr leaves space for action buttons) */}
-        <div className="flex justify-between items-start mb-2 gap-2 pr-12">
-          <h3 className={`font-display text-base font-semibold leading-tight transition-colors ${
-            ps.prepared
-              ? 'text-parchment-100 group-hover:text-gold-300'
-              : 'text-smoke-400 group-hover:text-smoke-200'
-          }`}>
-            {spell.name}
-          </h3>
-          <div className="flex items-center gap-1 shrink-0 flex-wrap justify-end">
-            <MechanicBadge spell={spell} />
-            {spell.concentration && (
-              <span
-                className="shrink-0 text-xs px-1.5 py-0.5 rounded font-display"
-                style={{ background: '#3d2a0a55', color: '#fcd34d', border: '1px solid #78350f' }}
-              >
-                ◎ Conc
-              </span>
-            )}
-          </div>
-        </div>
-
-        {/* Level + School + Ritual badges */}
-        <div className="flex items-center gap-2 mb-2 flex-wrap">
-          <span
-            className="text-xs font-display font-medium px-2 py-0.5 rounded"
-            style={{ background: '#2a2a35', color: '#fbbf24', border: '1px solid #4b4b58' }}
-          >
-            {levelText}
-          </span>
-          <span
-            className="text-xs font-display font-medium px-2 py-0.5 rounded"
-            style={{ background: schoolColor.bg, color: schoolColor.text, border: `1px solid ${schoolColor.border}44` }}
-          >
-            {schoolText}
-          </span>
-          {spell.ritual && (
-            <span
-              className="text-xs font-display px-1.5 py-0.5 rounded"
-              style={{ background: '#2e1a5f44', color: '#c4b5fd', border: '1px solid #4c1d9544' }}
-            >
-              Ritual
-            </span>
-          )}
-        </div>
-
-        {/* Description */}
-        {spell.description && (
-          <p className="font-body text-sm text-parchment-400 mb-3 line-clamp-2 leading-relaxed">
-            {spell.description}
-          </p>
-        )}
-
-        {/* Cast / Range footer */}
-        <div className="flex items-center gap-4 text-xs text-smoke-400 font-body">
-          <span>⏱ {spell.casting_time}</span>
-          <span>⊕ {spell.range}</span>
-        </div>
-
-        {/* Damage components */}
-        {spell.damage_components && spell.damage_components.length > 0 && (
-          <div className="mt-2 flex flex-wrap items-center gap-1.5">
-            {spell.damage_components.slice(0, 3).map((dc, idx) => {
-              const dc_colors = getDamageColors(dc.damage_type ?? '');
-              return (
-                <span
-                  key={idx}
-                  className="text-xs font-body font-medium px-2 py-0.5 rounded"
-                  style={{ background: dc_colors.bg, color: dc_colors.text }}
-                >
-                  {dc.dice_count}d{dc.die_size} {dc.damage_type}
-                </span>
-              );
-            })}
-          </div>
-        )}
-
-        {/* Gameplay tags */}
-        {spell.tags && spell.tags.length > 0 && (
-          <div className="mt-2 flex flex-wrap gap-1.5">
-            <TagPills tags={spell.tags} />
-          </div>
-        )}
-      </Link>
     </div>
   );
 }
@@ -259,15 +97,11 @@ interface LevelSectionProps {
   onRemove: (spellId: string) => void;
   updatingIds: Set<string>;
   isEditMode: boolean;
-  spellbookId: string;
-  spellbookName: string;
-  saveDC?: number;
-  atkBonus?: number;
+  linkState: object;
 }
 
 function LevelSection({
-  level, preparedSpells, onTogglePrepared, onRemove, updatingIds, isEditMode,
-  spellbookId, spellbookName, saveDC, atkBonus,
+  level, preparedSpells, onTogglePrepared, onRemove, updatingIds, isEditMode, linkState,
 }: LevelSectionProps) {
   const [open, setOpen] = useState(true);
   const preparedCount = preparedSpells.filter(ps => ps.prepared).length;
@@ -300,19 +134,16 @@ function LevelSection({
       </button>
       <div className="h-px bg-gradient-to-r from-smoke-700/60 via-smoke-700/20 to-transparent mb-2" />
       {open && (
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-3 2xl:grid-cols-4 gap-3 mb-6">
           {preparedSpells.map(ps => (
-            <PreparedSpellRow
+            <SpellbookSpellCard
               key={ps.id}
               ps={ps}
               onTogglePrepared={onTogglePrepared}
               onRemove={onRemove}
               isUpdating={updatingIds.has(ps.spell.id)}
               isEditMode={isEditMode}
-              spellbookId={spellbookId}
-              spellbookName={spellbookName}
-              saveDC={saveDC}
-              atkBonus={atkBonus}
+              linkState={linkState}
             />
           ))}
         </div>
@@ -459,11 +290,24 @@ export function SpellbookDetailPage() {
   });
 
   // Filter / sort
-  const [searchFilter,  setSearchFilter]  = useState('');
-  const [schoolFilter,  setSchoolFilter]  = useState('');
-  const [preparedOnly,  setPreparedOnly]  = useState(false);
-  const [sortBy,        setSortBy]        = useState<'level' | 'name' | 'school'>('level');
-  const [sortDir,       setSortDir]       = useState<'asc' | 'desc'>('asc');
+  const [searchFilter,       setSearchFilter]       = useState('');
+  const [levelFilter,        setLevelFilter]        = useState<number[]>([]);
+  const [schoolsFilter,      setSchoolsFilter]      = useState<string[]>([]);
+  const [classFilter,        setClassFilter]        = useState<string[]>([]);
+  const [damageTypeFilter,   setDamageTypeFilter]   = useState<string[]>([]);
+  const [tagFilter,          setTagFilter]          = useState<string[]>([]);
+  const [sourceFilter,       setSourceFilter]       = useState<string[]>([]);
+  const [preparedOnly,       setPreparedOnly]       = useState(false);
+  const [concentrationFilter,setConcentrationFilter]= useState(false);
+  const [isAttackRollFilter, setIsAttackRollFilter] = useState(false);
+  const [isSavingThrowFilter,setIsSavingThrowFilter]= useState(false);
+  const [hasVFilter,         setHasVFilter]         = useState(false);
+  const [hasSFilter,         setHasSFilter]         = useState(false);
+  const [hasMFilter,         setHasMFilter]         = useState(false);
+  const [sortBy,             setSortBy]             = useState<'level' | 'name' | 'school'>('level');
+  const [sortDir,            setSortDir]            = useState<'asc' | 'desc'>('asc');
+
+  const { data: sourcesData } = useSpellSources();
 
   // Misc
   const [isAddSpellOpen, setIsAddSpellOpen] = useState(false);
@@ -476,20 +320,34 @@ export function SpellbookDetailPage() {
   const filteredAndSorted = useMemo(() => {
     let list = [...preparedSpells];
     const q = searchFilter.trim().toLowerCase();
-    if (q)           list = list.filter(ps => ps.spell.name.toLowerCase().includes(q));
-    if (schoolFilter) list = list.filter(ps => ps.spell.school === schoolFilter);
-    if (preparedOnly) list = list.filter(ps => ps.prepared);
+    if (q)                       list = list.filter(ps => ps.spell.name.toLowerCase().includes(q));
+    if (levelFilter.length > 0)  list = list.filter(ps => levelFilter.includes(ps.spell.level));
+    if (schoolsFilter.length > 0) list = list.filter(ps => schoolsFilter.includes(ps.spell.school));
+    if (classFilter.length > 0)  list = list.filter(ps => ps.spell.classes?.some(c => classFilter.includes(c)));
+    if (damageTypeFilter.length > 0) list = list.filter(ps =>
+      ps.spell.damage_components?.some(dc => damageTypeFilter.includes(dc.damage_type ?? '')));
+    if (tagFilter.length > 0)    list = list.filter(ps => ps.spell.tags?.some(t => tagFilter.includes(t)));
+    if (sourceFilter.length > 0) list = list.filter(ps => ps.spell.source ? sourceFilter.includes(ps.spell.source) : false);
+    if (preparedOnly)            list = list.filter(ps => ps.prepared);
+    if (concentrationFilter)     list = list.filter(ps => ps.spell.concentration);
+    if (isAttackRollFilter)      list = list.filter(ps => ps.spell.is_attack_roll);
+    if (isSavingThrowFilter)     list = list.filter(ps => ps.spell.is_saving_throw);
+    if (hasVFilter)              list = list.filter(ps => ps.spell.components_v);
+    if (hasSFilter)              list = list.filter(ps => ps.spell.components_s);
+    if (hasMFilter)              list = list.filter(ps => ps.spell.components_m);
 
     list.sort((a, b) => {
       let cmp = 0;
       if      (sortBy === 'level')  cmp = a.spell.level - b.spell.level;
       else if (sortBy === 'name')   cmp = a.spell.name.localeCompare(b.spell.name);
       else if (sortBy === 'school') cmp = a.spell.school.localeCompare(b.spell.school);
-      if (cmp === 0) cmp = a.spell.name.localeCompare(b.spell.name); // tiebreak
+      if (cmp === 0) cmp = a.spell.name.localeCompare(b.spell.name);
       return sortDir === 'asc' ? cmp : -cmp;
     });
     return list;
-  }, [preparedSpells, searchFilter, schoolFilter, preparedOnly, sortBy, sortDir]);
+  }, [preparedSpells, searchFilter, levelFilter, schoolsFilter, classFilter, damageTypeFilter,
+      tagFilter, sourceFilter, preparedOnly, concentrationFilter, isAttackRollFilter,
+      isSavingThrowFilter, hasVFilter, hasSFilter, hasMFilter, sortBy, sortDir]);
 
   const groupedByLevel = useMemo(() => {
     const map = new Map<number, PreparedSpell[]>();
@@ -515,7 +373,11 @@ export function SpellbookDetailPage() {
     }
     return [...map.entries()].sort(([a], [b]) => a - b);
   }, [preparedSpells]);
-  const isFiltered    = !!(searchFilter || schoolFilter || preparedOnly || sortBy !== 'level' || sortDir !== 'asc');
+  const isFiltered = !!(searchFilter || levelFilter.length > 0 || schoolsFilter.length > 0 ||
+    classFilter.length > 0 || damageTypeFilter.length > 0 || tagFilter.length > 0 ||
+    sourceFilter.length > 0 || preparedOnly || concentrationFilter || isAttackRollFilter ||
+    isSavingThrowFilter || hasVFilter || hasSFilter || hasMFilter ||
+    sortBy !== 'level' || sortDir !== 'asc');
 
   // Damage spells eligible for comparison
   const damageSpells = useMemo(() => {
@@ -598,8 +460,19 @@ export function SpellbookDetailPage() {
 
   const clearFilters = () => {
     setSearchFilter('');
-    setSchoolFilter('');
+    setLevelFilter([]);
+    setSchoolsFilter([]);
+    setClassFilter([]);
+    setDamageTypeFilter([]);
+    setTagFilter([]);
+    setSourceFilter([]);
     setPreparedOnly(false);
+    setConcentrationFilter(false);
+    setIsAttackRollFilter(false);
+    setIsSavingThrowFilter(false);
+    setHasVFilter(false);
+    setHasSFilter(false);
+    setHasMFilter(false);
     setSortBy('level');
     setSortDir('asc');
   };
@@ -793,59 +666,7 @@ export function SpellbookDetailPage() {
         </button>
       </div>
 
-      {/* ── Filter / Sort bar ───────────────────────────────────────────── */}
-      {preparedSpells.length > 0 && (
-        <div className="mb-4 flex flex-wrap gap-2 items-center">
-          <input
-            type="text"
-            value={searchFilter}
-            onChange={e => setSearchFilter(e.target.value)}
-            placeholder="Filter by name…"
-            className="dnd-input font-body text-sm py-1.5 max-w-[180px]"
-          />
-          <select
-            value={schoolFilter}
-            onChange={e => setSchoolFilter(e.target.value)}
-            className="dnd-input font-body text-sm py-1.5"
-          >
-            <option value="">All Schools</option>
-            {SCHOOLS.map(s => (
-              <option key={s} value={s}>{s.charAt(0).toUpperCase() + s.slice(1)}</option>
-            ))}
-          </select>
-          <select
-            value={`${sortBy}-${sortDir}`}
-            onChange={e => handleSortChange(e.target.value)}
-            className="dnd-input font-body text-sm py-1.5"
-          >
-            <option value="level-asc">Level ↑</option>
-            <option value="level-desc">Level ↓</option>
-            <option value="name-asc">Name A–Z</option>
-            <option value="name-desc">Name Z–A</option>
-            <option value="school-asc">School A–Z</option>
-          </select>
-          <button
-            onClick={() => setPreparedOnly(v => !v)}
-            className={`font-display text-xs px-3 py-1.5 rounded border transition-colors ${
-              preparedOnly
-                ? 'bg-gold-900/40 border-gold-700 text-gold-300'
-                : 'border-smoke-600 text-smoke-400 hover:border-smoke-500 hover:text-smoke-300'
-            }`}
-          >
-            ★ Prepared only
-          </button>
-          {isFiltered && (
-            <button
-              onClick={clearFilters}
-              className="font-display text-xs text-smoke-500 hover:text-smoke-300 transition-colors"
-            >
-              × Clear
-            </button>
-          )}
-        </div>
-      )}
-
-      {/* ── Spell list or empty state ───────────────────────────────────── */}
+      {/* ── Filter sidebar + spell grid ─────────────────────────── */}
       {preparedSpells.length === 0 ? (
         <EmptyState
           icon="📖"
@@ -853,27 +674,212 @@ export function SpellbookDetailPage() {
           description="Add spells to your spellbook to begin your arcane collection."
           action={{ label: 'Add Your First Spell', onClick: () => setIsAddSpellOpen(true) }}
         />
-      ) : filteredAndSorted.length === 0 ? (
-        <p className="font-body text-smoke-400 text-center py-12">
-          No spells match your filters.
-        </p>
       ) : (
-        <div>
-          {groupedByLevel.map(([level, spells]) => (
-            <LevelSection
-              key={level}
-              level={level}
-              preparedSpells={spells}
-              onTogglePrepared={handleTogglePrepared}
-              onRemove={handleRemoveSpell}
-              updatingIds={updatingIds}
-              isEditMode={isEditMode}
-              spellbookId={spellbook.id}
-              spellbookName={spellbook.name}
-              saveDC={linkedCharacter?.spell_save_dc}
-              atkBonus={linkedCharacter?.spell_attack_bonus}
-            />
-          ))}
+        <div className="flex flex-col lg:flex-row lg:items-start gap-6">
+
+          {/* Filter Sidebar */}
+          <aside className="lg:w-64 xl:w-72 shrink-0">
+            <div
+              className="rounded-xl p-4 lg:sticky lg:top-6"
+              style={{ background: 'linear-gradient(160deg, #0d0720 0%, #0f0a1e 100%)', border: '1px solid rgba(109,40,217,0.2)', borderLeft: '3px solid rgba(109,40,217,0.55)' }}
+            >
+              <p className="font-display uppercase tracking-[0.25em] text-[10px] text-arcane-800 mb-3">✦ Filter Grimoire</p>
+              <div className="space-y-3">
+                {/* Search */}
+                <div>
+                  <label className="block text-xs font-display font-medium text-parchment-300 mb-1">Search</label>
+                  <input
+                    type="text"
+                    value={searchFilter}
+                    onChange={e => setSearchFilter(e.target.value)}
+                    className="dnd-input font-body text-sm py-1.5"
+                    placeholder="Spell name…"
+                  />
+                </div>
+
+                {/* Level */}
+                <div>
+                  <label className="block text-xs font-display font-medium text-parchment-300 mb-1">Level</label>
+                  <MultiSelect
+                    id="sb-level"
+                    placeholder="All Levels"
+                    options={[
+                      { value: '0', label: 'Cantrip' },
+                      ...[1,2,3,4,5,6,7,8,9].map(l => ({ value: String(l), label: `Level ${l}` })),
+                    ]}
+                    value={levelFilter.map(String)}
+                    onChange={vals => setLevelFilter(vals.map(Number))}
+                  />
+                </div>
+
+                {/* School */}
+                <div>
+                  <label className="block text-xs font-display font-medium text-parchment-300 mb-1">School</label>
+                  <MultiSelect
+                    id="sb-school"
+                    placeholder="All Schools"
+                    options={SPELL_SCHOOLS.map(s => ({ value: s, label: s.charAt(0).toUpperCase() + s.slice(1) }))}
+                    value={schoolsFilter}
+                    onChange={setSchoolsFilter}
+                  />
+                </div>
+
+                {/* Class */}
+                <div>
+                  <label className="block text-xs font-display font-medium text-parchment-300 mb-1">Class</label>
+                  <MultiSelect
+                    id="sb-class"
+                    placeholder="All Classes"
+                    options={DND_CLASSES.map(c => ({ value: c, label: c.charAt(0).toUpperCase() + c.slice(1) }))}
+                    value={classFilter}
+                    onChange={setClassFilter}
+                  />
+                </div>
+
+                {/* Damage Type */}
+                <div>
+                  <label className="block text-xs font-display font-medium text-parchment-300 mb-1">Damage Type</label>
+                  <MultiSelect
+                    id="sb-damage"
+                    placeholder="All Types"
+                    options={DAMAGE_TYPES.map(d => ({ value: d, label: d.charAt(0).toUpperCase() + d.slice(1) }))}
+                    value={damageTypeFilter}
+                    onChange={setDamageTypeFilter}
+                  />
+                </div>
+
+                {/* Tag */}
+                <div>
+                  <label className="block text-xs font-display font-medium text-parchment-300 mb-1">Tag</label>
+                  <MultiSelect
+                    id="sb-tag"
+                    placeholder="All Tags"
+                    options={SPELL_TAGS.map(t => ({ value: t, label: t.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase()) }))}
+                    value={tagFilter}
+                    onChange={setTagFilter}
+                  />
+                </div>
+
+                {/* Source */}
+                <div>
+                  <label className="block text-xs font-display font-medium text-parchment-300 mb-1">Source</label>
+                  <MultiSelect
+                    id="sb-source"
+                    placeholder="All Sources"
+                    options={(sourcesData ?? []).map(s => ({ value: s, label: s }))}
+                    value={sourceFilter}
+                    onChange={setSourceFilter}
+                  />
+                </div>
+
+                {/* Properties */}
+                <div>
+                  <p className="text-xs font-display font-medium text-parchment-300 mb-1.5">Properties</p>
+                  <div className="space-y-1.5">
+                    {([
+                      { key: 'concentration', label: 'Concentration', value: concentrationFilter, set: setConcentrationFilter },
+                      { key: 'attack',        label: 'Attack Roll',   value: isAttackRollFilter,  set: setIsAttackRollFilter  },
+                      { key: 'save',          label: 'Saving Throw',  value: isSavingThrowFilter, set: setIsSavingThrowFilter  },
+                      { key: 'prepared',      label: '★ Prepared only', value: preparedOnly,      set: setPreparedOnly         },
+                    ] as const).map(({ key, label, value, set }) => (
+                      <label key={key} className="flex items-center gap-2 cursor-pointer group">
+                        <input
+                          type="checkbox"
+                          checked={value}
+                          onChange={e => (set as (v: boolean) => void)(e.target.checked)}
+                          className="w-3.5 h-3.5 rounded border-smoke-600 bg-stone-950 accent-gold-500 cursor-pointer"
+                        />
+                        <span className="font-body text-sm text-parchment-300 group-hover:text-parchment-100 transition-colors">
+                          {label}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Components */}
+                <div>
+                  <p className="text-xs font-display font-medium text-parchment-300 mb-1.5">Components</p>
+                  <div className="flex gap-4">
+                    {([
+                      { key: 'v', label: 'V', value: hasVFilter, set: setHasVFilter },
+                      { key: 's', label: 'S', value: hasSFilter, set: setHasSFilter },
+                      { key: 'm', label: 'M', value: hasMFilter, set: setHasMFilter },
+                    ] as const).map(({ key, label, value, set }) => (
+                      <label key={key} className="flex items-center gap-1.5 cursor-pointer group">
+                        <input
+                          type="checkbox"
+                          checked={value}
+                          onChange={e => (set as (v: boolean) => void)(e.target.checked)}
+                          className="w-3.5 h-3.5 rounded border-smoke-600 bg-stone-950 accent-gold-500 cursor-pointer"
+                        />
+                        <span className="font-body text-sm text-parchment-300 group-hover:text-parchment-100 transition-colors">
+                          {label}
+                        </span>
+                      </label>
+                    ))}
+                  </div>
+                </div>
+
+                {/* Sort */}
+                <div>
+                  <label className="block text-xs font-display font-medium text-parchment-300 mb-1">Sort</label>
+                  <select
+                    value={`${sortBy}-${sortDir}`}
+                    onChange={e => handleSortChange(e.target.value)}
+                    className="dnd-input font-body text-sm py-1.5 w-full"
+                  >
+                    <option value="level-asc">Level ↑</option>
+                    <option value="level-desc">Level ↓</option>
+                    <option value="name-asc">Name A–Z</option>
+                    <option value="name-desc">Name Z–A</option>
+                    <option value="school-asc">School A–Z</option>
+                  </select>
+                </div>
+
+                {isFiltered && (
+                  <button
+                    type="button"
+                    onClick={clearFilters}
+                    className="btn-secondary text-xs w-full py-1.5"
+                  >
+                    × Clear Filters
+                  </button>
+                )}
+              </div>
+            </div>
+          </aside>
+
+          {/* Main spell content */}
+          <div className="flex-1 min-w-0">
+            <div className="mb-3 font-body text-sm text-smoke-400">
+              Showing {filteredAndSorted.length} of {preparedSpells.length} spell{preparedSpells.length !== 1 ? 's' : ''}
+            </div>
+
+            {filteredAndSorted.length === 0 ? (
+              <p className="font-body text-smoke-400 text-center py-12">No spells match your filters.</p>
+            ) : (
+              <>
+                {groupedByLevel.map(([level, spells]) => (
+                  <LevelSection
+                    key={level}
+                    level={level}
+                    preparedSpells={spells}
+                    onTogglePrepared={handleTogglePrepared}
+                    onRemove={handleRemoveSpell}
+                    updatingIds={updatingIds}
+                    isEditMode={isEditMode}
+                    linkState={{
+                      spellbookId: spellbook.id,
+                      spellbookName: spellbook.name,
+                      saveDC: linkedCharacter?.spell_save_dc,
+                      atkBonus: linkedCharacter?.spell_attack_bonus,
+                    }}
+                  />
+                ))}
+              </>
+            )}
+          </div>
         </div>
       )}
 
