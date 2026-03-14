@@ -58,8 +58,8 @@ function SpellbookSpellCard({
   ps, onTogglePrepared, onRemove, isUpdating, isEditMode, linkState,
 }: SpellbookSpellCardProps) {
   return (
-    <div className={`relative transition-opacity ${!ps.prepared ? 'opacity-55 hover:opacity-80' : ''}`}>
-      <SpellCard spell={ps.spell} linkState={linkState} />
+    <div className={`relative flex flex-col transition-opacity ${!ps.prepared ? 'opacity-55 hover:opacity-80' : ''}`}>
+      <SpellCard spell={ps.spell} linkState={linkState} className="h-full" />
       {/* Action overlay — pointer-events-none so non-button areas still hit the SpellCard link */}
       <div className="absolute top-0 right-0 z-10 p-2 flex items-center gap-1.5 pointer-events-none">
         {isEditMode && (

@@ -9,6 +9,8 @@ interface SpellCardProps {
   spell: Spell;
   /** Optional router state forwarded to the Link (e.g. spellbook context) */
   linkState?: object;
+  /** Extra classes merged onto the root <Link> element */
+  className?: string;
 }
 
 const TAG_STYLES: Record<string, { bg: string; color: string }> = {
@@ -26,7 +28,7 @@ function tagLabel(tag: string): string {
   return tag.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase());
 }
 
-export function SpellCard({ spell, linkState }: SpellCardProps) {
+export function SpellCard({ spell, linkState, className }: SpellCardProps) {
   const levelText = spell.level === 0 ? 'Cantrip' : `Level ${spell.level}`;
   const schoolText = spell.school.charAt(0).toUpperCase() + spell.school.slice(1);
   const schoolColor = getSchoolColors(spell.school);
@@ -35,9 +37,7 @@ export function SpellCard({ spell, linkState }: SpellCardProps) {
     <Link
       to={`/spells/${spell.id}`}
       state={linkState}
-      className="block rounded-lg border border-smoke-700 bg-smoke-900
-                 hover:border-opacity-80 hover:-translate-y-0.5
-                 hover:shadow-lg transition-all duration-200 p-4 group"
+      className={`block rounded-lg border border-smoke-700 bg-smoke-900 hover:border-opacity-80 hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200 p-4 group${className ? ` ${className}` : ''}`}
       style={{ borderLeftColor: schoolColor.border, borderLeftWidth: 3 }}
     >
       {/* Header */}
