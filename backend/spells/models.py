@@ -209,3 +209,150 @@ class SpellParsingMetadata(models.Model):
 
     def __str__(self):
         return f"Parsing metadata for {self.spell.name}"
+
+
+class SummonTemplate(models.Model):
+    """
+    Summoned creature stat block for a TCoE-style summoning spell.
+
+    HP and AC scale with the spell slot used to cast the parent spell.
+    All TCE summon creatures use the attack formula floor(spell_level / 2).
+    """
+
+    NUM_ATTACKS_CHOICES = [
+        ('floor_half_level', 'floor(spell_level / 2)'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    spell = models.ForeignKey(
+        Spell,
+        on_delete=models.CASCADE,
+        related_name='summon_templates',
+        help_text='The casting spell this creature is summoned by.',
+    )
+    name = models.CharField(max_length=255, help_text='e.g. "Shadow Spirit: Despair"')
+    creature_type = models.CharField(max_length=255, blank=True, help_text='e.g. "Medium monstrosity, unaligned"')
+    source = models.CharField(max_length=50, default='TCoE')
+
+    # ── HP scaling formula ────────────────────────────────────────────────────
+    base_hp = models.IntegerField(help_text='HP at hp_base_level.')
+    hp_per_level = models.IntegerField(
+        default=0,
+        help_text='Additional HP per spell slot level above hp_base_level.',
+    )
+    hp_base_level = models.IntegerField(
+        help_text='The spell slot level at which base_hp applies (e.g. 3 for "+X above 3rd").',
+    )
+
+    # ── AC scaling formula ────────────────────────────────────────────────────
+    base_ac = models.IntegerField(help_text='AC value when ac_per_level == 0, or the additive base.')
+    ac_per_level = models.IntegerField(
+        default=0,
+        help_text='1 when AC formula is "base + spell level" (e.g. 11 + spell level).',
+    )
+
+    # ── Multiattack ───────────────────────────────────────────────────────────
+    num_attacks_formula = models.CharField(
+        max_length=50,
+        choices=NUM_ATTACKS_CHOICES,
+        default='floor_half_level',
+        help_text='Formula to compute number of attacks per round.',
+    )
+
+    raw_data = models.JSONField(default=dict, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'summon_templates'
+        verbose_name = 'Summon Template'
+        verbose_name_plural = 'Summon Templates'
+        ordering = ['spell__level', 'name']
+
+    def __str__(self) -> str:
+        return f"{self.name} (via {self.spell.name})"
+
+    def hp_at_level(self, slot_level: int) -> int:
+        """Compute HP when the parent spell is cast at slot_level."""
+        return self.base_hp + self.hp_per_level * max(0, slot_level - self.hp_base_level)
+
+    def ac_at_level(self, slot_level: int) -> int:
+        """Compute AC when the parent spell is cast at slot_level."""
+        return self.base_ac + self.ac_per_level * slot_level
+
+    def num_attacks_at_level(self, slot_level: int) -> int:
+        """Number of attacks per round at the given slot level."""
+        if self.num_attacks_formula == 'floor_half_level':
+            return slot_level // 2
+        return 1
+
+
+class SummonAttack(models.Model):
+    """
+    A single attack action available to a summoned creature.
+
+    Primary damage is stored directly; an optional secondary damage component
+    handles cases like Fey spirits (piercing + force on every hit).
+    """
+
+    ATTACK_TYPE_CHOICES = [
+        ('melee_weapon', 'Melee Weapon Attack'),
+        ('ranged_weapon', 'Ranged Weapon Attack'),
+        ('melee_spell', 'Melee Spell Attack'),
+        ('ranged_spell', 'Ranged Spell Attack'),
+    ]
+
+    id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
+    summon = models.ForeignKey(SummonTemplate, on_delete=models.CASCADE, related_name='attacks')
+    name = models.CharField(max_length=255, help_text='e.g. "Chilling Rend"')
+    attack_type = models.CharField(max_length=20, choices=ATTACK_TYPE_CHOICES)
+
+    # Primary damage ──────────────────────────────────────────────────────────
+    dice_count = models.IntegerField()
+    die_size = models.IntegerField()
+    flat_modifier = models.IntegerField(
+        default=0,
+        help_text='Flat bonus added to every hit (e.g. 3 for "+3").',
+    )
+    flat_per_level = models.IntegerField(
+        default=0,
+        help_text='Additional flat damage per spell slot level (1 for "+ the spell\'s level").',
+    )
+    damage_type = models.CharField(max_length=50)
+
+    # Optional secondary damage (e.g. Fey spirits: +1d6 force) ───────────────
+    secondary_dice_count = models.IntegerField(
+        default=0,
+        help_text='0 means no secondary damage.',
+    )
+    secondary_die_size = models.IntegerField(default=0)
+    secondary_flat = models.IntegerField(default=0)
+    secondary_damage_type = models.CharField(max_length=50, blank=True)
+
+    created_at = models.DateTimeField(auto_now_add=True)
+    updated_at = models.DateTimeField(auto_now=True)
+
+    class Meta:
+        db_table = 'summon_attacks'
+        verbose_name = 'Summon Attack'
+        verbose_name_plural = 'Summon Attacks'
+        ordering = ['name']
+
+    def __str__(self) -> str:
+        return f"{self.name} ({self.summon.name})"
+
+    def average_damage_at_level(self, slot_level: int) -> float:
+        """Average damage for one hit at the given slot level."""
+        primary = (
+            self.dice_count * (self.die_size + 1) / 2
+            + self.flat_modifier
+            + self.flat_per_level * slot_level
+        )
+        secondary = (
+            self.secondary_dice_count * (self.secondary_die_size + 1) / 2
+            + self.secondary_flat
+            if self.secondary_dice_count > 0
+            else 0
+        )
+        return primary + secondary

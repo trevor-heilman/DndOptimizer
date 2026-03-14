@@ -46,6 +46,35 @@ export interface DamageComponent {
   is_verified: boolean;
 }
 
+export interface SummonAttack {
+  id: string;
+  name: string;
+  attack_type: 'melee_weapon' | 'ranged_weapon' | 'melee_spell' | 'ranged_spell';
+  dice_count: number;
+  die_size: number;
+  flat_modifier: number;
+  flat_per_level: number;
+  damage_type: string;
+  secondary_dice_count: number;
+  secondary_die_size: number;
+  secondary_flat: number;
+  secondary_damage_type: string;
+}
+
+export interface SummonTemplate {
+  id: string;
+  name: string;
+  creature_type: string;
+  source: string;
+  base_hp: number;
+  hp_per_level: number;
+  hp_base_level: number;
+  base_ac: number;
+  ac_per_level: number;
+  num_attacks_formula: 'floor_half_level';
+  attacks: SummonAttack[];
+}
+
 export interface SpellParsingMetadata {
   id: string;
   parsing_confidence: number;
@@ -83,6 +112,7 @@ export interface Spell {
   upcast_attacks_increment?: number;
   raw_data?: Record<string, any>;
   damage_components?: DamageComponent[];
+  summon_templates?: SummonTemplate[];
   parsing_metadata?: SpellParsingMetadata;
   created_by?: string;
   created_at: string;
