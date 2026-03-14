@@ -303,7 +303,7 @@ export interface AnalysisContext {
 
 export interface SpellAnalysisResult {
   spell_name: string;
-  spell_type: 'attack_roll' | 'saving_throw' | 'other';
+  spell_type: 'attack_roll' | 'saving_throw' | 'summon' | 'other';
   average_damage: number;
   maximum_damage: number;
   minimum_damage: number;
@@ -313,6 +313,24 @@ export interface SpellAnalysisResult {
 }
 
 /** Shape returned by POST /api/analysis/analyze/ */
+export interface SummonPerTemplateResult {
+  name: string;
+  creature_type: string;
+  hp: number;
+  ac: number;
+  num_attacks: number;
+  expected_dpr: number;
+  average_dpr: number;
+  attacks: Array<{
+    name: string;
+    per_hit_avg: number;
+    hit_probability: number;
+    crit_probability: number;
+    expected_per_round: number;
+    num_attacks: number;
+  }>;
+}
+
 export interface MathBreakdown {
   // attack roll fields
   hit_probability?: number;
@@ -329,6 +347,11 @@ export interface MathBreakdown {
   number_of_targets?: number;
   save_penalty_die?: string;
   effective_save_bonus?: number;
+  // summon fields
+  slot_level?: number;
+  best_template?: string;
+  num_attacks?: number;
+  per_template?: SummonPerTemplateResult[];
   // shared
   resistance_applied?: boolean;
 }
@@ -336,7 +359,7 @@ export interface MathBreakdown {
 export interface SpellAnalysisApiResult {
   spell: { id: string; name: string; level: number };
   results: {
-    spell_type: 'attack_roll' | 'saving_throw' | 'auto_hit' | 'non_damage';
+    spell_type: 'attack_roll' | 'saving_throw' | 'auto_hit' | 'summon' | 'non_damage';
     average_damage: number;
     maximum_damage: number;
     expected_damage: number;

@@ -37,7 +37,7 @@ class SpellViewSet(viewsets.ModelViewSet):
     """
     ViewSet for spell CRUD operations.
     """
-    queryset = Spell.objects.all().prefetch_related('damage_components', 'parsing_metadata')
+    queryset = Spell.objects.all().prefetch_related('damage_components', 'parsing_metadata', 'summon_templates__attacks')
     permission_classes = [permissions.IsAuthenticatedOrReadOnly]
     pagination_class = SpellPagination
     filter_backends = [DjangoFilterBackend, filters.SearchFilter, filters.OrderingFilter]
@@ -404,7 +404,7 @@ class SpellViewSet(viewsets.ModelViewSet):
         queryset = (
             Spell.objects
             .filter(parsing_metadata__requires_review=True)
-            .prefetch_related('damage_components', 'parsing_metadata')
+            .prefetch_related('damage_components', 'parsing_metadata', 'summon_templates__attacks')
             .order_by('parsing_metadata__parsing_confidence', 'name')
         )
         page = self.paginate_queryset(queryset)
