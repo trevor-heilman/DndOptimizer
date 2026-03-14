@@ -12,7 +12,7 @@ import { HitChanceHeatmap } from '../components/HitChanceHeatmap';
 import { LoadingSpinner, AlertMessage } from '../components/ui';
 import { CreateSpellModal } from '../components/CreateSpellModal';
 import { useAuth } from '../contexts/AuthContext';
-import type { AnalysisContext } from '../types/api';
+import type { AnalysisContext, SummonPerTemplateResult } from '../types/api';
 
 export function SpellDetailPage() {
   const { id } = useParams<{ id: string }>();
@@ -425,7 +425,23 @@ export function SpellDetailPage() {
       {spell.summon_templates && spell.summon_templates.length > 0 && (
         <div className="mt-6 rounded-xl p-6"
           style={{ background: 'linear-gradient(155deg, #0a100e 0%, #0d1a12 100%)', border: '1px solid rgba(52,211,153,0.2)', borderLeft: '3px solid rgba(52,211,153,0.5)' }}>
-          <h2 className="font-display text-xl font-semibold text-emerald-300 mb-4">🧿 Summoned Creatures</h2>
+          <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
+            <h2 className="font-display text-xl font-semibold text-emerald-300">🧿 Summoned Creatures</h2>
+            <div className="flex items-center gap-3">
+              <label className="font-display text-xs text-smoke-400 uppercase tracking-widest">Slot Level</label>
+              <input
+                type="range"
+                min={spell.level}
+                max={9}
+                value={analysisContext.spell_slot_level ?? spell.level}
+                onChange={(e) => setAnalysisContext(prev => ({ ...prev, spell_slot_level: Number(e.target.value) }))}
+                className="w-24 accent-emerald-500"
+              />
+              <span className="font-display text-sm font-bold text-emerald-300 w-4 text-center">
+                {analysisContext.spell_slot_level ?? spell.level}
+              </span>
+            </div>
+          </div>
           <p className="font-body text-sm text-smoke-400 mb-5">
             Stat blocks scale with the spell slot used to cast this spell.
             All TCE summon spirits make <span className="text-parchment-300">⌊slot ÷ 2⌋</span> attacks per round using your spell attack modifier.
@@ -433,11 +449,15 @@ export function SpellDetailPage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {spell.summon_templates.map((tmpl) => {
-              const previewLevel = Math.max(spell.level, tmpl.hp_base_level + 1);
+              const slotForCard = Math.max(spell.level, tmpl.hp_base_level + 1, analysisContext.spell_slot_level ?? spell.level);
               const hpAtBase   = tmpl.base_hp + tmpl.hp_per_level * Math.max(0, tmpl.hp_base_level);
-              const acAtPreview = tmpl.base_ac + tmpl.ac_per_level * previewLevel;
-              const hpAtPreview = tmpl.base_hp + tmpl.hp_per_level * Math.max(0, previewLevel - tmpl.hp_base_level);
-              const attacksAtPreview = Math.floor(previewLevel / 2);
+              const acAtPreview = tmpl.base_ac + tmpl.ac_per_level * slotForCard;
+              const hpAtPreview = tmpl.base_hp + tmpl.hp_per_level * Math.max(0, slotForCard - tmpl.hp_base_level);
+              const attacksAtPreview = Math.floor(slotForCard / 2);
+              // Per-template DPR from latest analysis (if available)
+              const tmplAnalysis = analyzeSpell.data?.results.spell_type === 'summon'
+                ? (analyzeSpell.data.results.math_breakdown.per_template as SummonPerTemplateResult[])?.find(t => t.name === tmpl.name)
+                : undefined;
               return (
                 <div key={tmpl.id} className="rounded-lg border border-smoke-700 bg-smoke-900 p-4">
                   <div className="flex items-start justify-between gap-2 mb-1">
@@ -507,10 +527,20 @@ export function SpellDetailPage() {
                     </div>
                   )}
 
-                  {/* Stat-block scaling note */}
-                  <p className="font-body text-xs text-smoke-500 mt-3 italic">
-                    Stats shown at slot level {previewLevel} &mdash; base HP {hpAtBase} at level {tmpl.hp_base_level}
-                  </p>
+                  {/* Stat-block scaling note + inline DPR */}
+                  <div className="mt-3 pt-2 border-t border-smoke-700/60">
+                    <p className="font-body text-xs text-smoke-500 italic">
+                      Stats at slot {slotForCard} &mdash; base HP {hpAtBase} at level {tmpl.hp_base_level}
+                    </p>
+                    {tmplAnalysis && (
+                      <div className="mt-1.5 flex items-center justify-between">
+                        <span className="font-display text-xs text-smoke-400 uppercase tracking-widest">DPR</span>
+                        <span className="font-display text-sm font-bold text-emerald-400">
+                          {tmplAnalysis.expected_dpr.toFixed(1)}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 </div>
               );
             })}
@@ -520,8 +550,8 @@ export function SpellDetailPage() {
 
       {/* Combat Parameters — full width */}
       {(spell.is_attack_roll || spell.is_saving_throw || spell.is_auto_hit) &&
-        spell.damage_components &&
-        spell.damage_components.length > 0 && (
+        ((spell.damage_components && spell.damage_components.length > 0) ||
+         (spell.summon_templates && spell.summon_templates.length > 0)) && (
           <>
             <div className="mt-6 rounded-xl p-6"
               style={{ background: 'linear-gradient(155deg, #0e0b18 0%, #130a1e 100%)', border: '1px solid rgba(109,40,217,0.2)', borderLeft: '3px solid rgba(109,40,217,0.5)' }}>
@@ -583,7 +613,8 @@ export function SpellDetailPage() {
                       const { spell_type, math_breakdown: mb, average_damage, expected_damage } = analyzeSpell.data.results;
                       const isAttack = spell_type === 'attack_roll';
                       const isSave = spell_type === 'saving_throw';
-                      if (!isAttack && !isSave) return null;
+                      const isSummon = spell_type === 'summon';
+                      if (!isAttack && !isSave && !isSummon) return null;
 
                       return (
                         <div className="rounded-xl p-5"
@@ -591,6 +622,55 @@ export function SpellDetailPage() {
                           <h3 className="dnd-section-title text-base mb-4 flex items-center gap-2">
                             <span aria-hidden="true">📐</span> Math Breakdown
                           </h3>
+
+                          {isSummon && (() => {
+                            const perTemplate = (mb.per_template ?? []) as SummonPerTemplateResult[];
+                            // Per-card DPR also wired into creature cards via tmplAnalysis above
+                            return (
+                              <div className="space-y-3 font-body text-sm">
+                                {[
+                                  { label: 'Hit', color: '#4ade80', prob: mb.hit_probability ?? 0 },
+                                  { label: 'Crit', color: '#fbbf24', prob: mb.crit_probability ?? 0 },
+                                  { label: 'Miss', color: '#f87171', prob: mb.miss_probability ?? 0 },
+                                ].map(({ label, color, prob }) => (
+                                  <div key={label}>
+                                    <div className="flex justify-between text-xs mb-1">
+                                      <span className="text-parchment-300 font-display">{label}</span>
+                                      <span style={{ color }}>{(prob * 100).toFixed(0)}%</span>
+                                    </div>
+                                    <div className="h-2 rounded-full overflow-hidden" style={{ background: '#1e1e2e' }}>
+                                      <div className="h-full rounded-full transition-all" style={{ width: `${prob * 100}%`, background: color }} />
+                                    </div>
+                                  </div>
+                                ))}
+
+                                <div className="rounded-lg p-3" style={{ background: '#0e0a18', border: '1px solid rgba(52,211,153,0.2)' }}>
+                                  <p className="font-display text-xs text-smoke-400 uppercase tracking-widest mb-2">Best Template</p>
+                                  <p className="font-body text-sm text-emerald-300 font-semibold">{mb.best_template}</p>
+                                  <p className="font-body text-xs text-smoke-400 mt-0.5">
+                                    {mb.num_attacks} attack{(mb.num_attacks ?? 1) !== 1 ? 's' : ''} / round
+                                    {mb.resistance_applied && <span className="text-orange-400 ml-2">(resistance applied)</span>}
+                                  </p>
+                                </div>
+
+                                <div className="rounded-lg p-3" style={{ background: '#0e0a18', border: '1px solid rgba(52,211,153,0.2)' }}>
+                                  <p className="font-display text-xs text-smoke-400 uppercase tracking-widest mb-2">Per-Template DPR</p>
+                                  <div className="space-y-1.5">
+                                    {perTemplate.map((t) => (
+                                      <div key={t.name} className="flex items-center justify-between gap-2">
+                                        <span className={`font-body text-xs truncate ${t.name === mb.best_template ? 'text-emerald-300 font-semibold' : 'text-parchment-400'}`}>
+                                          {t.name === mb.best_template ? '★ ' : ''}{t.name}
+                                        </span>
+                                        <span className={`font-display text-xs font-bold shrink-0 ${t.name === mb.best_template ? 'text-emerald-400' : 'text-parchment-300'}`}>
+                                          {t.expected_dpr.toFixed(1)}
+                                        </span>
+                                      </div>
+                                    ))}
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })()}
 
                           {isAttack && (() => {
                               const attacks = mb.number_of_attacks ?? 1;

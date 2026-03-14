@@ -84,7 +84,7 @@ class AnalysisViewSet(viewsets.ViewSet):
         serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
-        spell = Spell.objects.prefetch_related('damage_components').get(id=data['spell_id'])
+        spell = Spell.objects.prefetch_related('damage_components', 'summon_templates__attacks').get(id=data['spell_id'])
 
         # Build cache key from spell ID + updated_at + context params
         ctx_params = {k: v for k, v in data.items() if k != 'spell_id'}
@@ -120,7 +120,7 @@ class AnalysisViewSet(viewsets.ViewSet):
         serializer.is_valid(raise_exception=True)
 
         data = serializer.validated_data
-        spell = Spell.objects.prefetch_related('damage_components').get(id=data['spell_id'])
+        spell = Spell.objects.prefetch_related('damage_components', 'summon_templates__attacks').get(id=data['spell_id'])
 
         ctx_params = {k: v for k, v in data.items() if k != 'spell_id'}
         ctx_params['_spell_ts'] = spell.updated_at.timestamp()

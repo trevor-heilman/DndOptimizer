@@ -341,6 +341,117 @@ class SpellAnalysisService:
                 'math_breakdown': breakdown,
             }
 
+        # --- Summon spells (TCE-style): derive DPR from creature stat blocks ---
+        # This branch fires before `is_attack_roll` so that summon spells — which are
+        # flagged is_attack_roll=True for combat-parameter purposes — are handled here
+        # rather than falling through to the empty damage_components path.
+        _summon_qs = getattr(spell, 'summon_templates', None)
+        templates = list(_summon_qs.prefetch_related('attacks').all()) if _summon_qs is not None else []
+        if templates:
+            slot = context.spell_slot_level
+            ctx_crit_type = getattr(context, 'crit_type', 'double_dice') or 'double_dice'
+            ctx_lucky = getattr(context, 'lucky', 'none') or 'none'
+            ctx_resistance = getattr(context, 'resistance', False)
+
+            per_template_results = []
+            for tmpl in templates:
+                num_attacks = tmpl.num_attacks_at_level(slot)
+                template_expected = 0.0
+                template_avg = 0.0
+                attack_breakdowns = []
+
+                for atk in tmpl.attacks.all():
+                    flat_total = atk.flat_modifier + atk.flat_per_level * slot
+                    primary_result = AttackRollCalculator.expected_damage(
+                        dice_count=atk.dice_count,
+                        die_size=atk.die_size,
+                        modifier=flat_total,
+                        attack_bonus=context.caster_attack_bonus,
+                        target_ac=context.target_ac,
+                        advantage=context.advantage,
+                        disadvantage=context.disadvantage,
+                        crit_enabled=context.crit_enabled,
+                        crit_type=ctx_crit_type,
+                        lucky=ctx_lucky,
+                        number_of_attacks=num_attacks,
+                    )
+                    # Secondary damage (e.g. Fey spirits +1d6 force) — scales with hit
+                    # probability but is not doubled on a critical hit (simplification).
+                    secondary_avg = 0.0
+                    secondary_expected = 0.0
+                    if atk.secondary_dice_count > 0:
+                        secondary_avg = DiceCalculator.average(
+                            atk.secondary_dice_count, atk.secondary_die_size, atk.secondary_flat
+                        )
+                        secondary_expected = (
+                            secondary_avg * primary_result['hit_probability'] * num_attacks
+                        )
+
+                    per_hit_avg = (
+                        DiceCalculator.average(atk.dice_count, atk.die_size, flat_total) + secondary_avg
+                    )
+                    atk_expected = primary_result['expected_damage'] + secondary_expected
+                    template_expected += atk_expected
+                    template_avg += per_hit_avg * num_attacks
+                    attack_breakdowns.append({
+                        'name': atk.name,
+                        'dice_count': atk.dice_count,
+                        'die_size': atk.die_size,
+                        'flat_total': flat_total,
+                        'secondary_avg': secondary_avg,
+                        'per_hit_avg': per_hit_avg,
+                        'expected_per_round': atk_expected,
+                        'hit_probability': primary_result['hit_probability'],
+                        'crit_probability': primary_result['crit_probability'],
+                        'num_attacks': num_attacks,
+                    })
+
+                if ctx_resistance:
+                    template_expected *= 0.5
+                    template_avg *= 0.5
+
+                per_template_results.append({
+                    'name': tmpl.name,
+                    'creature_type': tmpl.creature_type,
+                    'hp': tmpl.hp_at_level(slot),
+                    'ac': tmpl.ac_at_level(slot),
+                    'num_attacks': num_attacks,
+                    'expected_dpr': template_expected,
+                    'average_dpr': template_avg,
+                    'attacks': attack_breakdowns,
+                })
+
+            best = max(per_template_results, key=lambda t: t['expected_dpr'])
+            # Shared hit probability (all templates use the same attack roll math)
+            shared_hit_prob = (
+                per_template_results[0]['attacks'][0]['hit_probability']
+                if per_template_results and per_template_results[0]['attacks']
+                else 0.0
+            )
+            shared_crit_prob = (
+                per_template_results[0]['attacks'][0]['crit_probability']
+                if per_template_results and per_template_results[0]['attacks']
+                else 0.0
+            )
+            return {
+                'spell_type': 'summon',
+                'average_damage': best['average_dpr'],
+                'maximum_damage': best['average_dpr'],
+                'expected_damage': best['expected_dpr'],
+                'upcast_bonus_dice': 0,
+                'efficiency': best['expected_dpr'] / slot if slot > 0 else 0,
+                'math_breakdown': {
+                    'slot_level': slot,
+                    'hit_probability': round(shared_hit_prob, 4),
+                    'miss_probability': round(1 - shared_hit_prob, 4),
+                    'crit_probability': round(shared_crit_prob, 4),
+                    'best_template': best['name'],
+                    'num_attacks': best['num_attacks'],
+                    'resistance_applied': ctx_resistance,
+                    'per_template': per_template_results,
+                },
+            }
+
         components = list(spell.damage_components.all())
 
         # Per-component upcast scaling (e.g. Acid Arrow: each component gains +1d4/slot separately).
