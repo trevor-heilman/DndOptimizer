@@ -58,12 +58,18 @@ const LEVEL_SECTION_NAME: Record<number, string> = {
 };
 
 const SOURCE_ABBREV: Record<string, string> = {
-  "Player's Handbook":              'PHB',
-  "Xanathar's Guide to Everything": 'XGtE',
-  "Tasha's Cauldron of Everything": 'TCoE',
-  "Mordenkainen's Tome of Foes":    'MTF',
-  "Sword Coast Adventurer's Guide": 'SCAG',
+  "Player's Handbook":                 'PHB',
+  "Player's Handbook (2014)":          'PHB 2014',
+  "Player's Handbook 2014":            'PHB 2014',
+  "Player's Handbook (2024)":          'PHB 2024',
+  "Player's Handbook 2024":            'PHB 2024',
+  "Xanathar's Guide to Everything":    'XGtE',
+  "Tasha's Cauldron of Everything":    'TCoE',
+  "Mordenkainen's Tome of Foes":       'MTF',
+  "Sword Coast Adventurer's Guide":    'SCAG',
   "Strixhaven: A Curriculum of Chaos": 'SCC',
+  "Systems Reference Document":        'SRD',
+  "SRD 5.1":                           'SRD',
 };
 
 // ─── SpellRow ────────────────────────────────────────────────────────────────
