@@ -57,6 +57,15 @@ const LEVEL_SECTION_NAME: Record<number, string> = {
   5: 'Level 5', 6: 'Level 6', 7: 'Level 7', 8: 'Level 8', 9: 'Level 9',
 };
 
+const SOURCE_ABBREV: Record<string, string> = {
+  "Player's Handbook":              'PHB',
+  "Xanathar's Guide to Everything": 'XGtE',
+  "Tasha's Cauldron of Everything": 'TCoE',
+  "Mordenkainen's Tome of Foes":    'MTF',
+  "Sword Coast Adventurer's Guide": 'SCAG',
+  "Strixhaven: A Curriculum of Chaos": 'SCC',
+};
+
 // ─── SpellRow ────────────────────────────────────────────────────────────────
 
 interface SpellRowProps {
@@ -113,6 +122,11 @@ function SpellRow({ spell, isAdded, isAdding, onAdd }: SpellRowProps) {
           >
             {schoolLabel}
           </span>
+          {spell.source && (
+            <span className="text-[10px] font-display px-1.5 rounded shrink-0 bg-smoke-800/60 text-smoke-400 border border-smoke-700/50">
+              {SOURCE_ABBREV[spell.source] ?? spell.source}
+            </span>
+          )}
         </div>
       </div>
 

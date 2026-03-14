@@ -2059,7 +2059,7 @@
     },
     {
         "name": "Summon Greater Demon",
-        "level": "5",
+        "level": "4",
         "school": "conjuration",
         "casting_time": "1 action",
         "range": "60 ft.",
@@ -2083,9 +2083,9 @@
         "tags": [
             "warlock",
             "wizard",
-            "level5"
+            "level4"
         ],
-        "type": "5th-level conjuration",
+        "type": "4th-level conjuration",
         "source": "Xanathar's Guide to Everything",
         "higher_levels": "** When you cast this spell using a spell slot of 5th level or higher, the challenge rating increases by 1 for each slot level above 4th."
     },
