@@ -24,7 +24,7 @@ import {
 } from '../hooks/useSpellbooks';
 import { useBatchAnalyzeSpells, useGetSpellEfficiency } from '../hooks/useAnalysis';
 import { useCharacter } from '../hooks/useCharacters';
-import { getSchoolColors } from '../constants/spellColors';
+import { getSchoolColors, getDamageColors } from '../constants/spellColors';
 import { AddSpellPicker } from '../components/AddSpellPicker';
 import { AnalysisContextForm } from '../components/AnalysisContextForm';
 import { LoadingSpinner, AlertMessage, EmptyState, ChartCard } from '../components/ui';
@@ -121,93 +121,131 @@ function PreparedSpellRow({
 }: PreparedSpellRowProps) {
   const { spell } = ps;
   const schoolColor = getSchoolColors(spell.school);
-  const schoolLabel = spell.school.charAt(0).toUpperCase() + spell.school.slice(1);
-  const levelLabel  = spell.level === 0 ? 'Cantrip' : `Lvl ${spell.level}`;
+  const levelText  = spell.level === 0 ? 'Cantrip' : `Level ${spell.level}`;
+  const schoolText = spell.school.charAt(0).toUpperCase() + spell.school.slice(1);
 
   return (
     <div
-      className={`flex items-center gap-3 py-2.5 px-4 rounded-lg transition-all ${
-        ps.prepared
-          ? 'bg-smoke-900/80 border border-gold-900/40'
-          : 'bg-smoke-900/40 border border-smoke-800/60'
+      className={`relative rounded-lg border bg-smoke-900 hover:-translate-y-0.5 hover:shadow-lg transition-all duration-200 group ${
+        ps.prepared ? 'hover:border-opacity-80' : 'opacity-60 hover:opacity-85'
       }`}
+      style={{ borderLeftColor: schoolColor.border, borderLeftWidth: 3 }}
     >
-      {/* Prepared toggle */}
-      <button
-        onClick={() => onTogglePrepared(spell.id, ps.prepared)}
-        disabled={isUpdating}
-        title={ps.prepared ? 'Mark as unprepared' : 'Prepare this spell'}
-        className={`shrink-0 text-xl leading-none transition-all hover:scale-110 active:scale-95 ${
-          isUpdating ? 'opacity-40 cursor-wait' : 'cursor-pointer'
-        } ${ps.prepared ? 'text-gold-400' : 'text-smoke-600 hover:text-smoke-400'}`}
-      >
-        {ps.prepared ? '★' : '☆'}
-      </button>
-
-      {/* Spell info */}
-      <div className="flex-1 min-w-0">
-        <div className="flex items-center gap-2 flex-wrap">
-          <Link
-            to={`/spells/${spell.id}`}
-            state={{ spellbookId, spellbookName, saveDC, atkBonus }}
-            className="font-display text-sm text-parchment-100 hover:text-gold-300 transition-colors"
+      {/* ── Overlay action buttons (absolute top-right) ── */}
+      <div className="absolute top-2.5 right-2.5 z-10 flex items-center gap-1.5">
+        {isEditMode && (
+          <button
+            onClick={() => onRemove(spell.id)}
+            title="Remove from spellbook"
+            className="text-smoke-600 hover:text-crimson-400 transition-colors p-0.5"
           >
+            <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
+            </svg>
+          </button>
+        )}
+        <button
+          onClick={() => onTogglePrepared(spell.id, ps.prepared)}
+          disabled={isUpdating}
+          title={ps.prepared ? 'Mark as unprepared' : 'Prepare this spell'}
+          className={`text-lg leading-none transition-all hover:scale-110 active:scale-95 ${
+            isUpdating ? 'opacity-40 cursor-wait' : 'cursor-pointer'
+          } ${ps.prepared ? 'text-gold-400' : 'text-smoke-600 hover:text-smoke-400'}`}
+        >
+          {ps.prepared ? '★' : '☆'}
+        </button>
+      </div>
+
+      {/* ── Main card body — link to spell detail ── */}
+      <Link
+        to={`/spells/${spell.id}`}
+        state={{ spellbookId, spellbookName, saveDC, atkBonus }}
+        className="block p-4"
+      >
+        {/* Header: name + mechanic/conc badges (pr leaves space for action buttons) */}
+        <div className="flex justify-between items-start mb-2 gap-2 pr-12">
+          <h3 className={`font-display text-base font-semibold leading-tight transition-colors ${
+            ps.prepared
+              ? 'text-parchment-100 group-hover:text-gold-300'
+              : 'text-smoke-400 group-hover:text-smoke-200'
+          }`}>
             {spell.name}
-          </Link>
-          {spell.concentration && (
-            <span
-              className="shrink-0 text-[10px] px-1 rounded font-display"
-              style={{ color: '#fcd34d', border: '1px solid #78350f55', background: '#3d2a0a55' }}
-            >
-              ◎ Conc
-            </span>
-          )}
+          </h3>
+          <div className="flex items-center gap-1 shrink-0 flex-wrap justify-end">
+            <MechanicBadge spell={spell} />
+            {spell.concentration && (
+              <span
+                className="shrink-0 text-xs px-1.5 py-0.5 rounded font-display"
+                style={{ background: '#3d2a0a55', color: '#fcd34d', border: '1px solid #78350f' }}
+              >
+                ◎ Conc
+              </span>
+            )}
+          </div>
+        </div>
+
+        {/* Level + School + Ritual badges */}
+        <div className="flex items-center gap-2 mb-2 flex-wrap">
+          <span
+            className="text-xs font-display font-medium px-2 py-0.5 rounded"
+            style={{ background: '#2a2a35', color: '#fbbf24', border: '1px solid #4b4b58' }}
+          >
+            {levelText}
+          </span>
+          <span
+            className="text-xs font-display font-medium px-2 py-0.5 rounded"
+            style={{ background: schoolColor.bg, color: schoolColor.text, border: `1px solid ${schoolColor.border}44` }}
+          >
+            {schoolText}
+          </span>
           {spell.ritual && (
             <span
-              className="shrink-0 text-[10px] px-1 rounded font-display"
-              style={{ color: '#c4b5fd', border: '1px solid #4c1d9555', background: '#2e1a5f55' }}
+              className="text-xs font-display px-1.5 py-0.5 rounded"
+              style={{ background: '#2e1a5f44', color: '#c4b5fd', border: '1px solid #4c1d9544' }}
             >
               Ritual
             </span>
           )}
-          <MechanicBadge spell={spell} />
         </div>
-        <div className="flex items-center gap-2 mt-0.5 flex-wrap">
-          <span className="text-xs font-body text-smoke-400">
-            {spell.casting_time} · {spell.range}
-          </span>
-          <span
-            className="text-[10px] font-display px-1.5 rounded shrink-0"
-            style={{
-              background: schoolColor.bg,
-              color: schoolColor.text,
-              border: `1px solid ${schoolColor.border}44`,
-            }}
-          >
-            {schoolLabel}
-          </span>
-          <span
-            className="text-[10px] font-display px-1.5 rounded shrink-0 opacity-40"
-            style={{ background: '#2a2a35', color: '#fbbf24', border: '1px solid #4b4b5844' }}
-          >
-            {levelLabel}
-          </span>
-          <TagPills tags={spell.tags} />
-        </div>
-      </div>
 
-      {/* Remove — only in edit mode */}
-      {isEditMode && (
-        <button
-          onClick={() => onRemove(spell.id)}
-          title="Remove from spellbook"
-          className="shrink-0 text-smoke-600 hover:text-crimson-400 transition-colors p-1"
-        >
-          <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
-          </svg>
-        </button>
-      )}
+        {/* Description */}
+        {spell.description && (
+          <p className="font-body text-sm text-parchment-400 mb-3 line-clamp-2 leading-relaxed">
+            {spell.description}
+          </p>
+        )}
+
+        {/* Cast / Range footer */}
+        <div className="flex items-center gap-4 text-xs text-smoke-400 font-body">
+          <span>⏱ {spell.casting_time}</span>
+          <span>⊕ {spell.range}</span>
+        </div>
+
+        {/* Damage components */}
+        {spell.damage_components && spell.damage_components.length > 0 && (
+          <div className="mt-2 flex flex-wrap items-center gap-1.5">
+            {spell.damage_components.slice(0, 3).map((dc, idx) => {
+              const dc_colors = getDamageColors(dc.damage_type ?? '');
+              return (
+                <span
+                  key={idx}
+                  className="text-xs font-body font-medium px-2 py-0.5 rounded"
+                  style={{ background: dc_colors.bg, color: dc_colors.text }}
+                >
+                  {dc.dice_count}d{dc.die_size} {dc.damage_type}
+                </span>
+              );
+            })}
+          </div>
+        )}
+
+        {/* Gameplay tags */}
+        {spell.tags && spell.tags.length > 0 && (
+          <div className="mt-2 flex flex-wrap gap-1.5">
+            <TagPills tags={spell.tags} />
+          </div>
+        )}
+      </Link>
     </div>
   );
 }
@@ -262,7 +300,7 @@ function LevelSection({
       </button>
       <div className="h-px bg-gradient-to-r from-smoke-700/60 via-smoke-700/20 to-transparent mb-2" />
       {open && (
-        <div className="space-y-1.5 mb-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 mb-6">
           {preparedSpells.map(ps => (
             <PreparedSpellRow
               key={ps.id}
@@ -611,7 +649,7 @@ export function SpellbookDetailPage() {
   // ── Render ────────────────────────────────────────────────────────────────
 
   return (
-    <div className="max-w-4xl mx-auto">
+    <div>
       {/* Back link */}
       <Link
         to="/spellbooks"
