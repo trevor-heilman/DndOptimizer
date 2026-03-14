@@ -425,69 +425,143 @@ export function SpellDetailPage() {
       {spell.summon_templates && spell.summon_templates.length > 0 && (
         <div className="mt-6 rounded-xl p-6"
           style={{ background: 'linear-gradient(155deg, #0a100e 0%, #0d1a12 100%)', border: '1px solid rgba(52,211,153,0.2)', borderLeft: '3px solid rgba(52,211,153,0.5)' }}>
-          <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-            <h2 className="font-display text-xl font-semibold text-emerald-300">🧿 Summoned Creatures</h2>
-            <div className="flex items-center gap-3">
-              <label className="font-display text-xs text-smoke-400 uppercase tracking-widest">Slot Level</label>
-              <input
-                type="range"
-                min={spell.level}
-                max={9}
-                value={analysisContext.spell_slot_level ?? spell.level}
-                onChange={(e) => setAnalysisContext(prev => ({ ...prev, spell_slot_level: Number(e.target.value) }))}
-                className="w-24 accent-emerald-500"
-              />
-              <span className="font-display text-sm font-bold text-emerald-300 w-4 text-center">
-                {analysisContext.spell_slot_level ?? spell.level}
-              </span>
-            </div>
-          </div>
+          <h2 className="font-display text-xl font-semibold text-emerald-300 mb-3">🧿 Summoned Creatures</h2>
           <p className="font-body text-sm text-smoke-400 mb-5">
-            Stat blocks scale with the spell slot used to cast this spell.
-            All TCE summon spirits make <span className="text-parchment-300">⌊slot ÷ 2⌋</span> attacks per round using your spell attack modifier.
+            Each spirit makes <span className="text-parchment-300">⌊slot ÷ 2⌋</span> attacks per round using your spell attack modifier.
+            HP, AC, and damage all scale with spell slot level.
           </p>
+
+          {/* ── Embedded Combat Parameters ──────────────────────────────── */}
+          <div className="mb-6 rounded-xl p-5"
+            style={{ background: '#0e0b18', border: '1px solid rgba(109,40,217,0.2)', borderLeft: '3px solid rgba(109,40,217,0.4)' }}>
+            <h3 className="font-display text-sm font-semibold text-smoke-300 uppercase tracking-widest mb-4">⚔️ Combat Parameters</h3>
+            <AnalysisContextForm context={analysisContext} onChange={setAnalysisContext} spells={spell ? [spell] : []} />
+            <div className="mt-4 flex flex-wrap gap-3">
+              <button
+                onClick={() => {
+                  const ctx = { ...analysisContext, spell_slot_level: analysisContext.spell_slot_level ?? spell.level };
+                  analyzeSpell.mutate({ spellId: spell.id, context: ctx });
+                  getEfficiency.mutate({ spellId: spell.id, context: ctx, minLevel: spell.level, maxLevel: 9 });
+                }}
+                disabled={analyzeSpell.isPending || getEfficiency.isPending}
+                className="btn-primary text-sm disabled:opacity-50"
+              >
+                {(analyzeSpell.isPending || getEfficiency.isPending) ? 'Analyzing…' : '⚡ Analyze DPR'}
+              </button>
+            </div>
+            {analyzeSpell.isError && (
+              <div className="mt-4">
+                <AlertMessage variant="error" message="Analysis failed. Check that attack bonus and target AC are set." />
+              </div>
+            )}
+          </div>
+
+          {/* ── DPR Analysis Results ─────────────────────────────────────── */}
+          {analyzeSpell.data?.results.spell_type === 'summon' && (() => {
+            const { expected_damage, efficiency, math_breakdown: mb } = analyzeSpell.data.results;
+            const perTemplate = (mb.per_template ?? []) as SummonPerTemplateResult[];
+            return (
+              <div className="mb-6 rounded-xl p-5"
+                style={{ background: 'linear-gradient(155deg, #130408 0%, #1a0510 100%)', border: '1px solid rgba(190,18,60,0.2)', borderLeft: '3px solid rgba(190,18,60,0.55)' }}>
+                <h3 className="dnd-section-title text-base mb-4">📊 DPR Results — Slot {mb.slot_level}</h3>
+                <div className="grid grid-cols-3 gap-3 mb-4">
+                  <div className="rounded-lg p-3 text-center"
+                    style={{ background: 'linear-gradient(145deg, #0e0a18 0%, #120d22 100%)', border: '1px solid rgba(109,40,217,0.18)', borderTop: '2px solid rgba(217,162,31,0.5)' }}>
+                    <div className="font-display text-xs text-smoke-400 uppercase tracking-widest mb-1">Best DPR</div>
+                    <div className="font-display text-2xl font-bold text-gold-400">{expected_damage.toFixed(1)}</div>
+                    <div className="font-body text-xs text-smoke-500 mt-0.5 truncate">{mb.best_template}</div>
+                  </div>
+                  <div className="rounded-lg p-3 text-center"
+                    style={{ background: 'linear-gradient(145deg, #0e0a18 0%, #120d22 100%)', border: '1px solid rgba(109,40,217,0.18)' }}>
+                    <div className="font-display text-xs text-smoke-400 uppercase tracking-widest mb-1">Efficiency</div>
+                    <div className="font-display text-xl font-bold text-parchment-100">{efficiency.toFixed(2)}</div>
+                    <div className="font-body text-xs text-smoke-400">dmg / slot</div>
+                  </div>
+                  <div className="rounded-lg p-3 text-center"
+                    style={{ background: 'linear-gradient(145deg, #0e0a18 0%, #120d22 100%)', border: '1px solid rgba(109,40,217,0.18)' }}>
+                    <div className="font-display text-xs text-smoke-400 uppercase tracking-widest mb-1">Hit Chance</div>
+                    <div className="font-display text-xl font-bold text-green-400">{((mb.hit_probability ?? 0) * 100).toFixed(0)}%</div>
+                    <div className="font-body text-xs text-smoke-400">{mb.num_attacks} atk / round</div>
+                  </div>
+                </div>
+                <div className="space-y-1 mb-4">
+                  {perTemplate.map((t) => (
+                    <div key={t.name} className={`flex items-center justify-between rounded px-3 py-1.5 ${
+                      t.name === mb.best_template ? 'bg-emerald-950/50 border border-emerald-700/50' : 'bg-smoke-800/40'
+                    }`}>
+                      <span className={`font-body text-xs ${t.name === mb.best_template ? 'text-emerald-300 font-semibold' : 'text-parchment-400'}`}>
+                        {t.name === mb.best_template ? '★ ' : ''}{t.name}
+                      </span>
+                      <span className={`font-display text-sm font-bold ${t.name === mb.best_template ? 'text-emerald-400' : 'text-parchment-300'}`}>
+                        {t.expected_dpr.toFixed(1)}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+                {getEfficiency.data && (
+                  <EfficiencyChart data={getEfficiency.data.efficiency_by_slot} spellName={spell.name} />
+                )}
+              </div>
+            );
+          })()}
 
           <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4">
             {spell.summon_templates.map((tmpl) => {
-              const slotForCard = Math.max(spell.level, tmpl.hp_base_level + 1, analysisContext.spell_slot_level ?? spell.level);
+              const slotForCard = analysisContext.spell_slot_level ?? spell.level;
               const hpAtBase   = tmpl.base_hp + tmpl.hp_per_level * Math.max(0, tmpl.hp_base_level);
               const acAtPreview = tmpl.base_ac + tmpl.ac_per_level * slotForCard;
               const hpAtPreview = tmpl.base_hp + tmpl.hp_per_level * Math.max(0, slotForCard - tmpl.hp_base_level);
               const attacksAtPreview = Math.floor(slotForCard / 2);
-              // Per-template DPR from latest analysis (if available)
+              // Per-template DPR + best-template highlight from latest analysis
               const tmplAnalysis = analyzeSpell.data?.results.spell_type === 'summon'
                 ? (analyzeSpell.data.results.math_breakdown.per_template as SummonPerTemplateResult[])?.find(t => t.name === tmpl.name)
                 : undefined;
+              const isBest = analyzeSpell.data?.results.spell_type === 'summon'
+                && analyzeSpell.data.results.math_breakdown.best_template === tmpl.name;
               return (
-                <div key={tmpl.id} className="rounded-lg border border-smoke-700 bg-smoke-900 p-4">
+                <div key={tmpl.id} className={`rounded-lg p-4 transition-colors ${
+                  isBest ? 'border-2 border-emerald-500/70 bg-emerald-950/20' : 'border border-smoke-700 bg-smoke-900'
+                }`}>
                   <div className="flex items-start justify-between gap-2 mb-1">
-                    <h3 className="font-display text-base font-semibold text-parchment-100 leading-tight">{tmpl.name}</h3>
+                    <h3 className="font-display text-base font-semibold text-parchment-100 leading-tight">
+                      {isBest && <span className="text-emerald-400 mr-1">★</span>}{tmpl.name}
+                    </h3>
                     <span className="font-body text-xs text-smoke-400 shrink-0 mt-0.5">{tmpl.source}</span>
                   </div>
                   {tmpl.creature_type && (
                     <p className="font-body text-xs text-smoke-400 italic mb-3">{tmpl.creature_type}</p>
                   )}
 
-                  {/* HP / AC / Attacks at preview level */}
-                  <div className="grid grid-cols-3 gap-2 mb-3">
+                  {/* HP / AC / Attacks / DPR — 4-column stat boxes */}
+                  <div className="grid grid-cols-4 gap-1.5 mb-3">
                     <div className="bg-smoke-800 rounded p-2 text-center border border-smoke-700">
                       <div className="font-display text-xs text-smoke-400 mb-0.5">HP</div>
                       <div className="font-display text-sm font-bold text-red-400">{hpAtPreview}</div>
                       {tmpl.hp_per_level > 0 && (
-                        <div className="font-body text-xs text-smoke-500">+{tmpl.hp_per_level}/lvl</div>
+                        <div className="font-body text-[10px] text-smoke-500">+{tmpl.hp_per_level}/lvl</div>
                       )}
                     </div>
                     <div className="bg-smoke-800 rounded p-2 text-center border border-smoke-700">
                       <div className="font-display text-xs text-smoke-400 mb-0.5">AC</div>
                       <div className="font-display text-sm font-bold text-blue-400">{acAtPreview}</div>
                       {tmpl.ac_per_level > 0 && (
-                        <div className="font-body text-xs text-smoke-500">+{tmpl.ac_per_level}/lvl</div>
+                        <div className="font-body text-[10px] text-smoke-500">+1/lvl</div>
                       )}
                     </div>
                     <div className="bg-smoke-800 rounded p-2 text-center border border-smoke-700">
-                      <div className="font-display text-xs text-smoke-400 mb-0.5">Attacks</div>
+                      <div className="font-display text-xs text-smoke-400 mb-0.5">Atk</div>
                       <div className="font-display text-sm font-bold text-gold-400">{attacksAtPreview}</div>
-                      <div className="font-body text-xs text-smoke-500">⌊lvl÷2⌋</div>
+                      <div className="font-body text-[10px] text-smoke-500">⌊lvl÷2⌋</div>
+                    </div>
+                    <div className={`rounded p-2 text-center border ${
+                      tmplAnalysis ? 'bg-emerald-950/50 border-emerald-700' : 'bg-smoke-800 border-smoke-700'
+                    }`}>
+                      <div className="font-display text-xs text-smoke-400 mb-0.5">DPR</div>
+                      {tmplAnalysis ? (
+                        <div className="font-display text-sm font-bold text-emerald-400">{tmplAnalysis.expected_dpr.toFixed(1)}</div>
+                      ) : (
+                        <div className="font-display text-sm text-smoke-600">—</div>
+                      )}
                     </div>
                   </div>
 
@@ -527,20 +601,9 @@ export function SpellDetailPage() {
                     </div>
                   )}
 
-                  {/* Stat-block scaling note + inline DPR */}
-                  <div className="mt-3 pt-2 border-t border-smoke-700/60">
-                    <p className="font-body text-xs text-smoke-500 italic">
-                      Stats at slot {slotForCard} &mdash; base HP {hpAtBase} at level {tmpl.hp_base_level}
-                    </p>
-                    {tmplAnalysis && (
-                      <div className="mt-1.5 flex items-center justify-between">
-                        <span className="font-display text-xs text-smoke-400 uppercase tracking-widest">DPR</span>
-                        <span className="font-display text-sm font-bold text-emerald-400">
-                          {tmplAnalysis.expected_dpr.toFixed(1)}
-                        </span>
-                      </div>
-                    )}
-                  </div>
+                  <p className="font-body text-[10px] text-smoke-600 mt-2 italic">
+                    Slot {slotForCard} — base HP {hpAtBase} (lvl {tmpl.hp_base_level})
+                  </p>
                 </div>
               );
             })}
@@ -548,10 +611,9 @@ export function SpellDetailPage() {
         </div>
       )}
 
-      {/* Combat Parameters — full width */}
+      {/* Combat Parameters — full width (damage-component spells; summon spells have embedded params above) */}
       {(spell.is_attack_roll || spell.is_saving_throw || spell.is_auto_hit) &&
-        ((spell.damage_components && spell.damage_components.length > 0) ||
-         (spell.summon_templates && spell.summon_templates.length > 0)) && (
+        spell.damage_components && spell.damage_components.length > 0 && (
           <>
             <div className="mt-6 rounded-xl p-6"
               style={{ background: 'linear-gradient(155deg, #0e0b18 0%, #130a1e 100%)', border: '1px solid rgba(109,40,217,0.2)', borderLeft: '3px solid rgba(109,40,217,0.5)' }}>
