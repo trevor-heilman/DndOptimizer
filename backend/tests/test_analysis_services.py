@@ -799,8 +799,7 @@ class TestCharLevelBreakpoints:
         bp = {'5': {'die_count': 1, 'die_size': 6, 'flat': 0}}  # avg = 3.5
         spell = self._auto_hit_spell('GFB Level 5', bp)
         ctx = self._ctx(char_level=5)
-        base = 0.0
-        result = SpellAnalysisService._apply_char_level_breakpoints(spell, ctx, base)
+        result = SpellAnalysisService._apply_char_level_breakpoints(spell, ctx, 0.0)
         assert result == pytest.approx(3.5)
 
     def test_highest_applicable_threshold_is_used(self):
@@ -895,3 +894,155 @@ class TestCharLevelBreakpoints:
         ctx = self._ctx(char_level=1)
         result = SpellAnalysisService._apply_char_level_breakpoints(spell, ctx, 0.0)
         assert result == pytest.approx(3.5)  # default 1d6 avg
+
+
+# ─────────────────────────────────────────────────────────────────────────────
+# B7 — SpellParsingService._normalize_raw() and _infer_tags() field mappings
+# ─────────────────────────────────────────────────────────────────────────────
+
+class TestSpellParsingServiceNormalizeRaw:
+    """Tests for SpellParsingService._normalize_raw() — all field-mapping paths."""
+
+    def setup_method(self):
+        from spells.services import SpellParsingService
+        self.svc = SpellParsingService
+
+    def test_pascal_case_detected_by_name_key(self):
+        """Presence of 'Name' (capital N) without 'name' triggers PascalCase mapping."""
+        raw = {'Name': 'Fireball', 'Level': 3, 'School': 'evocation'}
+        result = self.svc._normalize_raw(raw)
+        assert result['name'] == 'Fireball'
+        assert result['level'] == 3
+        assert result['school'] == 'evocation'
+        assert 'Name' not in result
+
+    def test_full_pascal_field_map(self):
+        """Every key in _PASCAL_FIELD_MAP is correctly remapped to snake_case."""
+        raw = {
+            'Name': 'Test Spell',
+            'Level': 2,
+            'School': 'illusion',
+            'CastingTime': '1 action',
+            'Range': '60 feet',
+            'Duration': '1 minute',
+            'Ritual': False,
+            'Description': 'A test spell.',
+            'Source': 'PHB',
+            'Components': 'V, S',
+            'Classes': ['wizard'],
+            'HigherLevel': 'Deals more damage.',
+        }
+        result = self.svc._normalize_raw(raw)
+        assert result['name'] == 'Test Spell'
+        assert result['casting_time'] == '1 action'
+        assert result['components_raw'] == 'V, S'
+        assert result['higher_level'] == 'Deals more damage.'
+        assert result['ritual'] is False
+        assert result['source'] == 'PHB'
+        assert result['classes'] == ['wizard']
+
+    def test_at_higher_levels_alias_maps_to_higher_level(self):
+        """'AtHigherLevels' is an alias for 'HigherLevel' — both map to 'higher_level'."""
+        raw = {'Name': 'Test', 'AtHigherLevels': 'Double dice.'}
+        result = self.svc._normalize_raw(raw)
+        assert result['higher_level'] == 'Double dice.'
+        assert 'AtHigherLevels' not in result
+
+    def test_snake_case_input_passes_through_unchanged(self):
+        """No 'Name' key → input returned as-is (already snake_case or Open5e)."""
+        raw = {'name': 'Magic Missile', 'level': 1, 'school': 'evocation'}
+        result = self.svc._normalize_raw(raw)
+        assert result == raw
+
+    def test_empty_dict_passes_through(self):
+        """Empty dict has no 'Name' key → returned unchanged."""
+        assert self.svc._normalize_raw({}) == {}
+
+    def test_extra_snake_case_fields_carried_over(self):
+        """Unknown snake_case fields alongside PascalCase are preserved via setdefault."""
+        raw = {'Name': 'Spell', 'Level': 1, 'custom_field': 'custom_value'}
+        result = self.svc._normalize_raw(raw)
+        assert result['name'] == 'Spell'
+        assert result['custom_field'] == 'custom_value'
+
+    def test_pascal_case_with_both_name_and_lowercase_name_skips_mapping(self):
+        """If both 'Name' and 'name' are present the mapping is NOT triggered."""
+        raw = {'Name': 'PascalName', 'name': 'snake_name', 'level': 1}
+        result = self.svc._normalize_raw(raw)
+        # snake_case path: returned as-is because 'name' key is already present
+        assert result['name'] == 'snake_name'
+        assert result.get('Name') == 'PascalName'
+
+    def test_ritual_boolean_preserved(self):
+        """Boolean values (Ritual: True) survive the mapping unchanged."""
+        raw = {'Name': 'Detect Magic', 'Ritual': True}
+        result = self.svc._normalize_raw(raw)
+        assert result['ritual'] is True
+
+
+class TestSpellParsingServiceInferTags:
+    """Tests for SpellParsingService._infer_tags() — all tag branches."""
+
+    def setup_method(self):
+        from spells.services import SpellParsingService
+        self.svc = SpellParsingService
+
+    def _infer(self, desc: str = '', higher: str = '',
+               dice: list | None = None, types: list | None = None) -> list[str]:
+        return self.svc._infer_tags(desc, higher, dice or [], types or [])
+
+    def test_damage_tag_requires_dice_and_damage_type(self):
+        """'damage' tag only appears when BOTH dice and a damage type are present."""
+        assert 'damage' in self._infer(dice=[(1, 6)], types=['fire'])
+        assert 'damage' not in self._infer(dice=[(1, 6)], types=[])
+        assert 'damage' not in self._infer(dice=[], types=['fire'])
+
+    def test_healing_tag_from_description(self):
+        """'healing' tag triggered by healing keywords in description."""
+        assert 'healing' in self._infer(desc='The target regains hit points equal to 2d6.')
+
+    def test_aoe_tag_from_description(self):
+        """'aoe' tag triggered by AoE keywords."""
+        assert 'aoe' in self._infer(desc='Each creature in a 20-foot radius must make a saving throw.')
+
+    def test_crowd_control_tag(self):
+        """'crowd_control' tag triggered by condition keywords."""
+        assert 'crowd_control' in self._infer(desc='The target is restrained until the end of its next turn.')
+
+    def test_summoning_tag(self):
+        """'summoning' tag triggered by summon/conjure keywords."""
+        assert 'summoning' in self._infer(desc='You summon a fey creature that appears in an unoccupied space.')
+
+    def test_buff_tag(self):
+        """'buff' tag triggered by buff keywords."""
+        assert 'buff' in self._infer(desc='The target gains advantage on attack rolls.')
+
+    def test_debuff_tag(self):
+        """'debuff' tag triggered by debuff keywords."""
+        assert 'debuff' in self._infer(desc='The target has disadvantage on saving throws.')
+
+    def test_utility_tag_from_keyword(self):
+        """'utility' tag triggered by utility keywords (alongside other tags)."""
+        assert 'utility' in self._infer(desc='You can fly at a speed of 60 feet.')
+
+    def test_fallback_utility_when_no_other_tags_match(self):
+        """With no matching keywords a spell gets only the 'utility' fallback tag."""
+        tags = self._infer(desc='A completely mundane description with no keywords.')
+        assert tags == ['utility']
+
+    def test_multiple_tags_returned_sorted(self):
+        """A spell can receive multiple tags; they are returned sorted alphabetically."""
+        tags = self._infer(
+            desc='Each creature in a 20-foot radius takes fire damage on a failed save.',
+            dice=[(8, 6)],
+            types=['fire'],
+        )
+        assert 'damage' in tags
+        assert 'aoe' in tags
+        assert tags == sorted(tags)
+
+    def test_higher_level_text_also_scanned(self):
+        """Tag keywords in higher_level text are detected even if absent from description."""
+        tags = self._infer(desc='A plain description.', higher='You summon an additional creature.')
+        assert 'summoning' in tags
+

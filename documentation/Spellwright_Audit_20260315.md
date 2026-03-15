@@ -1,6 +1,6 @@
 # Spellwright — Project & Test Audit
 **Date:** 2026-03-15  
-**Last updated:** 2026-03-15 — Priority 1 test build-out complete (B1/B2/B3/F1/F2/F3/F4/E1/E2)  
+**Last updated:** 2026-03-15 — Priority 3 small items B7/F11/F12 complete (368 backend, 320 frontend)  
 **Status:** Living document — update each session
 
 ---
@@ -91,7 +91,7 @@ A D&D 5e spell optimization platform: browse the PHB 2014/XGtE/TCoE/PHB 2024 spe
 | File | Classes | Tests | What it covers |
 |------|---------|-------|----------------|
 | `test_api.py` | 5 | 18 | API root, auth, dice/attack/save calculators, rate limiting, spell model endpoints |
-| `test_analysis_services.py` | 5 | 47 | Dice/attack/save calcs, spell analysis (attack/save/upcast/auto-hit), breakeven, char-level breakpoints (valid + malformed) |
+| `test_analysis_services.py` | 8 | 66 | Dice/attack/save calcs, spell analysis (attack/save/upcast/auto-hit), breakeven, char-level breakpoints, `_normalize_raw()` PascalCase mapping (B7), `_infer_tags()` all branches (B7) |
 | `test_models.py` | 7 | 31 | User, Spell, DamageComponent, SpellParsingMetadata, Spellbook, AnalysisContext, Character.max_prepared_spells (7 subclass + bonus edge cases) |
 | `test_summon_analysis.py` | 4 | 28 | Summon branch: 0 attacks, extreme slot, multiple templates, best-template selection, missing template graceful fail |
 | `test_compare_growth.py` | 4 | 26 | Compare growth (cantrip/leveled), view integration, context/comparison ViewSets |
@@ -102,7 +102,6 @@ A D&D 5e spell optimization platform: browse the PHB 2014/XGtE/TCoE/PHB 2024 spe
 | `test_management_commands.py` | ~8 | 43 | seed_spells, classify_phb_editions, fix_upcast_components, backfill_spell_classes, check_upcast |
 
 ### Not covered (gaps remaining)
-- `SpellParsingService._normalize_raw()` PascalCase→snake_case field mapping (B7)
 - `upcast_scale_step = 0` (not validated; would cause division by zero in engine)
 - `DamageComponent` edge cases: 0 dice, negative flat modifier, invalid timing (B4)
 - `char_level_breakpoints` round-trip via import/export (B5)
@@ -111,7 +110,7 @@ A D&D 5e spell optimization platform: browse the PHB 2014/XGtE/TCoE/PHB 2024 spe
 
 ## 5. Frontend Unit Test Coverage
 
-**Current:** 226 tests · 18 test files (Priority 1 complete)  
+**Current:** 295 tests → **320 tests** · 25 test files (Priority 2 + B7/F11/F12 complete)  
 
 | File | Component | Tests | Status |
 |------|-----------|-------|--------|
@@ -130,15 +129,14 @@ A D&D 5e spell optimization platform: browse the PHB 2014/XGtE/TCoE/PHB 2024 spe
 | `SpellbookDetailPage.test.tsx` | SpellbookDetailPage | 8 | ⚠️ Minimal — loading state, empty spellbook |
 | `ComparePage.test.tsx` | ComparePage | 32 | ✅ Full: structure, combobox selection, comparison/growth/breakeven results, error state |
 | `CreateSpellModal.test.tsx` | CreateSpellModal | 31 | ✅ Full: render guard, create mode, validation (5 rules), conditional sections (component rows, class checkboxes, char-level breakpoints), edit mode pre-fill, submission payload, pending/error/success states |
-| `analysis.test.ts` | analysis service | 5 | ✅ API call mocking |
-
-### Not covered / needs expansion
+| `DamageChart.test.tsx` | DamageChart | 14 | ✅ Empty state, leveled slot pills (slots 3–9), stat pills (Min/Avg/Crit Avg/Max/Crit Max), showCrit toggle, onSlotChange callback, cantrip mode render, fallback mode |
+| `EfficiencyChart.test.tsx` | EfficiencyChart | 11 | ✅ Empty state, chart title, best-slot footer (slot + value), multi-point render, reversed-order best-slot detection |
 - **SpellbookDetailPage** — cast button behavior, slot tracking, hit/miss overlay, combat log panel
 - **SpellsPage** — search/filter, pagination, efficiency sort, "not in spellbook" filter
 - **Other modal components** — `CreateCharacterModal`, `AddSpellPicker`, `ImportSpellsModal`, `ClearSpellsModal`
-- **All chart components** — `DamageChart`, `EfficiencyChart`, `GrowthChart3D`, `HitChanceHeatmap`, `CantripScalingChart`
+- **Remaining chart components** — `GrowthChart3D`, `HitChanceHeatmap`, `CantripScalingChart`
 - **Hooks** — `useCharacters`, `useSpellbooks` not tested
-- **Empty / loading / error states** — across all pages
+- **Empty / loading / error states** — across all pages (F13)
 
 ---
 
@@ -217,9 +215,9 @@ A D&D 5e spell optimization platform: browse the PHB 2014/XGtE/TCoE/PHB 2024 spe
 | ID | Type | Target | What to test | Effort | Status |
 |:--:|------|--------|-------------|--------|--------|
 | B6 | Backend | `test_management_commands.py` (verify) | `seed_spells`, `classify_phb_editions`, `fix_upcast_components` — **largely done** | ✅ Done | 43 tests |
-| B7 | Backend | `test_analysis_services.py` (extend) | `SpellParsingService._normalize_raw()` all field mappings | Small | ⏳ Not started |
-| F11 | Frontend unit | `DamageChart.test.tsx` | Renders bars, slot selector changes data | Small | ⏳ Not started |
-| F12 | Frontend unit | `EfficiencyChart.test.tsx` | Renders line chart, handles empty data | Small | ⏳ Not started |
+| B7 | Backend | `test_analysis_services.py` (extend) | `SpellParsingService._normalize_raw()` all field mappings + `_infer_tags()` all branches | Small | ✅ Done — +8 normalize_raw + 11 infer_tags tests |
+| F11 | Frontend unit | `DamageChart.test.tsx` | Renders bars, slot selector changes data | Small | ✅ Done — 14 tests |
+| F12 | Frontend unit | `EfficiencyChart.test.tsx` | Renders line chart, handles empty data | Small | ✅ Done — 11 tests |
 | F13 | Frontend unit | Error/loading states | All pages: loading spinner, error alert, empty state | Medium | ⏳ Not started |
 | E5 | E2E | `mobile.spec.ts` | Key flows on 375px viewport (auth, spells list, spellbook page) | Medium | ⏳ Not started |
 | E6 | E2E | `error-scenarios.spec.ts` | Network timeout handling, empty search result, invalid form submission | Medium | ⏳ Not started |
@@ -250,7 +248,8 @@ Phase 4 — Polish + CI
 - B6 (management commands) was ✅ complete before this session — 43 tests already written
 - **Priority 2 complete** — all 8 items (B4/B5/F5/F6/F7/F8/F9/F10) ✅ done; **349 backend tests, 295 frontend unit tests** as of this session
 - **E3/E4 complete** — `spell-import.spec.ts` (10 tests) + `spell-detail-analysis.spec.ts` (14 tests) added
-- Next up: Phase 4 — B7/F11/F12/F13/E5/E6/E7
+- **Priority 3 small items complete** — B7/F11/F12 ✅ done; **368 backend tests, 320 frontend unit tests**
+- Next up: F13/E5/E6/E7
 
 ---
 
