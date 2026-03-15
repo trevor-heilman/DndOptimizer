@@ -114,6 +114,11 @@ class SpellViewSet(viewsets.ModelViewSet):
             if val is not None:
                 queryset = queryset.filter(**{field: val.lower() == 'true'})
 
+        # Exclude spells already in a given spellbook: ?not_in_spellbook=<uuid>
+        not_in_spellbook = self.request.query_params.get('not_in_spellbook')
+        if not_in_spellbook and self.request.user.is_authenticated:
+            queryset = queryset.exclude(prepared_in__spellbook_id=not_in_spellbook)
+
         return queryset
 
     def perform_create(self, serializer):

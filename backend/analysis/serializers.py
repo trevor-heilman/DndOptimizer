@@ -16,7 +16,8 @@ class AnalysisContextSerializer(serializers.ModelSerializer):
             'caster_attack_bonus', 'number_of_targets', 'advantage',
             'disadvantage', 'spell_slot_level', 'crit_enabled', 'crit_type',
             'half_damage_on_save', 'evasion_enabled', 'resistance',
-            'lucky', 'elemental_adept_type', 'created_by', 'created_at'
+            'lucky', 'elemental_adept_type', 'save_penalty_die',
+            'spellcasting_ability_modifier', 'created_by', 'created_at'
         ]
         read_only_fields = ['id', 'created_by', 'created_at']
 

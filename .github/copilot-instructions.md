@@ -76,7 +76,7 @@
 - **Networking on Windows/WSL**: The frontend container must be on port 80 (not 3000). The Windows hosts file has `127.0.0.1 localhost` set explicitly so `http://localhost` resolves to IPv4 — do not remove this entry. When recreating containers, use ONLY `-p 0.0.0.0:80:80` — **never** add `-p [::1]:80:80`. WSL's `wslrelay.exe` accepts TCP on `[::1]:80` but cannot forward HTTP, causing the browser (via Happy Eyeballs) to silently connect via IPv6 and then spin forever on page load.
 - **After any backend rebuild**: The Django superuser password is NOT reset by a backend container rebuild — the password lives in the PostgreSQL volume which persists across rebuilds. Only run a password reset if the database volume was wiped.
 - **After any backend container recreation**: Always restart the frontend container immediately after (`podman restart spellwright_frontend_1`). nginx resolves the upstream hostname (`spellwright_backend_1`) once at startup and caches the IP — if the backend container is recreated it gets a new IP, causing all proxied API calls to fail with 502 Bad Gateway until nginx is restarted.
-- **Rebuild after every code change**: After completing any backend code change (Python, migrations, management commands), always run `.\scripts\rebuild.ps1` before declaring work complete. After any frontend code change (TypeScript, components, styles), run `.\scripts\rebuild.ps1 -Frontend`. If both changed, run `.\scripts\rebuild.ps1 -Frontend`. Do not end a work session without confirming the rebuild succeeded and the app is running at http://localhost/.
+- **Rebuild after every code change — but ask first**: When code changes are complete and a rebuild is needed, **always ask the user** "Ready to rebuild now, or continue working on more changes first?" before running any rebuild command. Only run `.\scripts\rebuild.ps1` (or `-Frontend`) after the user confirms. This avoids wasting rebuild time when more changes are coming. At the end of a session, do not close out without confirming the rebuild succeeded and the app is running at http://localhost/.
 - **Always `git pull` before starting work**: This is a solo repo but the remote can diverge from local — e.g. due to prior GitHub web UI edits or commits made from a different environment (WSL vs Windows). This project has both a Windows working directory and a WSL copy (the rsync in rebuild.ps1)Always run `git pull` at the start of every session to avoid merge conflicts during push. Windows is the single source of truth for commits — never commit or push directly from WSL.
 
 ## 9. Documentation
@@ -105,6 +105,15 @@
 - Ensure all UI components are accessible (WCAG compliance).
 - Use semantic HTML and ARIA attributes.
 - Prepare for future i18n/l10n support.
+
+## 13. Objective Staging & Doc Classification
+- The file `documentation/Spellwright_updates20260314.md` contains a **"# Objective Staging"** section where the user drops raw, unclassified requests.
+- **Whenever new items appear there without a dev note**, classify them before or alongside implementation:
+  1. Move or copy the item into the appropriate section (Spells, Spellbooks, Calculations, Project Organisation, etc.).
+  2. Add a `> **Dev note:**` block covering: what currently exists in the codebase relevant to this request, what files/models/hooks would need to change, estimated effort (Trivial / Quick win / Small / Medium / Large), and any design decisions or alternatives.
+  3. Add the item to the **Priority Summary** table with the correct effort label.
+  4. Leave the original line in "Objective Staging" struck-through with a `✅ Done` or `→ Classified` note so the staging section stays clean.
+- When an item is too vague to classify accurately, add a `> **Needs clarification:**` note and ask the user before implementing.
 
 ---
 

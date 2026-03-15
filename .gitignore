@@ -65,3 +65,7 @@ Thumbs.db
 
 # Project specific
 documentation/move_instructions.txt
+
+# Spell data JSON files (large, imported separately — kept on disk, not in repo)
+backend/data/*.json
+documentation/data/*.json

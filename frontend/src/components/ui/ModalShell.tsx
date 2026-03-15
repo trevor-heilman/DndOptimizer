@@ -42,7 +42,7 @@ export function ModalShell({
 }: ModalShellProps) {
   return (
     <div className="fixed inset-0 bg-black/70 flex items-center justify-center z-50 p-4">
-      <div className={`dnd-card border-t-2 ${ACCENT_BORDER[accent]} ${maxWidth} w-full shadow-2xl flex flex-col`}>
+      <div className={`dnd-card border-t-2 ${ACCENT_BORDER[accent]} ${maxWidth} w-full shadow-2xl flex flex-col max-h-[90vh]`}>
         {/* Header */}
         <div className="flex justify-between items-center p-6 border-b border-smoke-700">
           <h2 className={`font-display text-xl font-bold ${ACCENT_TITLE[accent]}`}>

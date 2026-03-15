@@ -28,6 +28,8 @@ interface DamageChartProps {
   resistance?: boolean;
   /** Elemental Adept damage type — bypasses resistance for matching components. */
   elementalAdeptType?: string | null;
+  /** Hide crit bars/pills — set false for saving-throw and auto-hit spells that cannot crit. */
+  showCrit?: boolean;
 }
 
 const CANTRIP_TIERS = [
@@ -158,7 +160,7 @@ function computeAtSlot(
   return { rows, totalMin, totalAvg, totalCritAvg, totalMax, totalCritMax, totalAttacks };
 }
 
-function ScalingBarChart({ data }: { data: { label: string; avg: number; max: number; min: number; crit_avg: number; crit_max: number }[] }) {
+function ScalingBarChart({ data, showCrit = true }: { data: { label: string; avg: number; max: number; min: number; crit_avg: number; crit_max: number }[]; showCrit?: boolean }) {
   return (
     <ResponsiveContainer width="100%" height={300}>
       <BarChart data={data} margin={{ top: 20, right: 30, left: 20, bottom: 5 }}>
@@ -169,15 +171,15 @@ function ScalingBarChart({ data }: { data: { label: string; avg: number; max: nu
         <Legend wrapperStyle={{ color: '#c4a882', fontFamily: 'Cinzel, serif', fontSize: 13 }} />
         <Bar dataKey="min"      name="Minimum"  fill="#4c1d95" radius={[4, 4, 0, 0]} />
         <Bar dataKey="avg"      name="Average"  fill="#b45309" radius={[4, 4, 0, 0]} />
-        <Bar dataKey="crit_avg" name="Crit Avg" fill="#f97316" radius={[4, 4, 0, 0]} />
+        {showCrit && <Bar dataKey="crit_avg" name="Crit Avg" fill="#f97316" radius={[4, 4, 0, 0]} />}
         <Bar dataKey="max"      name="Maximum"  fill="#d4af37" radius={[4, 4, 0, 0]} />
-        <Bar dataKey="crit_max" name="Crit Max" fill="#ef4444" radius={[4, 4, 0, 0]} />
+        {showCrit && <Bar dataKey="crit_max" name="Crit Max" fill="#ef4444" radius={[4, 4, 0, 0]} />}
       </BarChart>
     </ResponsiveContainer>
   );
 }
 
-export function DamageChart({ damageComponents, spell, title = 'Damage Distribution', selectedSlot: controlledSlot, onSlotChange, critType = 'double_dice', resistance = false, elementalAdeptType = null }: DamageChartProps) {
+export function DamageChart({ damageComponents, spell, title = 'Damage Distribution', selectedSlot: controlledSlot, onSlotChange, critType = 'double_dice', resistance = false, elementalAdeptType = null, showCrit = true }: DamageChartProps) {
   const [internalSlot, setInternalSlot] = useState<number>(() =>
     spell && spell.level > 0 ? spell.level : 1,
   );
@@ -229,7 +231,7 @@ export function DamageChart({ damageComponents, spell, title = 'Damage Distribut
         crit_max: parseFloat((crit_max_base * resMult).toFixed(2)),
       };
     });
-    return <ChartCard title={title}><ScalingBarChart data={data} /></ChartCard>;
+    return <ChartCard title={title}><ScalingBarChart data={data} showCrit={showCrit} /></ChartCard>;
   }
 
   // ── Leveled spell: slot selector + on-hit breakdown ───────────────────────
@@ -266,13 +268,13 @@ export function DamageChart({ damageComponents, spell, title = 'Damage Distribut
         )}
 
         {/* Min / Avg / Crit Avg / Max / Crit Max summary pills */}
-        <div className="grid grid-cols-5 gap-2 mb-4">
+        <div className={`grid ${showCrit ? 'grid-cols-5' : 'grid-cols-3'} gap-2 mb-4`}>
           {[
             { label: 'Min',      value: totalMin,                 color: '#818cf8' },
             { label: 'Avg',      value: totalAvg.toFixed(1),      color: '#fbbf24' },
-            { label: 'Crit Avg', value: totalCritAvg.toFixed(1),  color: '#f97316' },
+            ...(showCrit ? [{ label: 'Crit Avg', value: totalCritAvg.toFixed(1),  color: '#f97316' }] : []),
             { label: 'Max',      value: totalMax,                 color: '#f87171' },
-            { label: 'Crit Max', value: totalCritMax,             color: '#ef4444' },
+            ...(showCrit ? [{ label: 'Crit Max', value: totalCritMax,             color: '#ef4444' }] : []),
           ].map(({ label, value, color }) => (
             <div key={label} className="text-center p-2 rounded-lg bg-smoke-800 border border-smoke-700">
               <div className="font-display text-[10px] uppercase tracking-widest mb-1" style={{ color: '#94a3b8' }}>{label}</div>
@@ -297,9 +299,9 @@ export function DamageChart({ damageComponents, spell, title = 'Damage Distribut
             <Legend wrapperStyle={{ color: '#c4a882', fontFamily: 'Cinzel, serif', fontSize: 13 }} />
             <Bar dataKey="min"      name="Minimum"  fill="#4c1d95" radius={[4, 4, 0, 0]} />
             <Bar dataKey="avg"      name="Average"  fill="#b45309" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="crit_avg" name="Crit Avg" fill="#f97316" radius={[4, 4, 0, 0]} />
+            {showCrit && <Bar dataKey="crit_avg" name="Crit Avg" fill="#f97316" radius={[4, 4, 0, 0]} />}
             <Bar dataKey="max"      name="Maximum"  fill="#d4af37" radius={[4, 4, 0, 0]} />
-            <Bar dataKey="crit_max" name="Crit Max" fill="#ef4444" radius={[4, 4, 0, 0]} />
+            {showCrit && <Bar dataKey="crit_max" name="Crit Max" fill="#ef4444" radius={[4, 4, 0, 0]} />}
           </BarChart>
         </ResponsiveContainer>
       </ChartCard>

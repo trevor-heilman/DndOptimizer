@@ -10,7 +10,13 @@
     "preview": "vite preview",
     "test": "vitest run",
     "test:watch": "vitest",
-    "test:coverage": "vitest run --coverage"
+    "test:coverage": "vitest run --coverage",
+    "check-e2e-env": "node -e \"const m=[];if(!process.env.E2E_EMAIL)m.push('E2E_EMAIL');if(!process.env.E2E_PASSWORD)m.push('E2E_PASSWORD');if(m.length){console.error('\\n[E2E] Missing env vars: '+m.join(', ')+'\\n  Set them in frontend/.env.e2e (copy .env.e2e.example) or as Windows env vars.\\n');process.exit(1);}console.log('[E2E] Credentials found ✓');\"",
+    "pretest:e2e": "npm run check-e2e-env",
+    "test:e2e": "playwright test",
+    "test:e2e:headed": "playwright test --headed",
+    "test:e2e:ui": "playwright test --ui",
+    "test:e2e:report": "playwright show-report"
   },
   "dependencies": {
     "@tanstack/react-query": "^5.90.21",
@@ -24,9 +30,11 @@
   },
   "devDependencies": {
     "@eslint/js": "^9.36.0",
+    "@playwright/test": "^1.58.2",
     "@testing-library/jest-dom": "^6.9.1",
     "@testing-library/react": "^16.3.2",
     "@testing-library/user-event": "^14.6.1",
+    "@types/node": "^25.5.0",
     "@types/react": "^19.1.13",
     "@types/react-dom": "^19.1.9",
     "@types/react-plotly.js": "^2.6.4",

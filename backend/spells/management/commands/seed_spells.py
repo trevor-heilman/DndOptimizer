@@ -68,17 +68,23 @@ class Command(BaseCommand):
 
         # Import each file
         total_imported = 0
+        total_skipped = 0
         total_errors = 0
 
         for filepath in files_to_import:
             self.stdout.write(f'Importing from {filepath}...')
-            imported, errors = self._import_file(filepath)
+            imported, errors, skipped = self._import_file(filepath)
             total_imported += imported
+            total_skipped += skipped
             total_errors += errors
 
             self.stdout.write(
                 self.style.SUCCESS(f'  Imported {imported} spells')
             )
+            if skipped > 0:
+                self.stdout.write(
+                    self.style.WARNING(f'  {skipped} spells already exist (name + source match) — skipped')
+                )
             if errors > 0:
                 self.stdout.write(
                     self.style.WARNING(f'  {errors} spells had errors')
@@ -86,14 +92,17 @@ class Command(BaseCommand):
 
         self.stdout.write(
             self.style.SUCCESS(
-                f'\nTotal: {total_imported} spells imported, {total_errors} errors'
+                f'\nTotal: {total_imported} imported, {total_skipped} skipped (duplicate), {total_errors} errors'
             )
         )
 
     def _import_file(self, filepath: str) -> tuple:
-        """Import spells from a single file. Returns (imported_count, error_count)."""
+        """Import spells from a single file. Returns (imported_count, error_count, skipped_count)."""
+        from spells.models import Spell
+
         imported = 0
         errors = 0
+        skipped = 0
 
         try:
             with open(filepath, encoding='utf-8') as f:
@@ -127,6 +136,15 @@ class Command(BaseCommand):
                     # Parse spell data
                     parsed = SpellParsingService.parse_spell_data(raw_spell)
 
+                    # Dedup: skip if (name, source) already exists as a non-custom spell.
+                    # This lets PHB 2014 and PHB 2024 versions of the same spell coexist,
+                    # but prevents re-running an import from creating duplicates.
+                    name = parsed['normalized_data'].get('name', '').strip()
+                    source = parsed['normalized_data'].get('source', '').strip()
+                    if Spell.objects.filter(name__iexact=name, source=source, is_custom=False).exists():
+                        skipped += 1
+                        continue
+
                     # Create spell with components
                     spell = SpellParsingService.create_spell_from_parsed_data(
                         parsed,
@@ -153,4 +171,4 @@ class Command(BaseCommand):
                     )
                 )
 
-        return (imported, errors)
+        return (imported, errors, skipped)

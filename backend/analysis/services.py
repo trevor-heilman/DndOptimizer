@@ -247,24 +247,29 @@ class SpellAnalysisService:
         """
         Return total bonus dice gained from casting at slot_level.
         Returns 0 if the spell has no upcast data or slot is at/below base level.
+        Respects upcast_scale_step: e.g. step=2 means +1 increment every 2 levels
+        (like Hex +1d6 per 2 levels).  Default step is 1 (every level).
         """
         if not spell.upcast_dice_increment:
             return 0
         base_level = spell.upcast_base_level if spell.upcast_base_level is not None else spell.level
         levels_above = max(0, slot_level - base_level)
-        return levels_above * spell.upcast_dice_increment
+        step = spell.upcast_scale_step or 1
+        return (levels_above // step) * spell.upcast_dice_increment
 
     @staticmethod
     def _upcast_extra_attacks(spell, slot_level: int) -> int:
         """
         Return extra attack rolls gained from upcasting (e.g. Scorching Ray +1 ray/slot).
         Returns 0 if the spell has no upcast_attacks_increment or slot is at/below base level.
+        Respects upcast_scale_step (shared with dice scaling).
         """
         if not getattr(spell, 'upcast_attacks_increment', None):
             return 0
         base_level = spell.upcast_base_level if spell.upcast_base_level is not None else spell.level
         levels_above = max(0, slot_level - base_level)
-        return levels_above * spell.upcast_attacks_increment
+        step = spell.upcast_scale_step or 1
+        return (levels_above // step) * spell.upcast_attacks_increment
 
     @staticmethod
     def analyze_spell(spell, context) -> dict[str, Any]:
@@ -461,13 +466,25 @@ class SpellAnalysisService:
 
         def _effective_dice(c) -> int:
             """Dice count for component c at the current slot, accounting for per-component upcast."""
-            return c.dice_count + (c.upcast_dice_increment or 0) * levels_above
+            if not c.upcast_dice_increment:
+                return c.dice_count
+            step = c.upcast_scale_step or spell.upcast_scale_step or 1
+            return c.dice_count + (c.upcast_dice_increment * (levels_above // step))
+
+        # spellcasting_ability_modifier is typically set on the analysis context; default to 3
+        # for backward compatibility with contexts created before the field existed.
+        spell_mod = getattr(context, 'spellcasting_ability_modifier', 3)
+
+        def _eff_mod(c) -> int:
+            """Effective flat modifier, adding spellcasting ability modifier when flagged."""
+            bonus = spell_mod if getattr(c, 'uses_spellcasting_modifier', False) else 0
+            return c.flat_modifier + bonus
 
         total_average = sum(
-            DiceCalculator.average(_effective_dice(c), c.die_size, c.flat_modifier) for c in components
+            DiceCalculator.average(_effective_dice(c), c.die_size, _eff_mod(c)) for c in components
         )
         total_maximum = sum(
-            DiceCalculator.maximum(_effective_dice(c), c.die_size, c.flat_modifier) for c in components
+            DiceCalculator.maximum(_effective_dice(c), c.die_size, _eff_mod(c)) for c in components
         )
 
         # Spell-level upcast bonus dice: only applicable when no component handles its own scaling.
@@ -506,7 +523,7 @@ class SpellAnalysisService:
                 result = AttackRollCalculator.expected_damage(
                     dice_count=_effective_dice(component),
                     die_size=component.die_size,
-                    modifier=component.flat_modifier,
+                    modifier=_eff_mod(component),
                     attack_bonus=context.caster_attack_bonus,
                     target_ac=context.target_ac,
                     advantage=context.advantage,
@@ -572,7 +589,7 @@ class SpellAnalysisService:
                 result = SavingThrowCalculator.expected_damage(
                     dice_count=_effective_dice(component),
                     die_size=component.die_size,
-                    modifier=component.flat_modifier,
+                    modifier=_eff_mod(component),
                     spell_dc=context.spell_save_dc,
                     save_bonus=context.target_save_bonus,
                     half_on_success=spell.half_damage_on_save,
@@ -634,7 +651,7 @@ class SpellAnalysisService:
             # Guaranteed-hit spells (e.g. Magic Missile): expected damage = avg_per_dart * total_attacks
             total_expected = 0.0
             for component in components:
-                avg = DiceCalculator.average(_effective_dice(component), component.die_size, component.flat_modifier)
+                avg = DiceCalculator.average(_effective_dice(component), component.die_size, _eff_mod(component))
                 total_expected += avg * total_attacks
 
             if extra_dice > 0:

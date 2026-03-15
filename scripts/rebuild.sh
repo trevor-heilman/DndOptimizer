@@ -80,7 +80,7 @@ fi
 # ── 7. (Optional) Rebuild frontend ────────────────────────────────────────
 if [ "$FRONTEND" = true ]; then
   echo "[7] Building frontend image (no-cache)..."
-  podman build --no-cache -t localhost/spellwright_frontend:latest ./frontend
+  podman build -t localhost/spellwright_frontend:latest ./frontend
 
   echo "[7b] Recreating frontend container..."
   # Force-remove the old container so the new image is actually used.

@@ -118,6 +118,72 @@ export const mockEfficiencyResponse = {
   ],
 };
 
+export const mockCharacter = {
+  id: 'char-1',
+  owner: 'user-1',
+  owner_username: 'tester',
+  name: 'Gandalf',
+  character_class: 'wizard',
+  character_level: 10,
+  subclass: '',
+  portrait_color: 'violet' as const,
+  ruleset: '2014' as const,
+  spellcasting_ability_modifier: 5,
+  dc_bonus: 0,
+  attack_bonus_extra: 0,
+  spell_slots_used: [0, 0, 0, 0, 0, 0, 0, 0, 0],
+  school_copy_discounts: {},
+  spell_save_dc: 17,
+  spell_attack_bonus: 9,
+  proficiency_bonus: 4,
+  max_prepared_spells: 15,
+  spellbook_count: 1,
+  created_at: '2026-01-01T00:00:00Z',
+  updated_at: '2026-01-01T00:00:00Z',
+};
+
+export const mockSpellbookDetail = {
+  id: 'sb-1',
+  owner: 'user-1',
+  name: "Gandalf's Grimoire",
+  description: 'Test spellbook',
+  character: 'char-1',
+  character_name: 'Gandalf',
+  book_color: 'violet' as const,
+  label_color: '',
+  sort_order: 0,
+  spell_count: 2,
+  prepared_spell_count: 1,
+  prepared_spells: [
+    {
+      id: 'ps-1',
+      spell: mockSpell,
+      prepared: true,
+      added_at: '2026-01-01T00:00:00Z',
+      updated_at: '2026-01-01T00:00:00Z',
+    },
+    {
+      id: 'ps-2',
+      spell: mockSpell2,
+      prepared: false,
+      added_at: '2026-01-01T00:00:00Z',
+      updated_at: '2026-01-01T00:00:00Z',
+    },
+  ],
+  created_at: '2026-01-01T00:00:00Z',
+  updated_at: '2026-01-01T00:00:00Z',
+};
+
+export const mockCharacterSpell = {
+  id: 'ps-1',
+  spell: mockSpell,
+  prepared: true,
+  added_at: '2026-01-01T00:00:00Z',
+  updated_at: '2026-01-01T00:00:00Z',
+  spellbook_name: "Gandalf's Grimoire",
+  spellbook_id: 'sb-1',
+};
+
 // ─── Handlers ────────────────────────────────────────────────────────────────
 
 export const handlers = [

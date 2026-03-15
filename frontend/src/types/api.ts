@@ -40,9 +40,12 @@ export interface DamageComponent {
   flat_modifier?: number;
   damage_type: string;
   timing: 'on_hit' | 'on_fail' | 'on_success' | 'end_of_turn' | 'per_round' | 'delayed';
+  condition_label?: string | null;
   on_crit_extra: boolean;
   scales_with_slot: boolean;
   upcast_dice_increment?: number | null;
+  upcast_scale_step?: number | null;
+  uses_spellcasting_modifier?: boolean;
   is_verified: boolean;
 }
 
@@ -110,6 +113,7 @@ export interface Spell {
   upcast_dice_increment?: number;
   upcast_die_size?: number;
   upcast_attacks_increment?: number;
+  upcast_scale_step?: number;
   raw_data?: Record<string, any>;
   damage_components?: DamageComponent[];
   summon_templates?: SummonTemplate[];
@@ -149,6 +153,8 @@ export interface SpellListParams {
   has_v?: boolean;
   has_s?: boolean;
   has_m?: boolean;
+  ordering?: string;
+  not_in_spellbook?: string;
 }
 
 // ─── Character types ─────────────────────────────────────────────────────────
@@ -299,6 +305,8 @@ export interface AnalysisContext {
   elemental_adept_type?: string | null;
   /** Die subtracted from target saving throws (Mind Sliver, Bane → d4; Synaptic Static → d6). */
   save_penalty_die?: 'none' | 'd4' | 'd6' | 'd8';
+  /** Caster's spellcasting ability modifier (added to damage components with uses_spellcasting_modifier). */
+  spellcasting_ability_modifier?: number;
 }
 
 export interface SpellAnalysisResult {
