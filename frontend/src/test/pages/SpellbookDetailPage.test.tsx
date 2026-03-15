@@ -156,4 +156,37 @@ describe('SpellbookDetailPage', () => {
     renderDetailPage();
     expect(screen.getByText(/gandalf/i)).toBeInTheDocument();
   });
+
+  // ── F13: error / empty state ────────────────────────────────────────────
+
+  it('shows "Spellbook Not Found" title in error state', () => {
+    vi.mocked(useSpellbook).mockReturnValue({ data: undefined, isLoading: false, error: { message: 'Not found' } } as any);
+    renderDetailPage();
+    expect(screen.getByText('Spellbook Not Found')).toBeInTheDocument();
+    expect(screen.getByText(/doesn't exist/i)).toBeInTheDocument();
+  });
+
+  it('shows a "Back to Spellbooks" button in error state', () => {
+    vi.mocked(useSpellbook).mockReturnValue({ data: undefined, isLoading: false, error: { message: 'Not found' } } as any);
+    renderDetailPage();
+    expect(screen.getByRole('button', { name: /back to spellbooks/i })).toBeInTheDocument();
+  });
+
+  it('shows the "No Spells Yet" empty state when the spellbook has no spells', () => {
+    vi.mocked(useSpellbook).mockReturnValue({
+      data: { ...mockSpellbook, prepared_spells: [], spell_count: 0, prepared_spell_count: 0 },
+      isLoading: false, error: null,
+    } as any);
+    renderDetailPage();
+    expect(screen.getByRole('heading', { name: 'No Spells Yet' })).toBeInTheDocument();
+  });
+
+  it('shows an "Add Your First Spell" action in the empty spellbook state', () => {
+    vi.mocked(useSpellbook).mockReturnValue({
+      data: { ...mockSpellbook, prepared_spells: [], spell_count: 0, prepared_spell_count: 0 },
+      isLoading: false, error: null,
+    } as any);
+    renderDetailPage();
+    expect(screen.getByRole('button', { name: /add your first spell/i })).toBeInTheDocument();
+  });
 });

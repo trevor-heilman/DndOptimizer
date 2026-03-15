@@ -109,4 +109,25 @@ describe('CharacterSpellsPage', () => {
     renderPage();
     expect(screen.getByRole('button', { name: /edit/i })).toBeInTheDocument();
   });
+
+  // ── F13: error / empty state ────────────────────────────────────────────
+
+  it('shows a spells error alert when spells fail to load', () => {
+    vi.mocked(useCharacterSpells).mockReturnValue({ data: undefined, isLoading: false, error: { message: 'Server error' } } as any);
+    renderPage();
+    expect(screen.getByText(/could not load spells/i)).toBeInTheDocument();
+    expect(screen.getByText(/failed to fetch spells/i)).toBeInTheDocument();
+  });
+
+  it('shows empty state when the character has no spells', () => {
+    vi.mocked(useCharacterSpells).mockReturnValue({ data: [], isLoading: false, error: null } as any);
+    renderPage();
+    expect(screen.getByText(/no spells found across any tomes/i)).toBeInTheDocument();
+  });
+
+  it('shows the total spell count stat', () => {
+    renderPage();
+    // 1 spell in mock → totalCount = 1 displayed in the header
+    expect(screen.getByText('1')).toBeInTheDocument();
+  });
 });
