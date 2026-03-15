@@ -79,7 +79,7 @@ class SpellListSerializer(serializers.ModelSerializer):
             'is_saving_throw', 'is_auto_hit', 'save_type', 'half_damage_on_save',
             'components_v', 'components_s', 'components_m', 'material',
             'description', 'source', 'is_custom', 'created_by',
-            'classes', 'tags', 'aoe_radius', 'damage_components',
+            'classes', 'tags', 'char_level_breakpoints', 'aoe_radius', 'damage_components',
         ]
         read_only_fields = ['id', 'created_by']
 
@@ -106,7 +106,7 @@ class SpellDetailSerializer(serializers.ModelSerializer):
             'number_of_attacks', 'crit_enabled', 'aoe_radius', 'damage_type',
             'upcast_base_level', 'upcast_dice_increment', 'upcast_die_size', 'upcast_attacks_increment', 'upcast_scale_step',
             'source', 'is_custom', 'description', 'higher_level', 'raw_data',
-            'classes', 'tags',
+            'classes', 'tags', 'char_level_breakpoints',
             'damage_components', 'summon_templates', 'parsing_metadata', 'created_by',
             'created_by_username', 'created_at', 'updated_at'
         ]
@@ -129,7 +129,7 @@ class SpellCreateUpdateSerializer(serializers.ModelSerializer):
             'number_of_attacks', 'crit_enabled', 'aoe_radius', 'damage_type',
             'upcast_base_level', 'upcast_dice_increment', 'upcast_die_size', 'upcast_attacks_increment', 'upcast_scale_step',
             'source', 'is_custom', 'description', 'higher_level', 'raw_data',
-            'classes', 'tags',
+            'classes', 'tags', 'char_level_breakpoints',
             'damage_components'
         ]
 

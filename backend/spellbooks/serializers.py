@@ -21,7 +21,7 @@ class CharacterSerializer(serializers.ModelSerializer):
             'id', 'name', 'character_class', 'character_level', 'subclass',
             'portrait_color', 'ruleset',
             'spellcasting_ability_modifier', 'dc_bonus', 'attack_bonus_extra',
-            'spell_slots_used', 'school_copy_discounts',
+            'spell_slots_used', 'school_copy_discounts', 'prepared_spells_bonus',
             # computed
             'spell_save_dc', 'spell_attack_bonus', 'proficiency_bonus', 'max_prepared_spells',
             'spellbook_count',
@@ -37,7 +37,7 @@ class CharacterCreateUpdateSerializer(serializers.ModelSerializer):
             'name', 'character_class', 'character_level', 'subclass',
             'portrait_color', 'ruleset',
             'spellcasting_ability_modifier', 'dc_bonus', 'attack_bonus_extra',
-            'spell_slots_used', 'school_copy_discounts',
+            'spell_slots_used', 'school_copy_discounts', 'prepared_spells_bonus',
         ]
 
 

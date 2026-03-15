@@ -92,6 +92,12 @@ export function SpellDetailPage() {
   const levelText = spell.level === 0 ? 'Cantrip' : `Level ${spell.level}`;
   const schoolText = spell.school.charAt(0).toUpperCase() + spell.school.slice(1);
 
+  // True if the spell gains any benefit from being cast at a higher slot level.
+  const scalesWithSlot =
+    !!(spell.upcast_dice_increment && spell.upcast_die_size) ||
+    !!spell.upcast_attacks_increment ||
+    (spell.damage_components ?? []).some((dc) => dc.scales_with_slot);
+
   const TIMING_LABEL: Record<string, string> = {
     on_hit: 'on hit',
     on_fail: 'on failed save',
@@ -187,6 +193,17 @@ export function SpellDetailPage() {
               </span>
             );
           })}
+          {spell.classes && spell.classes.length > 0 && spell.classes.map((cls) => (
+            <Link
+              key={cls}
+              to={`/spells?class_name=${encodeURIComponent(cls)}`}
+              className="font-display text-sm px-3 py-1 rounded transition-colors hover:opacity-80"
+              style={{ background: '#0f2a1a', color: '#86efac', border: '1px solid #16532d66' }}
+              title={`See all ${cls.charAt(0).toUpperCase() + cls.slice(1)} spells`}
+            >
+              {cls.charAt(0).toUpperCase() + cls.slice(1)}
+            </Link>
+          ))}
         </div>
         {/* Arcane divider */}
         <div className="flex items-center gap-3 mt-4 mb-5 select-none" aria-hidden="true">
@@ -265,6 +282,23 @@ export function SpellDetailPage() {
                 </span>
               </div>
             )
+          )}
+          {spell.char_level_breakpoints && Object.keys(spell.char_level_breakpoints).length > 0 && (
+            <div className="mt-1">
+              <span className="block w-full text-sm font-display font-medium text-smoke-400 mb-1">Char Level Scaling:</span>
+              <div className="space-y-1">
+                {Object.entries(spell.char_level_breakpoints)
+                  .sort(([a], [b]) => Number(a) - Number(b))
+                  .map(([lvl, bp]) => (
+                    <div key={lvl} className="flex items-center gap-2">
+                      <span className="text-xs font-body text-smoke-500 w-16 shrink-0">Level {lvl}+</span>
+                      <span className="text-sm text-parchment-200">
+                        +{bp.die_count}d{bp.die_size}{bp.flat ? ` +${bp.flat}` : ''}
+                      </span>
+                    </div>
+                  ))}
+              </div>
+            </div>
           )}
         </div>
       </div>
@@ -467,7 +501,9 @@ export function SpellDetailPage() {
                 onClick={() => {
                   const ctx = { ...analysisContext, spell_slot_level: analysisContext.spell_slot_level ?? spell.level };
                   analyzeSpell.mutate({ spellId: spell.id, context: ctx });
-                  getEfficiency.mutate({ spellId: spell.id, context: ctx, minLevel: spell.level, maxLevel: 9 });
+                  if (scalesWithSlot) {
+                    getEfficiency.mutate({ spellId: spell.id, context: ctx, minLevel: spell.level, maxLevel: 9 });
+                  }
                 }}
                 disabled={analyzeSpell.isPending || getEfficiency.isPending}
                 className="btn-primary text-sm disabled:opacity-50"
@@ -684,6 +720,7 @@ export function SpellDetailPage() {
                       {analyzeSpell.data.results.expected_damage.toFixed(2)}
                     </div>
                   </div>
+                  {scalesWithSlot && (
                   <div className="rounded-lg p-4 text-center"
                        style={{ background: 'linear-gradient(145deg, #0e0a18 0%, #120d22 100%)', border: '1px solid rgba(109,40,217,0.18)' }}>
                     <div className="font-display text-xs text-smoke-400 uppercase tracking-widest mb-1">Efficiency</div>
@@ -692,6 +729,7 @@ export function SpellDetailPage() {
                     </div>
                     <div className="font-body text-xs text-smoke-400">dmg / slot level</div>
                   </div>
+                  )}
                 </div>
 
                 {/* Math Breakdown + Upcast Efficiency side by side */}
@@ -932,7 +970,7 @@ export function SpellDetailPage() {
                       <AlertMessage variant="error" message="Could not load efficiency data for this spell." />
                     )}
 
-                    {getEfficiency.data && (
+                    {getEfficiency.data && scalesWithSlot && (
                       <div className="mt-6 xl:mt-0">
                         <EfficiencyChart
                           data={getEfficiency.data.efficiency_by_slot}

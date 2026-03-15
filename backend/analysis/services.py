@@ -336,6 +336,7 @@ class SpellAnalysisService:
                 }
             else:
                 breakdown = {}
+            expected = SpellAnalysisService._apply_char_level_breakpoints(spell, context, expected)
             return {
                 'spell_type': spell_type,
                 'average_damage': total_avg,
@@ -565,6 +566,7 @@ class SpellAnalysisService:
             crit_prob_final = math_crit_prob if math_crit_prob is not None else 0.0
             if getattr(context, 'resistance', False) and not bypass_resistance:
                 total_expected *= 0.5
+            total_expected = SpellAnalysisService._apply_char_level_breakpoints(spell, context, total_expected)
             return {
                 'spell_type': 'attack_roll',
                 'average_damage': total_average,
@@ -627,6 +629,7 @@ class SpellAnalysisService:
             fail_prob_final = math_fail_prob if math_fail_prob is not None else 0.0
             if getattr(context, 'resistance', False) and not bypass_resistance:
                 total_expected *= 0.5
+            total_expected = SpellAnalysisService._apply_char_level_breakpoints(spell, context, total_expected)
             return {
                 'spell_type': 'saving_throw',
                 'average_damage': total_average,
@@ -662,6 +665,7 @@ class SpellAnalysisService:
 
             if getattr(context, 'resistance', False) and not bypass_resistance:
                 total_expected *= 0.5
+            total_expected = SpellAnalysisService._apply_char_level_breakpoints(spell, context, total_expected)
             return {
                 'spell_type': 'auto_hit',
                 'average_damage': total_average * total_attacks,
@@ -681,6 +685,53 @@ class SpellAnalysisService:
             'efficiency': 0,
             'math_breakdown': {},
         }
+
+    @staticmethod
+    def _apply_char_level_breakpoints(spell: Any, context: Any, expected_damage: float) -> float:
+        """
+        Apply char_level_breakpoints bonus damage.
+
+        Looks up the highest threshold in spell.char_level_breakpoints that is <=
+        context.character_level and adds the resulting dice bonus (factoring in hit /
+        save-fail probability and resistance) to expected_damage.
+
+        Returns the updated expected_damage (unchanged if no breakpoints apply).
+        """
+        breakpoints: dict = getattr(spell, 'char_level_breakpoints', None) or {}
+        if not breakpoints:
+            return expected_damage
+
+        char_level = getattr(context, 'character_level', 1) or 1
+        applicable = [int(k) for k in breakpoints if int(k) <= char_level]
+        if not applicable:
+            return expected_damage
+
+        bp = breakpoints[str(max(applicable))]
+        die_count = int(bp.get('die_count', 1))
+        die_size = int(bp.get('die_size', 6))
+        flat = int(bp.get('flat', 0))
+        bonus_avg = DiceCalculator.average(die_count, die_size, flat)
+
+        if spell.is_attack_roll:
+            hit_p = AttackRollCalculator.hit_probability(
+                context.caster_attack_bonus, context.target_ac,
+                context.advantage, context.disadvantage,
+            )
+            bonus_expected = bonus_avg * hit_p * spell.number_of_attacks
+        elif spell.is_saving_throw:
+            fail_p = SavingThrowCalculator.save_failure_probability(
+                context.spell_save_dc, context.target_save_bonus,
+                context.advantage, context.disadvantage,
+            )
+            base_targets = getattr(context, 'number_of_targets', 1) or 1
+            bonus_expected = bonus_avg * fail_p * base_targets
+        else:
+            bonus_expected = bonus_avg
+
+        if getattr(context, 'resistance', False):
+            bonus_expected *= 0.5
+
+        return expected_damage + bonus_expected
 
     @staticmethod
     def compare_spells(spell_a, spell_b, context_a, context_b=None) -> dict[str, Any]:

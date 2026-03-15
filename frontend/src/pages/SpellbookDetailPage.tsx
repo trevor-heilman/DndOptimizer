@@ -45,6 +45,48 @@ const LEVEL_SECTION_NAME: Record<number, string> = {
   5: 'Level 5', 6: 'Level 6', 7: 'Level 7', 8: 'Level 8', 9: 'Level 9',
 };
 
+// ─── Hit/Miss Tracking ───────────────────────────────────────────────────────
+
+interface CombatRoll {
+  id: string;
+  spellName: string;
+  spellId: string;
+  attackBonus: number;
+  hit: boolean;
+  timestamp: number;
+}
+
+/**
+ * Bayesian AC inference from a series of attack roll outcomes.
+ * Prior: discrete uniform over AC 5–30.
+ * Likelihood per roll: P(hit | AC, B) = clamp(0.05, (21 - AC + B) / 20, 0.95)
+ */
+function inferAC(rolls: CombatRoll[]): { ac: number; ciLow: number; ciHigh: number; confidence: string; hits: number; total: number } | null {
+  if (!rolls.length) return null;
+  const acs = Array.from({ length: 26 }, (_, i) => i + 5); // AC 5..30
+  let post = acs.map(() => 1 / 26);
+  for (const r of rolls) {
+    const B = r.attackBonus;
+    post = post.map((p, i) => {
+      const h = Math.max(0.05, Math.min(0.95, (21 - acs[i] + B) / 20));
+      return p * (r.hit ? h : 1 - h);
+    });
+    const sum = post.reduce((a, b) => a + b, 0);
+    post = post.map(p => p / sum);
+  }
+  const mapIdx = post.indexOf(Math.max(...post));
+  let cum = 0;
+  let ciLow = acs[0];
+  let ciHigh = acs[acs.length - 1];
+  for (let i = 0; i < acs.length; i++) {
+    cum += post[i];
+    if (cum < 0.025) ciLow = acs[Math.min(i + 1, acs.length - 1)];
+    if (cum < 0.975) ciHigh = acs[i];
+  }
+  const confidence = rolls.length >= 10 ? 'High' : rolls.length >= 5 ? 'Medium' : 'Low';
+  return { ac: acs[mapIdx], ciLow, ciHigh, confidence, hits: rolls.filter(r => r.hit).length, total: rolls.length };
+}
+
 // ─── Sub-components ─────────────────────────────────────────────────────────
 
 interface SpellbookSpellCardProps {
@@ -58,10 +100,17 @@ interface SpellbookSpellCardProps {
   onCast?: () => void;
   /** Whether at least one slot of the spell's level is available to use. */
   hasSlotAvailable?: boolean;
+  /** Show the hit/miss prompt overlay on this card (only when this spell was just cast). */
+  pendingCast?: boolean;
+  /** Record a hit (true) or miss (false) outcome. */
+  onLogRoll?: (hit: boolean) => void;
+  /** Skip recording an outcome for this cast. */
+  onSkipRoll?: () => void;
 }
 
 function SpellbookSpellCard({
   ps, onTogglePrepared, onRemove, isUpdating, isEditMode, linkState, onCast, hasSlotAvailable,
+  pendingCast, onLogRoll, onSkipRoll,
 }: SpellbookSpellCardProps) {
   return (
     <div className={`relative flex flex-col transition-opacity ${!ps.prepared ? 'opacity-55 hover:opacity-80' : ''}`}>
@@ -102,6 +151,35 @@ function SpellbookSpellCard({
           {ps.prepared ? '★' : '☆'}
         </button>
       </div>
+      {/* Hit/miss prompt overlay — shown immediately after casting an attack-roll spell */}
+      {pendingCast && (
+        <div
+          className="absolute inset-0 flex flex-col items-center justify-center gap-2 rounded z-20"
+          style={{ background: 'rgba(10, 6, 25, 0.92)', backdropFilter: 'blur(2px)' }}
+        >
+          <p className="font-display text-xs text-parchment-300 select-none">Did it hit?</p>
+          <div className="flex gap-1.5">
+            <button
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); onLogRoll?.(true); }}
+              className="font-display text-xs px-2.5 py-1.5 rounded border border-green-700 bg-green-900/40 text-green-400 hover:bg-green-800/50 transition-colors"
+            >
+              🎯 Hit
+            </button>
+            <button
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); onLogRoll?.(false); }}
+              className="font-display text-xs px-2.5 py-1.5 rounded border border-crimson-800 bg-crimson-900/30 text-crimson-400 hover:bg-crimson-900/50 transition-colors"
+            >
+              💨 Miss
+            </button>
+            <button
+              onClick={(e) => { e.preventDefault(); e.stopPropagation(); onSkipRoll?.(); }}
+              className="font-display text-xs px-2.5 py-1.5 rounded border border-smoke-600 bg-smoke-800/40 text-smoke-400 hover:bg-smoke-700/50 transition-colors"
+            >
+              Skip
+            </button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
@@ -116,12 +194,16 @@ interface LevelSectionProps {
   updatingIds: Set<string>;
   isEditMode: boolean;
   linkState: object;
-  onCast?: (spellLevel: number) => void;
+  onCast?: (spellLevel: number, ps: PreparedSpell) => void;
   slotsAvailable?: number[];
+  pendingCastId?: string | null;
+  onLogRoll?: (hit: boolean) => void;
+  onSkipRoll?: () => void;
 }
 
 function LevelSection({
   level, preparedSpells, onTogglePrepared, onRemove, updatingIds, isEditMode, linkState, onCast, slotsAvailable,
+  pendingCastId, onLogRoll, onSkipRoll,
 }: LevelSectionProps) {
   const [open, setOpen] = useState(true);
   const preparedCount = preparedSpells.filter(ps => ps.prepared).length;
@@ -164,8 +246,11 @@ function LevelSection({
               isUpdating={updatingIds.has(ps.spell.id)}
               isEditMode={isEditMode}
               linkState={linkState}
-              onCast={onCast && ps.spell.level > 0 ? () => onCast(ps.spell.level) : undefined}
+              onCast={onCast && ps.spell.level > 0 ? () => onCast(ps.spell.level, ps) : undefined}
               hasSlotAvailable={ps.spell.level > 0 ? (slotsAvailable?.[ps.spell.level - 1] ?? 0) > 0 : undefined}
+              pendingCast={pendingCastId === ps.spell.id}
+              onLogRoll={onLogRoll}
+              onSkipRoll={onSkipRoll}
             />
           ))}
         </SpellCardGrid>
@@ -366,11 +451,24 @@ export function SpellbookDetailPage() {
     advantage: false,
     disadvantage: false,
     spell_slot_level: 1,
+    character_level: 1,
     crit_enabled: true,
     half_damage_on_save: true,
     evasion_enabled: false,
     spellcasting_ability_modifier: 3,
   });
+
+  // Hit/miss combat tracking
+  const combatLogKey = `combat-log-${id ?? 'sb'}`;
+  const [combatRolls, setCombatRolls] = useState<CombatRoll[]>(() => {
+    try { return JSON.parse(localStorage.getItem(`combat-log-${id ?? 'sb'}`) ?? '[]'); }
+    catch { return []; }
+  });
+  useEffect(() => {
+    localStorage.setItem(combatLogKey, JSON.stringify(combatRolls));
+  }, [combatRolls, combatLogKey]);
+  const [pendingCast, setPendingCast] = useState<{ spellId: string; spellName: string; attackBonus: number } | null>(null);
+  const [showCombatTracker, setShowCombatTracker] = useState(false);
 
   // Filter / sort
   const [searchFilter,       setSearchFilter]       = useState('');
@@ -404,6 +502,7 @@ export function SpellbookDetailPage() {
       caster_attack_bonus: linkedCharacter.spell_attack_bonus,
       spell_save_dc: linkedCharacter.spell_save_dc,
       spellcasting_ability_modifier: linkedCharacter.spellcasting_ability_modifier,
+      character_level: linkedCharacter.character_level,
     }));
   }, [linkedCharacter?.id]);
 
@@ -496,13 +595,17 @@ export function SpellbookDetailPage() {
     updateSlots.mutate(current);
   };
 
-  // Damage spells eligible for comparison
-  const damageSpells = useMemo(() => {
-    return preparedSpells.filter(
-      ps =>
-        ps.spell.damage_components &&
-        ps.spell.damage_components.length > 0
-    );
+  // Spells eligible for the Damage Comparison panel.
+  // Primary: spells tagged "damage" or "summoning" (the tags are the source of truth).
+  // Fallback: custom/untagged spells that have damage_components but no tags at all.
+  const compareSpells = useMemo(() => {
+    return preparedSpells.filter(ps => {
+      const spellTags = ps.spell.tags ?? [];
+      if (spellTags.includes('damage') || spellTags.includes('summoning')) return true;
+      // Fallback for older custom spells that predate the tagging system
+      if (!spellTags.length && ps.spell.damage_components && ps.spell.damage_components.length > 0) return true;
+      return false;
+    });
   }, [preparedSpells]);
 
   // ── Early returns ────────────────────────────────────────────────────────
@@ -595,7 +698,7 @@ export function SpellbookDetailPage() {
 
   const handleOpenDamageCompare = () => {
     // Default-check all damage spells when opening
-    setCheckedSpellIds(new Set(damageSpells.map(ps => ps.spell.id)));
+    setCheckedSpellIds(new Set(compareSpells.map(ps => ps.spell.id)));
     batchAnalyze.reset();
     setEfficiencyData({});
     setShowDamageCompare(true);
@@ -619,12 +722,13 @@ export function SpellbookDetailPage() {
   const handleRunByLevel = async () => {
     const ids = [...checkedSpellIds];
     if (ids.length === 0) return;
-    const spellMap = new Map(damageSpells.map(ps => [ps.spell.id, ps.spell]));
+    const spellMap = new Map(compareSpells.map(ps => [ps.spell.id, ps.spell]));
     const results: Record<string, {slot_level: number; expected_damage: number}[]> = {};
     await Promise.allSettled(ids.map(async id => {
       const sp = spellMap.get(id);
-      const minLevel = sp && sp.level === 0 ? 0 : Math.max(1, sp?.level ?? 1);
-      const maxLevel = sp && sp.level === 0 ? 3 : 9;
+      // Cantrips scale by character level (1–20); leveled spells use slot levels (spell.level–9).
+      const minLevel = sp && sp.level === 0 ? 1 : Math.max(1, sp?.level ?? 1);
+      const maxLevel = sp && sp.level === 0 ? 20 : 9;
       try {
         const resp = await import('../services/analysis').then(m =>
           m.default.getSpellEfficiency(id, damageContext, minLevel, maxLevel)
@@ -750,8 +854,25 @@ export function SpellbookDetailPage() {
             spell{preparedSpells.length !== 1 ? 's' : ''}
           </span>
           {totalPrepared > 0 && (
-            <span className="bg-gold-900/30 text-gold-400 border border-gold-800/50 px-2.5 py-0.5 rounded-full font-body text-xs">
-              ★ {totalPrepared} prepared
+            <span
+              className="border px-2.5 py-0.5 rounded-full font-body text-xs"
+              style={
+                linkedCharacter?.max_prepared_spells != null && totalPrepared > linkedCharacter.max_prepared_spells
+                  ? { background: 'rgba(239,68,68,0.15)', color: '#f87171', borderColor: 'rgba(239,68,68,0.4)' }
+                  : { background: 'rgba(161,128,58,0.2)',  color: '#cfaa55', borderColor: 'rgba(161,128,58,0.35)' }
+              }
+            >
+              ★{' '}
+              {linkedCharacter?.max_prepared_spells != null ? (
+                <>
+                  {totalPrepared}/{linkedCharacter.max_prepared_spells}
+                  {(linkedCharacter.prepared_spells_bonus ?? 0) > 0 && (
+                    <span className="opacity-60"> +{linkedCharacter.prepared_spells_bonus}</span>
+                  )}
+                </>
+              ) : (
+                <>{totalPrepared} prepared</>
+              )}
             </span>
           )}
         </div>
@@ -791,6 +912,85 @@ export function SpellbookDetailPage() {
           );
         })()}
       </div>
+
+      {/* ── Combat Tracker ───────────────────────────────────────────────── */}
+      {linkedCharacter && (
+        <div className="mt-4">
+          <button
+            onClick={() => setShowCombatTracker(v => !v)}
+            className="font-display text-sm flex items-center gap-2 text-parchment-400 hover:text-parchment-200 transition-colors"
+          >
+            <svg className={`w-3.5 h-3.5 transition-transform ${showCombatTracker ? 'rotate-90' : ''}`}
+                 fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+            </svg>
+            🎯 Combat Log
+            {combatRolls.length > 0 && (
+              <span className="font-body text-xs text-smoke-500">({combatRolls.length} rolls)</span>
+            )}
+          </button>
+
+          {showCombatTracker && (() => {
+            const acInfo = inferAC(combatRolls.filter(r => r.attackBonus === (damageContext.caster_attack_bonus ?? 5)));
+            return (
+              <div className="mt-2 rounded-lg p-3 space-y-2"
+                   style={{ background: 'rgba(15, 10, 30, 0.6)', border: '1px solid rgba(109,40,217,0.2)' }}>
+                {combatRolls.length === 0 ? (
+                  <p className="font-body text-xs text-smoke-500 py-1">
+                    No attack rolls logged yet. Cast an attack-roll spell to begin tracking.
+                  </p>
+                ) : (
+                  <>
+                    {/* Summary row */}
+                    <div className="flex flex-wrap gap-x-4 gap-y-1 font-body text-xs text-smoke-400">
+                      <span>
+                        <span className="text-parchment-300 font-bold">{acInfo ? acInfo.hits : 0}</span>/{combatRolls.length} hits
+                        {combatRolls.length > 0 && (
+                          <span className="text-smoke-600 ml-1">
+                            ({Math.round((combatRolls.filter(r => r.hit).length / combatRolls.length) * 100)}%)
+                          </span>
+                        )}
+                      </span>
+                      {acInfo && (
+                        <span>
+                          Est. enemy AC:&nbsp;
+                          <span className="text-gold-400 font-bold font-display">{acInfo.ac}</span>
+                          <span className="text-smoke-600 ml-1">
+                            [{acInfo.ciLow}–{acInfo.ciHigh}]
+                          </span>
+                          <span className={`ml-1 ${acInfo.confidence === 'High' ? 'text-green-500' : acInfo.confidence === 'Medium' ? 'text-gold-600' : 'text-smoke-600'}`}>
+                            ({acInfo.confidence} confidence)
+                          </span>
+                        </span>
+                      )}
+                    </div>
+
+                    {/* Last 5 rolls */}
+                    <div className="flex flex-wrap gap-1 pt-0.5">
+                      {[...combatRolls].reverse().slice(0, 8).map(r => (
+                        <span
+                          key={r.id}
+                          title={`${r.spellName} — ${r.hit ? 'Hit' : 'Miss'}`}
+                          className={`font-body text-[10px] px-1.5 py-0.5 rounded border ${r.hit ? 'border-green-800/60 bg-green-900/20 text-green-400' : 'border-crimson-900/60 bg-crimson-900/15 text-crimson-500'}`}
+                        >
+                          {r.hit ? '●' : '○'} {r.spellName.split(' ')[0]}
+                        </span>
+                      ))}
+                    </div>
+
+                    <button
+                      onClick={() => { if (window.confirm('Clear the combat log?')) setCombatRolls([]); }}
+                      className="font-display text-[10px] text-smoke-600 hover:text-crimson-400 transition-colors"
+                    >
+                      Clear Log
+                    </button>
+                  </>
+                )}
+              </div>
+            );
+          })()}
+        </div>
+      )}
 
       {/* ── Action bar ─────────────────────────────────────────────────── */}
       <div className="mb-4">
@@ -1012,8 +1212,31 @@ export function SpellbookDetailPage() {
                       atkBonus: linkedCharacter?.spell_attack_bonus,
                       spellcastingMod: linkedCharacter?.spellcasting_ability_modifier,
                     }}
-                    onCast={linkedCharacter ? handleCastSpell : undefined}
+                    onCast={linkedCharacter ? (spellLevel, ps) => {
+                      handleCastSpell(spellLevel);
+                      if (ps.spell.is_attack_roll) {
+                        setPendingCast({
+                          spellId: ps.spell.id,
+                          spellName: ps.spell.name,
+                          attackBonus: damageContext.caster_attack_bonus ?? 5,
+                        });
+                      }
+                    } : undefined}
                     slotsAvailable={linkedCharacter ? slotsAvailable : undefined}
+                    pendingCastId={pendingCast?.spellId}
+                    onLogRoll={(hit) => {
+                      if (!pendingCast) return;
+                      setCombatRolls(prev => [...prev, {
+                        id: crypto.randomUUID(),
+                        spellName: pendingCast.spellName,
+                        spellId: pendingCast.spellId,
+                        attackBonus: pendingCast.attackBonus,
+                        hit,
+                        timestamp: Date.now(),
+                      }]);
+                      setPendingCast(null);
+                    }}
+                    onSkipRoll={() => setPendingCast(null)}
                   />
                 ))}
               </>
@@ -1023,7 +1246,7 @@ export function SpellbookDetailPage() {
       )}
 
       {/* ── Damage Comparison ──────────────────────────────────────────── */}
-      {damageSpells.length > 0 && (
+      {compareSpells.length > 0 && (
         <div className="mt-8">
           <button
             onClick={() => showDamageCompare ? setShowDamageCompare(false) : handleOpenDamageCompare()}
@@ -1033,7 +1256,7 @@ export function SpellbookDetailPage() {
                  fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
             </svg>
-            ⚡ Compare Damage Spells ({damageSpells.length})
+            ⚡ Compare Damage Spells ({compareSpells.length})
           </button>
 
           {showDamageCompare && (
@@ -1044,7 +1267,7 @@ export function SpellbookDetailPage() {
 
               {/* Spell checklist */}
               <div className="mb-4 grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
-                {damageSpells.map(ps => (
+                {compareSpells.map(ps => (
                   <label
                     key={ps.spell.id}
                     className="flex items-center gap-2 cursor-pointer group"
@@ -1056,7 +1279,7 @@ export function SpellbookDetailPage() {
                       className="accent-gold-500 w-4 h-4"
                     />
                     <span className="font-body text-sm text-parchment-200 group-hover:text-parchment-100 transition-colors truncate">
-                      {ps.spell.name}
+                      {ps.spell.tags?.includes('summoning') ? '🔮 ' : ''}{ps.spell.name}
                       <span className="text-smoke-500 ml-1 text-xs">
                         {ps.spell.level === 0 ? '(Cantrip)' : `(Lvl ${ps.spell.level})`}
                       </span>
@@ -1067,7 +1290,7 @@ export function SpellbookDetailPage() {
 
               <div className="flex gap-2 mb-4 flex-wrap">
                 <button
-                  onClick={() => setCheckedSpellIds(new Set(damageSpells.map(ps => ps.spell.id)))}
+                  onClick={() => setCheckedSpellIds(new Set(compareSpells.map(ps => ps.spell.id)))}
                   className="font-display text-xs text-smoke-400 hover:text-smoke-200 transition-colors"
                 >
                   Select all
@@ -1083,7 +1306,11 @@ export function SpellbookDetailPage() {
 
               {/* Context form */}
               <div className="mb-4 border-t border-smoke-700 pt-4">
-                <AnalysisContextForm context={damageContext} onChange={setDamageContext} />
+                <AnalysisContextForm
+                  context={damageContext}
+                  onChange={setDamageContext}
+                  spells={compareSpells.filter(ps => checkedSpellIds.has(ps.spell.id)).map(ps => ps.spell)}
+                />
               </div>
 
               {/* Mode toggle */}
@@ -1126,10 +1353,12 @@ export function SpellbookDetailPage() {
 
                   {/* Bar chart */}
                   {batchAnalyze.data && (() => {
-                    const chartData = damageSpells
+                    const chartData = compareSpells
                       .filter(ps => batchAnalyze.data![ps.spell.id] !== undefined)
                       .map(ps => ({
+                        spellId: ps.spell.id,
                         name: ps.spell.name,
+                        isSummoning: batchAnalyze.data![ps.spell.id].results.spell_type === 'summon',
                         expectedDamage: Number(batchAnalyze.data![ps.spell.id].results.expected_damage.toFixed(2)),
                         efficiency:     Number(batchAnalyze.data![ps.spell.id].results.efficiency.toFixed(2)),
                       }))
@@ -1137,8 +1366,15 @@ export function SpellbookDetailPage() {
 
                     if (chartData.length === 0) return null;
 
+                    const hasSummoning = chartData.some(r => r.isSummoning);
+
                     return (
-                      <ChartCard title="Expected Damage by Spell" className="mt-2">
+                      <ChartCard title="Expected Damage / DPR by Spell" className="mt-2">
+                        {hasSummoning && (
+                          <p className="font-body text-xs text-smoke-500 italic mb-3">
+                            🔮 Summoning spells (teal) show best-template DPR at slot {damageContext.spell_slot_level}. Damage spells (gold/purple) show expected damage.
+                          </p>
+                        )}
                         <ResponsiveContainer width="100%" height={Math.max(220, chartData.length * 36)}>
                           <BarChart
                             data={chartData}
@@ -1158,28 +1394,98 @@ export function SpellbookDetailPage() {
                               contentStyle={{ background: '#1e1e2e', border: '1px solid #7c3aed', borderRadius: 8, color: '#c4a882' }}
                               formatter={(value, name) => [
                                 value ?? 0,
-                                name === 'expectedDamage' ? 'Expected Damage' : 'Efficiency',
+                                name === 'expectedDamage' ? 'Exp. Damage / DPR' : 'Efficiency',
                               ]}
                             />
-                            <Bar dataKey="expectedDamage" name="Expected Damage" radius={[0, 4, 4, 0]}>
-                              {chartData.map((_, i) => (
-                                <Cell key={i} fill={i === 0 ? '#d4af37' : '#7c3aed'} />
-                              ))}
+                            <Bar dataKey="expectedDamage" name="expectedDamage" radius={[0, 4, 4, 0]}>
+                              {chartData.map((row, i) => {
+                                if (row.isSummoning) return <Cell key={i} fill="#0891b2" />;
+                                const isTopDamage = chartData.slice(0, i).every(r => r.isSummoning);
+                                return <Cell key={i} fill={isTopDamage ? '#d4af37' : '#7c3aed'} />;
+                              })}
                             </Bar>
                           </BarChart>
                         </ResponsiveContainer>
+
                         {/* Efficiency table */}
                         <div className="mt-4 border-t border-smoke-700 pt-4">
-                          <p className="font-display text-xs uppercase tracking-widest text-smoke-500 mb-2">Efficiency (dmg / slot level)</p>
+                          <p className="font-display text-xs uppercase tracking-widest text-smoke-500 mb-2">Efficiency (dmg or DPR / slot level)</p>
                           <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                             {chartData.map(row => (
                               <div key={row.name} className="flex justify-between font-body text-sm bg-smoke-800 rounded px-3 py-1.5">
-                                <span className="text-parchment-300 truncate mr-2">{row.name}</span>
-                                <span className="text-gold-400 font-semibold shrink-0">{row.efficiency}</span>
+                                <span className="text-parchment-300 truncate mr-2">
+                                  {row.isSummoning ? '🔮 ' : ''}{row.name}
+                                </span>
+                                <span
+                                  className="font-semibold shrink-0"
+                                  style={{ color: row.isSummoning ? '#67e8f9' : '#cfaa55' }}
+                                >
+                                  {row.efficiency}
+                                </span>
                               </div>
                             ))}
                           </div>
                         </div>
+
+                        {/* Summoning template breakdown */}
+                        {hasSummoning && (() => {
+                          const summonRows = chartData.filter(r => r.isSummoning);
+                          return (
+                            <div className="mt-4 border-t border-smoke-700 pt-4">
+                              <p className="font-display text-xs uppercase tracking-widest text-smoke-500 mb-1">🔮 Summoning Template Breakdown</p>
+                              <p className="font-body text-xs text-smoke-500 italic mb-3">
+                                All templates available at slot {damageContext.spell_slot_level}, sorted by expected DPR. Highlighted = best template (bar chart value).
+                              </p>
+                              {summonRows.map(row => {
+                                const res = batchAnalyze.data![row.spellId];
+                                const templates = (res.results.math_breakdown.per_template ?? [])
+                                  .slice()
+                                  .sort((a, b) => b.expected_dpr - a.expected_dpr);
+                                const bestName = res.results.math_breakdown.best_template;
+                                if (templates.length === 0) return (
+                                  <p key={row.spellId} className="font-body text-xs text-smoke-500 italic">
+                                    {row.name}: No template data — add summon templates via Edit Spell.
+                                  </p>
+                                );
+                                return (
+                                  <div key={row.spellId} className="mb-4">
+                                    <p className="font-display text-sm font-semibold mb-2" style={{ color: '#67e8f9' }}>
+                                      🔮 {row.name}
+                                    </p>
+                                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                                      {templates.map(t => (
+                                        <div
+                                          key={t.name}
+                                          className="flex items-center justify-between rounded px-3 py-2"
+                                          style={{
+                                            background: t.name === bestName ? 'rgba(8,145,178,0.12)' : 'rgba(15,15,25,0.6)',
+                                            border: t.name === bestName ? '1px solid rgba(8,145,178,0.45)' : '1px solid rgba(45,53,85,0.6)',
+                                          }}
+                                        >
+                                          <div className="min-w-0 mr-2">
+                                            <span className="font-body text-sm text-parchment-200">{t.name}</span>
+                                            {t.name === bestName && (
+                                              <span className="font-display text-[10px] text-cyan-400 ml-1.5">★ best</span>
+                                            )}
+                                            <span className="font-body text-xs text-smoke-500 block">
+                                              {t.creature_type} · {t.num_attacks} atk{t.num_attacks !== 1 ? 's' : ''}/round
+                                            </span>
+                                          </div>
+                                          <div className="text-right shrink-0">
+                                            <span className="font-display text-base font-bold" style={{ color: '#67e8f9' }}>
+                                              {t.expected_dpr.toFixed(1)}
+                                            </span>
+                                            <span className="font-body text-[10px] text-smoke-500 block">exp DPR</span>
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                );
+                              })}
+                            </div>
+                          );
+                        })()}
                       </ChartCard>
                     );
                   })()}
@@ -1196,7 +1502,7 @@ export function SpellbookDetailPage() {
 
                   {/* By-level line chart */}
                   {Object.keys(efficiencyData).length > 0 && (() => {
-                    const spellMap = new Map(damageSpells.map(ps => [ps.spell.id, ps.spell]));
+                    const spellMap = new Map(compareSpells.map(ps => [ps.spell.id, ps.spell]));
                     // Collect all slot levels present across all spells
                     const allLevels = new Set<number>();
                     Object.values(efficiencyData).forEach(pts =>
@@ -1217,17 +1523,28 @@ export function SpellbookDetailPage() {
                       return row;
                     });
 
-                    const spellNames = [...checkedSpellIds]
-                      .map(id => spellMap.get(id)?.name)
-                      .filter(Boolean) as string[];
+                    const spellEntries = [...checkedSpellIds]
+                      .map(id => ({
+                        id,
+                        name: spellMap.get(id)?.name ?? '',
+                        isSummoning: spellMap.get(id)?.tags?.includes('summoning') ?? false,
+                      }))
+                      .filter(e => e.name);
+
+                    const hasSummonInByLevel = spellEntries.some(e => e.isSummoning);
 
                     const LINE_COLORS = [
-                      '#d4af37', '#7c3aed', '#06b6d4', '#22c55e', '#f97316',
+                      '#d4af37', '#7c3aed', '#f97316',
                       '#ec4899', '#a78bfa', '#34d399', '#fb923c', '#60a5fa',
                     ];
 
                     return (
-                      <ChartCard title="Expected Damage by Spell Level" className="mt-2">
+                      <ChartCard title="Expected Damage / DPR by Spell Level" className="mt-2">
+                        {hasSummonInByLevel && (
+                          <p className="font-body text-xs text-smoke-500 italic mb-3">
+                            🔮 Summoning spell lines (teal) show best-template DPR at each slot level.
+                          </p>
+                        )}
                         <ResponsiveContainer width="100%" height={300}>
                           <LineChart data={lineData} margin={{ top: 5, right: 20, left: 0, bottom: 5 }}>
                             <CartesianGrid strokeDasharray="3 3" stroke="#3a3a4a" />
@@ -1237,18 +1554,22 @@ export function SpellbookDetailPage() {
                               contentStyle={{ background: '#1e1e2e', border: '1px solid #7c3aed', borderRadius: 8, color: '#c4a882' }}
                             />
                             <Legend wrapperStyle={{ color: '#c4a882', fontSize: 12 }} />
-                            {spellNames.map((name, i) => (
-                              <Line
-                                key={name}
-                                type="monotone"
-                                dataKey={name}
-                                stroke={LINE_COLORS[i % LINE_COLORS.length]}
-                                strokeWidth={2}
-                                dot={{ r: 4 }}
-                                activeDot={{ r: 6 }}
-                                connectNulls
-                              />
-                            ))}
+                            {spellEntries.map((entry, i) => {
+                              const dmgIdx = spellEntries.slice(0, i).filter(e => !e.isSummoning).length;
+                              const color = entry.isSummoning ? '#0891b2' : LINE_COLORS[dmgIdx % LINE_COLORS.length];
+                              return (
+                                <Line
+                                  key={entry.name}
+                                  type="monotone"
+                                  dataKey={entry.name}
+                                  stroke={color}
+                                  strokeWidth={2}
+                                  dot={{ r: 4 }}
+                                  activeDot={{ r: 6 }}
+                                  connectNulls
+                                />
+                              );
+                            })}
                           </LineChart>
                         </ResponsiveContainer>
                       </ChartCard>

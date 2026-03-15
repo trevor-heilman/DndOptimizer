@@ -129,6 +129,11 @@ export interface Spell {
   classes?: string[];
   /** Gameplay tags, e.g. ["damage", "aoe", "ritual"] */
   tags?: string[];
+  /**
+   * Character-level scaling breakpoints. Keys are string thresholds (e.g. "5"),
+   * values are { die_count, die_size, flat? }. The highest applicable tier is used.
+   */
+  char_level_breakpoints?: Record<string, { die_count: number; die_size: number; flat?: number }>;
 }
 
 export interface SpellListParams {
@@ -179,6 +184,7 @@ export interface Character {
   attack_bonus_extra: number;
   spell_slots_used: number[];     // 9 elements
   school_copy_discounts: Record<string, number>;
+  prepared_spells_bonus: number;
   // computed
   spell_save_dc: number;
   spell_attack_bonus: number;
@@ -201,6 +207,7 @@ export interface CharacterCreate {
   attack_bonus_extra?: number;
   spell_slots_used?: number[];
   school_copy_discounts?: Record<string, number>;
+  prepared_spells_bonus?: number;
 }
 
 export interface CharacterUpdate extends Partial<CharacterCreate> {}

@@ -105,6 +105,21 @@ class Spell(models.Model):
         help_text='Gameplay category tags for filtering and analysis.'
     )
 
+    # Character-level scaling breakpoints (e.g. Green-Flame Blade, Booming Blade).
+    # Keys are character-level thresholds (strings); values are bonus dice totals at that tier.
+    # Example: {"5": {"die_count": 1, "die_size": 8}, "11": {"die_count": 2, "die_size": 8}}
+    # The engine picks the highest threshold <= context.character_level.
+    char_level_breakpoints = models.JSONField(
+        default=dict,
+        blank=True,
+        help_text=(
+            'Character-level scaling breakpoints for spells that add bonus damage at '
+            'certain character levels (e.g. GFB, Booming Blade). Keys are character-level '
+            'thresholds as strings; values are {"die_count": N, "die_size": N, "flat": N}. '
+            'The highest applicable threshold is used.'
+        ),
+    )
+
     # Flexible storage
     raw_data = models.JSONField(default=dict, blank=True)
 

@@ -134,8 +134,12 @@ class AnalysisViewSet(viewsets.ViewSet):
 
         efficiency_data = []
 
+        is_cantrip = spell.level == 0
         for slot_level in range(min_level, max_level + 1):
             context = AnalysisContext.from_data(data, slot_override=slot_level)
+            # For cantrips the loop iterates over character levels, not slot levels.
+            if is_cantrip:
+                context.character_level = slot_level
             results = SpellAnalysisService.analyze_spell(spell, context)
             efficiency_data.append({
                 'slot_level': slot_level,
