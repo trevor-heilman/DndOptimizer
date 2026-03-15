@@ -217,9 +217,35 @@ export const handlers = [
   http.delete(`${BASE}/spells/spells/:id/`, () => new HttpResponse(null, { status: 204 })),
 
   // Spellbooks
-  http.get(`${BASE}/spellbooks/spellbooks/`, () =>
+  http.get(`${BASE}/spellbooks/`, () =>
     HttpResponse.json({ count: 1, next: null, previous: null, results: [mockSpellbook] })
   ),
+  http.post(`${BASE}/spellbooks/`, async ({ request }) => {
+    const body = await request.json() as Record<string, unknown>;
+    return HttpResponse.json(
+      { ...mockSpellbook, id: 'sb-new', name: (body['name'] as string) ?? 'New Tome' },
+      { status: 201 },
+    );
+  }),
+  http.delete(`${BASE}/spellbooks/:id/`, () => new HttpResponse(null, { status: 204 })),
+
+  // Characters
+  http.get(`${BASE}/spellbooks/characters/`, () =>
+    HttpResponse.json({ count: 1, next: null, previous: null, results: [mockCharacter] })
+  ),
+  http.get(`${BASE}/spellbooks/characters/:id/`, ({ params }) =>
+    params.id === mockCharacter.id
+      ? HttpResponse.json(mockCharacter)
+      : HttpResponse.json({ detail: 'Not found.' }, { status: 404 })
+  ),
+  http.post(`${BASE}/spellbooks/characters/`, async ({ request }) => {
+    const body = await request.json() as Record<string, unknown>;
+    return HttpResponse.json(
+      { ...mockCharacter, id: 'char-new', name: (body['name'] as string) ?? 'New Hero' },
+      { status: 201 },
+    );
+  }),
+  http.delete(`${BASE}/spellbooks/characters/:id/`, () => new HttpResponse(null, { status: 204 })),
 
   // Analysis
   http.post(`${BASE}/analysis/analyze/`, () => HttpResponse.json(mockAnalysisResult)),

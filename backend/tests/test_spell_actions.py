@@ -340,3 +340,113 @@ class TestUserViewSetStaff:
         # Only own profile
         assert len(response.data['results']) == 1
         assert response.data['results'][0]['username'] == 'spelltester'
+
+
+# ── char_level_breakpoints round-trip ────────────────────────────────────────
+
+@pytest.mark.django_db
+class TestCharLevelBreakpointsRoundTrip:
+    """
+    Verify char_level_breakpoints survives the API create → read cycle,
+    and document export behaviour (breakpoints are NOT currently in the export schema).
+    """
+
+    BREAKPOINTS = [
+        {"min_char_level": 5, "dice_count": 2, "die_size": 8},
+        {"min_char_level": 11, "dice_count": 3, "die_size": 8},
+    ]
+
+    @pytest.fixture
+    def user(self, db):
+        return User.objects.create_user(
+            username='bpuser', email='bp@example.com', password='pass123'
+        )
+
+    @pytest.fixture
+    def client(self, user):
+        c = APIClient()
+        c.force_authenticate(user=user)
+        return c
+
+    def test_breakpoints_preserved_on_create_and_read(self, client):
+        """Create a spell with char_level_breakpoints via POST and read it back."""
+        payload = {
+            'name': 'Chill Touch',
+            'level': 0,
+            'school': 'necromancy',
+            'casting_time': '1 action',
+            'range': '120 feet',
+            'duration': 'Instantaneous',
+            'description': 'Cantrip that scales with character level.',
+            'char_level_breakpoints': self.BREAKPOINTS,
+        }
+        create_resp = client.post('/api/spells/spells/', payload, format='json')
+        assert create_resp.status_code == status.HTTP_201_CREATED
+        spell_id = Spell.objects.get(name='Chill Touch').id
+
+        read_resp = client.get(f'/api/spells/spells/{spell_id}/')
+        assert read_resp.status_code == status.HTTP_200_OK
+        assert read_resp.data['char_level_breakpoints'] == self.BREAKPOINTS
+
+    def test_breakpoints_updated_via_patch(self, client):
+        """PATCH on char_level_breakpoints replaces the stored value."""
+        create_resp = client.post('/api/spells/spells/', {
+            'name': 'Sacred Flame', 'level': 0, 'school': 'evocation',
+            'casting_time': '1 action', 'range': '60 feet',
+            'duration': 'Instantaneous', 'description': 'Radiant flame.',
+            'char_level_breakpoints': self.BREAKPOINTS,
+        }, format='json')
+        assert create_resp.status_code == status.HTTP_201_CREATED
+        spell_id = Spell.objects.get(name='Sacred Flame').id
+
+        new_breakpoints = [{'min_char_level': 5, 'dice_count': 2, 'die_size': 8}]
+        patch_resp = client.patch(
+            f'/api/spells/spells/{spell_id}/',
+            {'char_level_breakpoints': new_breakpoints},
+            format='json',
+        )
+        assert patch_resp.status_code == status.HTTP_200_OK
+        assert patch_resp.data['char_level_breakpoints'] == new_breakpoints
+
+    def test_export_does_not_include_breakpoints(self, client):
+        """
+        SpellExportSerializer does not include char_level_breakpoints.
+        This test documents the current export schema limitation — if breakpoints
+        are later added to SpellExportSerializer this test will need updating.
+        """
+        create_resp = client.post('/api/spells/spells/', {
+            'name': 'Fire Bolt', 'level': 0, 'school': 'evocation',
+            'casting_time': '1 action', 'range': '120 feet',
+            'duration': 'Instantaneous', 'description': 'Fire bolt cantrip.',
+            'char_level_breakpoints': self.BREAKPOINTS,
+        }, format='json')
+        assert create_resp.status_code == status.HTTP_201_CREATED
+        spell_id = Spell.objects.get(name='Fire Bolt').id
+
+        export_resp = client.get(f'/api/spells/spells/{spell_id}/export/')
+        assert export_resp.status_code == status.HTTP_200_OK
+        # Document current behaviour: breakpoints are not in the export payload
+        assert 'char_level_breakpoints' not in export_resp.data
+
+    def test_import_spell_with_breakpoints_in_payload(self, client):
+        """
+        Importing a spell JSON that contains char_level_breakpoints:
+        the spell is created successfully (unrecognised fields are ignored by the
+        parsing service), and the breakpoints field defaults to empty on the new object.
+        """
+        import_payload = {
+            'spells': [{
+                'name': 'Ray of Frost',
+                'level': 0,
+                'school': 'evocation',
+                'casting_time': '1 action',
+                'range': '60 feet',
+                'duration': 'Instantaneous',
+                'description': 'A frigid beam of blue-white light.',
+                'char_level_breakpoints': self.BREAKPOINTS,
+            }],
+        }
+        resp = client.post('/api/spells/spells/import_spells/', import_payload, format='json')
+        assert resp.status_code == status.HTTP_201_CREATED
+        assert resp.data['imported'] == 1
+        assert resp.data['failed'] == 0

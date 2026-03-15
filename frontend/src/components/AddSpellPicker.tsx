@@ -348,6 +348,7 @@ export function AddSpellPicker({ spellbookId, alreadyAddedIds, spellbookClass, o
           {/* Level pills — multi-select; "All" clears selection */}
           <div className="flex flex-wrap gap-1.5">
             <button
+              aria-label="All levels"
               onClick={() => setLevelFilter(new Set())}
               className={`font-display text-xs px-2.5 py-1 rounded border transition-colors ${
                 levelFilter.size === 0
@@ -406,6 +407,7 @@ export function AddSpellPicker({ spellbookId, alreadyAddedIds, spellbookClass, o
           {/* Tag filter pills — multi-select */}
           <div className="flex flex-wrap gap-1.5">
             <button
+              aria-label="All tags"
               onClick={() => setTagFilter([])}
               className={`font-display text-xs px-2.5 py-1 rounded border transition-colors ${
                 tagFilter.length === 0

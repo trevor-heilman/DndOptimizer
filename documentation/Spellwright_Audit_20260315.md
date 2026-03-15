@@ -10,7 +10,7 @@
 A D&D 5e spell optimization platform: browse the PHB 2014/XGtE/TCoE/PHB 2024 spell catalog, build character spellbooks, analyze expected DPR for any spell/slot/context combination, compare spells, track spell slots and combat performance, and visualize scaling and efficiency.
 
 **Stack:** Django 5 + DRF backend · React 18 + TypeScript + Vite frontend · PostgreSQL 16 · Redis 7 · Podman containers  
-**Latest commit:** (post-commit `18f9729`) — Priority 1 test build-out  
+**Latest commit:** `23f450c` — Priority 1 test build-out  
 **Previous feature commit:** `e4e642e` — char-level breakpoints UI, summoning compare panel, efficiency guard
 
 ---
@@ -197,14 +197,14 @@ A D&D 5e spell optimization platform: browse the PHB 2014/XGtE/TCoE/PHB 2024 spe
 
 | ID | Type | Target | What to test | Effort | Status |
 |:--:|------|--------|-------------|--------|--------|
-| B4 | Backend | `test_models.py` (extend) | `DamageComponent` edge: 0 dice, negative flat, invalid timing | Small | ⏳ Not started |
-| B5 | Backend | `test_spell_actions.py` (extend) | `char_level_breakpoints` round-trip: create → export → import → compare fields | Small | ⏳ Not started |
-| F5 | Frontend unit | `AddSpellPicker.test.tsx` | Search, multi-select, source filter, submit | Medium | ⏳ Not started |
-| F6 | Frontend unit | `CreateCharacterModal.test.tsx` | Class, level, ruleset, prepared bonus, submit | Small | ⏳ Not started |
-| F7 | Frontend unit | `useSpellbooks.test.tsx` | Create/update/delete hook state, error | Small | ⏳ Not started |
-| F8 | Frontend unit | `useCharacters.test.tsx` | Hook state + error handling | Small | ⏳ Not started |
-| F9 | Frontend unit | `SpellsPage.test.tsx` (expand) | Search filter, pagination, efficiency sort, "not in spellbook" filter | Medium | ⚠️ File exists, ~8 minimal tests |
-| F10 | Frontend unit | `SpellCard.test.tsx` (extend) | Source badge, class pills, all timing labels | Small | ⚠️ File exists, 11 solid tests already |
+| B4 | Backend | `test_models.py` (extend) | `DamageComponent` edge: 0 dice, negative flat, invalid timing | Small | ✅ Done — +8 edge-case tests |
+| B5 | Backend | `test_spell_actions.py` (extend) | `char_level_breakpoints` round-trip: create → export → import → compare fields | Small | ✅ Done — +4 round-trip tests |
+| F5 | Frontend unit | `AddSpellPicker.test.tsx` | Search, multi-select, source filter, submit | Medium | ✅ Done — 17 tests; added aria-labels for level/tag "All" pills |
+| F6 | Frontend unit | `CreateCharacterModal.test.tsx` | Class, level, ruleset, prepared bonus, submit | Small | ✅ Done — 18 tests; added id/htmlFor for accessibility |
+| F7 | Frontend unit | `useSpellbooks.test.tsx` | Create/update/delete hook state, error | Small | ✅ Done — 7 tests; fixed MSW handler URL `/api/spellbooks/` |
+| F8 | Frontend unit | `useCharacters.test.tsx` | Hook state + error handling | Small | ✅ Done — 9 tests |
+| F9 | Frontend unit | `SpellsPage.test.tsx` (expand) | Search filter, pagination, efficiency sort, "not in spellbook" filter | Medium | ✅ Done — 18 tests |
+| F10 | Frontend unit | `SpellCard.test.tsx` (extend) | Source badge, class pills, all timing labels | Small | ✅ Done — 27 tests |
 | E3 | E2E | `spell-import.spec.ts` | Import JSON file → verify spells appear + counts update | Medium | ⏳ Not started |
 | E4 | E2E | `spell-detail-analysis.spec.ts` | Open spell detail → run Analyze → verify expected damage result | Medium | ⏳ Not started |
 
@@ -248,8 +248,8 @@ Phase 4 — Polish + CI
 **Notes on current phase status:**
 - **Priority 1 complete** — all 9 items (B1/B2/B3/F1/F2/F3/F4/E1/E2) ✅ done; 337 backend tests, 226 frontend unit tests, ~40 E2E tests
 - B6 (management commands) was ✅ complete before this session — 43 tests already written
-- Next up: Phase 3 (Priority 2) — B4/B5/F5/F6/F7/F8/F9/F10/E3/E4
-- F1/F2/F3/F9 file skeletons exist — need expansion from minimal to meaningful coverage
+- **Priority 2 complete** — all 8 items (B4/B5/F5/F6/F7/F8/F9/F10) ✅ done; **349 backend tests, 295 frontend unit tests** as of this session
+- Next up: Phase 4 (Priority 2 E-items + Priority 3) — E3/E4/B7/F11/F12/F13/E5/E6/E7
 
 ---
 
@@ -257,8 +257,8 @@ Phase 4 — Polish + CI
 
 | Area | Current | Target |
 |------|---------|--------|
-| Backend | 283 tests · ~92% | 350+ tests · 95%+ |
-| Frontend unit | 226 tests · ~85% (estimated) | 200+ tests · 85%+ |
+| Backend | 349 tests · ~92% | 350+ tests · 95%+ |
+| Frontend unit | 295 tests · ~85% (estimated) | 300+ tests · 85%+ |
 | E2E | 5 specs · ~22 tests | 12 specs · 50+ tests |
 | CI pipeline | Backend CI only; no E2E job | E2E job in GitHub Actions |
 

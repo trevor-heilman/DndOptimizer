@@ -208,6 +208,112 @@ class TestDamageComponentModel:
 
         assert spell.damage_components.count() == 2
 
+    def test_zero_dice_count_flat_only_damage(self):
+        """dice_count=0 is a valid flat-only component (e.g. Savage Attacker 0d0+5)."""
+        spell = Spell.objects.create(
+            name='Flat Damage Spell', level=1, school='abjuration',
+            casting_time='1 action', range='Touch', duration='Instantaneous',
+            description='Pure flat damage.'
+        )
+        dc = DamageComponent.objects.create(
+            spell=spell, dice_count=0, die_size=0, flat_modifier=5,
+            damage_type='force', timing='on_hit',
+        )
+        assert dc.dice_count == 0
+        assert dc.flat_modifier == 5
+
+    def test_negative_flat_modifier(self):
+        """A negative flat_modifier is stored and retrieved correctly."""
+        spell = Spell.objects.create(
+            name='Penalised Spell', level=1, school='necromancy',
+            casting_time='1 action', range='60 feet', duration='Instantaneous',
+            description='Reduced damage.'
+        )
+        dc = DamageComponent.objects.create(
+            spell=spell, dice_count=2, die_size=8, flat_modifier=-3,
+            damage_type='necrotic', timing='on_fail',
+        )
+        assert dc.flat_modifier == -3
+
+    def test_all_timing_choices_are_storable(self):
+        """Every TIMING_CHOICES value can be persisted without validation error."""
+        spell = Spell.objects.create(
+            name='Multi-timing Spell', level=3, school='evocation',
+            casting_time='1 action', range='30 feet', duration='1 minute',
+            description='Complex spell.'
+        )
+        valid_timings = ['on_hit', 'on_fail', 'on_success', 'end_of_turn', 'per_round', 'delayed']
+        for timing in valid_timings:
+            dc = DamageComponent.objects.create(
+                spell=spell, dice_count=1, die_size=6, damage_type='fire', timing=timing,
+            )
+            assert dc.timing == timing
+
+    def test_on_crit_extra_false(self):
+        """on_crit_extra can be explicitly set to False (e.g. DoT component)."""
+        spell = Spell.objects.create(
+            name='DoT Spell', level=2, school='necromancy',
+            casting_time='1 action', range='60 feet', duration='Instantaneous',
+            description='Damage over time spell.'
+        )
+        dc = DamageComponent.objects.create(
+            spell=spell, dice_count=2, die_size=6, damage_type='necrotic',
+            timing='per_round', on_crit_extra=False,
+        )
+        assert dc.on_crit_extra is False
+
+    def test_condition_label_stored_and_retrieved(self):
+        """condition_label (informational only) is stored and returned correctly."""
+        spell = Spell.objects.create(
+            name='Condition Spell', level=1, school='enchantment',
+            casting_time='1 action', range='30 feet', duration='Instantaneous',
+            description='Conditional damage.'
+        )
+        dc = DamageComponent.objects.create(
+            spell=spell, dice_count=1, die_size=6, damage_type='psychic',
+            timing='on_hit', condition_label='target is frightened',
+        )
+        assert dc.condition_label == 'target is frightened'
+
+    def test_condition_label_null_by_default(self):
+        """condition_label is None when not set."""
+        spell = Spell.objects.create(
+            name='Plain Spell', level=1, school='evocation',
+            casting_time='1 action', range='60 feet', duration='Instantaneous',
+            description='Plain damage.'
+        )
+        dc = DamageComponent.objects.create(
+            spell=spell, dice_count=2, die_size=4, damage_type='fire', timing='on_hit',
+        )
+        assert dc.condition_label is None
+
+    def test_per_component_upcast_increment_override(self):
+        """upcast_dice_increment on DamageComponent overrides the spell-level increment."""
+        spell = Spell.objects.create(
+            name='Upcast Spell', level=2, school='evocation',
+            casting_time='1 action', range='60 feet', duration='Instantaneous',
+            description='Scales differently per component.',
+            upcast_dice_increment=1,
+        )
+        dc = DamageComponent.objects.create(
+            spell=spell, dice_count=2, die_size=6, damage_type='fire',
+            timing='on_hit', upcast_dice_increment=2,
+        )
+        assert dc.upcast_dice_increment == 2
+
+    def test_damage_component_str(self):
+        """__str__ returns a human-readable summary."""
+        spell = Spell.objects.create(
+            name='Fireball', level=3, school='evocation',
+            casting_time='1 action', range='150 feet', duration='Instantaneous',
+            description='Fire explosion.'
+        )
+        dc = DamageComponent.objects.create(
+            spell=spell, dice_count=8, die_size=6, damage_type='fire', timing='on_fail',
+        )
+        assert '8d6' in str(dc)
+        assert 'fire' in str(dc)
+
 
 @pytest.mark.django_db
 class TestSpellParsingMetadata:

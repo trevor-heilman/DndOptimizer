@@ -174,10 +174,11 @@ export function CreateCharacterModal({ isOpen, onClose, onSave, existing }: Prop
         {/* Class + Level */}
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <label className="block text-sm font-display font-medium text-parchment-300 mb-1.5">
+            <label htmlFor="char-class" className="block text-sm font-display font-medium text-parchment-300 mb-1.5">
               Class
             </label>
             <select
+              id="char-class"
               value={cls}
               onChange={(e) => { setCls(e.target.value); setSubclass(''); }}
               className="dnd-input font-body"
@@ -190,10 +191,11 @@ export function CreateCharacterModal({ isOpen, onClose, onSave, existing }: Prop
             </select>
           </div>
           <div>
-            <label className="block text-sm font-display font-medium text-parchment-300 mb-1.5">
+            <label htmlFor="char-level" className="block text-sm font-display font-medium text-parchment-300 mb-1.5">
               Level <span className="text-smoke-500 font-normal">(1–20)</span>
             </label>
             <input
+              id="char-level"
               type="number"
               value={level}
               onChange={(e) => setLevel(e.target.value)}
@@ -207,11 +209,12 @@ export function CreateCharacterModal({ isOpen, onClose, onSave, existing }: Prop
         {/* Wizard subclass */}
         {isWizard && (
           <div>
-            <label className="block text-sm font-display font-medium text-parchment-300 mb-1.5">
+            <label htmlFor="char-subclass" className="block text-sm font-display font-medium text-parchment-300 mb-1.5">
               Wizard Subclass
               <span className="text-smoke-500 font-normal text-xs ml-2">affects spellbook copy cost</span>
             </label>
             <select
+              id="char-subclass"
               value={subclass}
               onChange={(e) => setSubclass(e.target.value)}
               className="dnd-input font-body"
