@@ -17,6 +17,18 @@ _HOURS_PER_LEVEL = 2   # hours per spell level
 # Order of Scribes reduces all copy costs by 50%
 _SCRIBES_DISCOUNT = 0.50
 
+# School-specialist subclasses get 50% off spells of their school
+_SCHOOL_SUBCLASS_MAP: dict[str, str] = {
+    'school_of_abjuration':    'abjuration',
+    'school_of_conjuration':   'conjuration',
+    'school_of_divination':    'divination',
+    'school_of_enchantment':   'enchantment',
+    'school_of_evocation':     'evocation',
+    'school_of_illusion':      'illusion',
+    'school_of_necromancy':    'necromancy',
+    'school_of_transmutation': 'transmutation',
+}
+
 
 @dataclass
 class SpellCopyEntry:
@@ -71,6 +83,8 @@ def calculate_copy_cost(
                 k: max(0, min(100, int(v)))
                 for k, v in character.school_copy_discounts.items()
             }
+        if character.subclass in _SCHOOL_SUBCLASS_MAP:
+            school_discounts.setdefault(_SCHOOL_SUBCLASS_MAP[character.subclass], 50)
 
     for ps in spellbook.prepared_spells.select_related('spell').all():
         spell = ps.spell

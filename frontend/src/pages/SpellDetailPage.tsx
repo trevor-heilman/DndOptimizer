@@ -23,6 +23,7 @@ export function SpellDetailPage() {
     spellbookName?: string;
     saveDC?: number;
     atkBonus?: number;
+    spellcastingMod?: number;
   } | null;
   const { data: spell, isLoading, error } = useSpell(id!);
   const { user } = useAuth();
@@ -50,6 +51,7 @@ export function SpellDetailPage() {
     target_ac: 15,
     caster_attack_bonus: fromSpellbook?.atkBonus ?? 5,
     spell_save_dc: fromSpellbook?.saveDC ?? 15,
+    spellcasting_ability_modifier: fromSpellbook?.spellcastingMod ?? 3,
     target_save_bonus: 0,
     number_of_targets: 1,
     advantage: false,
@@ -289,6 +291,11 @@ export function SpellDetailPage() {
                   <span className={`ml-1 ${isDelayedTiming(dc.timing) ? 'text-amber-500' : 'text-smoke-500'}`}>
                     · {TIMING_LABEL[dc.timing] ?? dc.timing.replace(/_/g, ' ')}
                   </span>
+                  {dc.condition_label && (
+                    <span className="ml-1 text-blue-400/80" title={dc.condition_label}>
+                      · {dc.condition_label}
+                    </span>
+                  )}
                 </span>
               ))}
               {spell.level === 0 && (
@@ -400,6 +407,24 @@ export function SpellDetailPage() {
             <div className="font-body text-base font-semibold text-gold-300">{value}</div>
           </div>
         ))}
+        {/* Components card */}
+        {(spell.components_v || spell.components_s || spell.components_m) && (() => {
+          const parts = [
+            spell.components_v && 'V',
+            spell.components_s && 'S',
+            spell.components_m && 'M',
+          ].filter(Boolean).join(', ');
+          const label = spell.components_m && spell.material
+            ? `${parts} (${spell.material})`
+            : parts;
+          return (
+            <div className="rounded-lg px-5 py-3 flex items-center justify-between"
+              style={{ background: 'linear-gradient(145deg, #0e0a18 0%, #120d22 100%)', border: '1px solid rgba(109,40,217,0.18)', borderTop: '2px solid rgba(109,40,217,0.4)' }}>
+              <div className="font-display text-[10px] text-gold-400 uppercase tracking-widest">🧪 Components</div>
+              <div className="font-body text-base font-semibold text-gold-300">{label}</div>
+            </div>
+          );
+        })()}
       </div>
 
       {/* Damage Distribution */}
@@ -414,6 +439,7 @@ export function SpellDetailPage() {
             critType={analysisContext.crit_type}
             resistance={analysisContext.resistance}
             elementalAdeptType={analysisContext.elemental_adept_type ?? null}
+            showCrit={spell.is_attack_roll === true}
           />
         </div>
       )}

@@ -423,6 +423,61 @@ class TestSpellAnalysisService:
         result = SpellAnalysisService.analyze_spell(spell, context)
         assert result['upcast_bonus_dice'] == 0
 
+    def test_analyze_spell_upcast_scale_step(self):
+        """Every-other-level scaling (step=2): +1d6 per 2 levels above base (Hex-style)."""
+        from analysis.models import AnalysisContext
+        spell = Spell.objects.create(
+            name='Hex Scale Step Test',
+            level=1,
+            school='enchantment',
+            casting_time='1 bonus action',
+            range='90 feet',
+            duration='Concentration, up to 1 hour',
+            description='Hex damage',
+            is_attack_roll=False,
+            is_saving_throw=False,
+            is_auto_hit=True,
+            upcast_base_level=3,
+            upcast_dice_increment=1,
+            upcast_die_size=6,
+            upcast_scale_step=2,
+        )
+        DamageComponent.objects.create(
+            spell=spell, dice_count=1, die_size=6, damage_type='necrotic', timing='on_hit'
+        )
+
+        from analysis.models import AnalysisContext
+        # Cast at level 3 (base) → 0 extra dice
+        ctx3 = AnalysisContext(
+            target_ac=14, caster_attack_bonus=5, spell_save_dc=13,
+            target_save_bonus=0, number_of_targets=1, spell_slot_level=3,
+        )
+        # Cast at level 4 (3 base + 1 level above, step=2 → 1//2=0) → still 0 extra
+        ctx4 = AnalysisContext(
+            target_ac=14, caster_attack_bonus=5, spell_save_dc=13,
+            target_save_bonus=0, number_of_targets=1, spell_slot_level=4,
+        )
+        # Cast at level 5 (3 base + 2 levels above, step=2 → 2//2=1) → +1d6
+        ctx5 = AnalysisContext(
+            target_ac=14, caster_attack_bonus=5, spell_save_dc=13,
+            target_save_bonus=0, number_of_targets=1, spell_slot_level=5,
+        )
+        # Cast at level 7 (3 base + 4 levels above, step=2 → 4//2=2) → +2d6
+        ctx7 = AnalysisContext(
+            target_ac=14, caster_attack_bonus=5, spell_save_dc=13,
+            target_save_bonus=0, number_of_targets=1, spell_slot_level=7,
+        )
+
+        r3 = SpellAnalysisService._upcast_extra_dice(spell, 3)
+        r4 = SpellAnalysisService._upcast_extra_dice(spell, 4)
+        r5 = SpellAnalysisService._upcast_extra_dice(spell, 5)
+        r7 = SpellAnalysisService._upcast_extra_dice(spell, 7)
+
+        assert r3 == 0, f"Expected 0 at level 3, got {r3}"
+        assert r4 == 0, f"Expected 0 at level 4 (step=2 not met), got {r4}"
+        assert r5 == 1, f"Expected 1 at level 5, got {r5}"
+        assert r7 == 2, f"Expected 2 at level 7, got {r7}"
+
     def test_compare_spells(self):
         """Test comparing two spells."""
         spell_a = Spell.objects.create(

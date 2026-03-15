@@ -3,6 +3,7 @@
  */
 import { useSearchParams } from 'react-router-dom';
 import { useSpells, useSpellSources } from '../hooks/useSpells';
+import { useSpellbooks } from '../hooks/useSpellbooks';
 import { SpellCard, SpellCardGrid } from '../components/SpellCard';
 import { ImportSpellsModal } from '../components/ImportSpellsModal';
 import { CreateSpellModal } from '../components/CreateSpellModal';
@@ -36,6 +37,8 @@ export function SpellsPage() {
   const has_v = searchParams.get('has_v') === 'true' ? true : undefined;
   const has_s = searchParams.get('has_s') === 'true' ? true : undefined;
   const has_m = searchParams.get('has_m') === 'true' ? true : undefined;
+  const ordering = searchParams.get('ordering') || 'level';
+  const not_in_spellbook = searchParams.get('not_in_spellbook') || undefined;
 
   function updateParams(updates: Record<string, string | string[] | undefined>) {
     setSearchParams((prev) => {
@@ -61,6 +64,7 @@ export function SpellsPage() {
   }
 
   const { data: sourcesData } = useSpellSources();
+  const { data: spellbooksData } = useSpellbooks();
 
   const { data, isLoading, error } = useSpells({
     level: levels.length > 0 ? levels : undefined,
@@ -78,6 +82,8 @@ export function SpellsPage() {
     has_v,
     has_s,
     has_m,
+    ordering: ordering !== 'level' ? ordering : undefined,
+    not_in_spellbook,
   });
 
   const handleSearchSubmit = (e: React.FormEvent) => {
@@ -226,6 +232,43 @@ export function SpellsPage() {
                   onChange={(vals) => updateParams({ source: vals.length > 0 ? vals : undefined, page: undefined })}
                 />
               </div>
+
+              <div>
+                <label htmlFor="ordering" className="block text-xs font-display font-medium text-parchment-300 mb-1">
+                  Sort By
+                </label>
+                <select
+                  id="ordering"
+                  value={ordering}
+                  onChange={(e) => updateParams({ ordering: e.target.value !== 'level' ? e.target.value : undefined, page: undefined })}
+                  className="dnd-input font-body text-sm py-1.5 w-full"
+                >
+                  <option value="level">Level (Low → High)</option>
+                  <option value="-level">Level (High → Low)</option>
+                  <option value="name">Name (A → Z)</option>
+                  <option value="-name">Name (Z → A)</option>
+                </select>
+              </div>
+
+              {/* Not in spellbook filter */}
+              {spellbooksData && spellbooksData.results.length > 0 && (
+                <div>
+                  <label htmlFor="not_in_spellbook" className="block text-xs font-display font-medium text-parchment-300 mb-1">
+                    Not in Spellbook
+                  </label>
+                  <select
+                    id="not_in_spellbook"
+                    value={not_in_spellbook ?? ''}
+                    onChange={(e) => updateParams({ not_in_spellbook: e.target.value || undefined, page: undefined })}
+                    className="dnd-input font-body text-sm py-1.5 w-full"
+                  >
+                    <option value="">— All Spells —</option>
+                    {spellbooksData.results.map((sb) => (
+                      <option key={sb.id} value={sb.id}>{sb.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
 
               {/* Boolean filters */}
               <div>

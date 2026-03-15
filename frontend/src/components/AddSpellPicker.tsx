@@ -11,7 +11,7 @@
  *  - Multiple spells can be added without closing the modal
  */
 import { useState, useMemo } from 'react';
-import { useSpells } from '../hooks/useSpells';
+import { useSpells, useSpellSources } from '../hooks/useSpells';
 import { useAddSpellToSpellbook } from '../hooks/useSpellbooks';
 import { getSchoolColors, DAMAGE_TYPES } from '../constants/spellColors';
 import { MultiSelect } from './MultiSelect';
@@ -241,11 +241,13 @@ export function AddSpellPicker({ spellbookId, alreadyAddedIds, spellbookClass, o
   const [damageTypeFilter, setDamageTypeFilter] = useState<string[]>([]);
   const [concentrationOnly, setConcentrationOnly] = useState(false);
   const [componentFilter, setComponentFilter] = useState({ v: false, s: false, m: false });
+  const [sourceFilter, setSourceFilter] = useState<string[]>([]);
   const [addingIds, setAddingIds] = useState<Set<string>>(new Set());
   // Track adds locally so buttons flip to "Added" without closing
   const [localAddedIds, setLocalAddedIds] = useState<Set<string>>(new Set(alreadyAddedIds));
 
   const { data: spellsResponse, isLoading } = useSpells({ page: 1, page_size: 1000 });
+  const { data: sourcesData } = useSpellSources();
   const addSpell = useAddSpellToSpellbook(spellbookId);
 
   const allSpells = spellsResponse?.results ?? [];
@@ -266,10 +268,11 @@ export function AddSpellPicker({ spellbookId, alreadyAddedIds, spellbookClass, o
       if (componentFilter.v && !spell.components_v) return false;
       if (componentFilter.s && !spell.components_s) return false;
       if (componentFilter.m && !spell.components_m) return false;
+      if (sourceFilter.length > 0 && !sourceFilter.includes(spell.source ?? '')) return false;
       if (q && !spell.name.toLowerCase().includes(q)) return false;
       return true;
     });
-  }, [allSpells, levelFilter, schoolFilter, classFilter, tagFilter, damageTypeFilter, concentrationOnly, componentFilter, search]);
+  }, [allSpells, levelFilter, schoolFilter, classFilter, tagFilter, damageTypeFilter, concentrationOnly, componentFilter, sourceFilter, search]);
 
   const grouped = useMemo(() => {
     const map = new Map<number, Spell[]>();
@@ -375,7 +378,7 @@ export function AddSpellPicker({ spellbookId, alreadyAddedIds, spellbookClass, o
             ))}
           </div>
 
-          {/* Row: school + class multi-select filters */}
+          {/* Row: school + class + source multi-select filters */}
           <div className="flex gap-2 flex-wrap">
             <MultiSelect
               placeholder="All Schools"
@@ -389,6 +392,13 @@ export function AddSpellPicker({ spellbookId, alreadyAddedIds, spellbookClass, o
               options={CLASS_OPTIONS}
               value={classFilter}
               onChange={setClassFilter}
+              className="flex-1 min-w-[120px]"
+            />
+            <MultiSelect
+              placeholder="All Sources"
+              options={(sourcesData ?? []).map(s => ({ value: s, label: s }))}
+              value={sourceFilter}
+              onChange={setSourceFilter}
               className="flex-1 min-w-[120px]"
             />
           </div>
@@ -471,7 +481,7 @@ export function AddSpellPicker({ spellbookId, alreadyAddedIds, spellbookClass, o
             </div>
           ) : grouped.length === 0 ? (
             <p className="font-body text-smoke-400 text-center py-12">
-              {search || levelFilter.size > 0 || schoolFilter.length > 0 || classFilter.length > 0 || tagFilter.length > 0 || damageTypeFilter.length > 0 || concentrationOnly || componentFilter.v || componentFilter.s || componentFilter.m
+              {search || levelFilter.size > 0 || schoolFilter.length > 0 || classFilter.length > 0 || tagFilter.length > 0 || damageTypeFilter.length > 0 || sourceFilter.length > 0 || concentrationOnly || componentFilter.v || componentFilter.s || componentFilter.m
                 ? 'No spells match your filters.'
                 : 'No spells available to add.'}
             </p>

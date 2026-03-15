@@ -70,6 +70,14 @@ class Spell(models.Model):
         null=True, blank=True,
         help_text='Additional attack rolls per slot level above upcast_base_level (e.g. Scorching Ray +1 ray/slot).'
     )
+    upcast_scale_step = models.IntegerField(
+        null=True, blank=True,
+        help_text=(
+            'Number of slot levels required to gain one increment of upcast dice/attacks. '
+            'Defaults to 1 (every level). Set to 2 for spells that scale every other level '
+            '(e.g. Hex +1d6 per 2 levels, Shatter +1d8 per 2 levels).'
+        ),
+    )
 
     # Spell components
     components_v = models.BooleanField(default=False, help_text='Verbal component required.')
@@ -148,6 +156,17 @@ class DamageComponent(models.Model):
     damage_type = models.CharField(max_length=50)
 
     timing = models.CharField(max_length=20, choices=TIMING_CHOICES, default='on_hit')
+    condition_label = models.CharField(
+        max_length=100,
+        null=True,
+        blank=True,
+        help_text=(
+            'Optional free-text condition that must be met for this damage to apply '
+            '(e.g. "target is grappled", "after shoving prone"). '
+            'Informational/display only — the analysis engine treats this component as '
+            'included by default but it can be toggled off by the user.'
+        ),
+    )
     on_crit_extra = models.BooleanField(default=True)
     scales_with_slot = models.BooleanField(default=False)
     upcast_dice_increment = models.IntegerField(
@@ -157,6 +176,17 @@ class DamageComponent(models.Model):
             'extra dice per slot level above the spell\'s upcast_base_level, instead of using '
             'the spell-level upcast_dice_increment.'
         ),
+    )
+    upcast_scale_step = models.IntegerField(
+        null=True, blank=True,
+        help_text=(
+            'Per-component override for the slot-level step size. '
+            'When set, overrides the spell-level upcast_scale_step for this component only.'
+        ),
+    )
+    uses_spellcasting_modifier = models.BooleanField(
+        default=False,
+        help_text='When True, the caster\'s spellcasting ability modifier is added to this component\'s damage (e.g. Cure Wounds 1d8 + mod).'
     )
     is_verified = models.BooleanField(default=False)
 

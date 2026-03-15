@@ -48,6 +48,12 @@ class AnalysisContext(models.Model):
     evasion_enabled = models.BooleanField(default=False)
     resistance = models.BooleanField(default=False)
 
+    # Caster ability modifier
+    spellcasting_ability_modifier = models.IntegerField(
+        default=3,
+        help_text='Caster spellcasting ability modifier, added to damage components with uses_spellcasting_modifier=True.',
+    )
+
     # Advanced combat modifiers
     crit_type = models.CharField(
         max_length=20, choices=CRIT_TYPE_CHOICES, default='double_dice',
@@ -90,21 +96,21 @@ class AnalysisContext(models.Model):
         'target_ac', 'target_save_bonus', 'spell_save_dc', 'caster_attack_bonus',
         'number_of_targets', 'advantage', 'disadvantage', 'spell_slot_level',
         'crit_enabled', 'crit_type', 'half_damage_on_save', 'evasion_enabled', 'resistance',
-        'lucky', 'elemental_adept_type', 'save_penalty_die',
+        'lucky', 'elemental_adept_type', 'save_penalty_die', 'spellcasting_ability_modifier',
     )
 
     @classmethod
     def create_from_data(cls, data: dict, user=None) -> 'AnalysisContext':
         """Create and persist an AnalysisContext from validated serializer data."""
         return cls.objects.create(
-            **{k: data[k] for k in cls._CONTEXT_FIELDS},
+            **{k: data[k] for k in cls._CONTEXT_FIELDS if k in data},
             created_by=user,
         )
 
     @classmethod
     def from_data(cls, data: dict, slot_override: int | None = None) -> 'AnalysisContext':
         """Build an unsaved AnalysisContext for in-memory use (e.g. efficiency loop)."""
-        fields = {k: data[k] for k in cls._CONTEXT_FIELDS if k != 'spell_slot_level'}
+        fields = {k: data[k] for k in cls._CONTEXT_FIELDS if k != 'spell_slot_level' and k in data}
         fields['spell_slot_level'] = slot_override if slot_override is not None else data.get('spell_slot_level', 1)
         return cls(**fields)
 

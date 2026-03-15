@@ -2,9 +2,34 @@
  * Modal for creating or editing a spell.
  */
 import { useState, useEffect } from 'react';
-import { useCreateSpell, useUpdateSpell } from '../hooks/useSpells';
+import { useCreateSpell, useUpdateSpell, useSpellSources } from '../hooks/useSpells';
 import { ModalShell, AlertMessage } from './ui';
+import { DAMAGE_TYPES, SPELL_TAGS } from '../constants/spellColors';
 import type { Spell } from '../types/api';
+
+interface DamageComponentEntry {
+  dice_count: number;
+  die_size: number;
+  flat_modifier: number;
+  damage_type: string;
+  timing: string;
+  condition_label: string;
+  on_crit_extra: boolean;
+  uses_spellcasting_modifier: boolean;
+  scales_with_slot: boolean;
+  upcast_dice_increment: number | null;
+}
+
+const DIE_SIZES = [4, 6, 8, 10, 12, 20] as const;
+
+const TIMING_OPTIONS: { value: string; label: string }[] = [
+  { value: 'on_hit',     label: 'On Hit' },
+  { value: 'on_fail',   label: 'On Failed Save' },
+  { value: 'on_success',label: 'On Successful Save' },
+  { value: 'end_of_turn',label: 'End of Turn' },
+  { value: 'per_round', label: 'Per Round' },
+  { value: 'delayed',   label: 'Delayed' },
+];
 
 interface CreateSpellModalProps {
   isOpen: boolean;
@@ -74,18 +99,26 @@ interface SpellFormState {
   material: string;
   is_attack_roll: boolean;
   is_saving_throw: boolean;
+  is_auto_hit: boolean;
   save_type: string;
   half_damage_on_save: boolean;
   classes: string[];
+  tags: string[];
   source: string;
   description: string;
   higher_level: string;
+  damage_components: DamageComponentEntry[];
+  upcast_dice_increment: number | null;
+  upcast_die_size: number | null;
+  upcast_base_level: number | null;
+  upcast_attacks_increment: number | null;
+  upcast_scale_step: number | null;
 }
 
 const defaultForm: SpellFormState = {
   name: '',
   level: 1,
-  school: 'evocation',
+  school: 'abjuration',
   casting_time: '1 action',
   casting_time_custom: '',
   range: '30 feet',
@@ -99,12 +132,20 @@ const defaultForm: SpellFormState = {
   material: '',
   is_attack_roll: false,
   is_saving_throw: false,
+  is_auto_hit: false,
   save_type: '',
   half_damage_on_save: false,
   classes: [],
+  tags: [],
   source: '',
   description: '',
   higher_level: '',
+  damage_components: [],
+  upcast_dice_increment: null,
+  upcast_die_size: null,
+  upcast_base_level: null,
+  upcast_attacks_increment: null,
+  upcast_scale_step: null,
 };
 
 /** Map a Spell back into the editable SpellFormState. */
@@ -128,12 +169,31 @@ function spellToFormState(spell: Spell): SpellFormState {
     material: spell.material ?? '',
     is_attack_roll: spell.is_attack_roll,
     is_saving_throw: spell.is_saving_throw,
+    is_auto_hit: spell.is_auto_hit ?? false,
     save_type: spell.save_type ?? '',
     half_damage_on_save: spell.half_damage_on_save,
     classes: spell.classes ?? [],
+    tags: spell.tags ?? [],
     source: spell.source ?? '',
     description: spell.description,
     higher_level: spell.higher_level ?? '',
+    damage_components: spell.damage_components?.map(dc => ({
+      dice_count: dc.dice_count,
+      die_size: dc.die_size,
+      flat_modifier: dc.flat_modifier ?? 0,
+      damage_type: dc.damage_type,
+      timing: dc.timing,
+      condition_label: dc.condition_label ?? '',
+      uses_spellcasting_modifier: dc.uses_spellcasting_modifier ?? false,
+      on_crit_extra: dc.on_crit_extra ?? true,
+      scales_with_slot: dc.scales_with_slot ?? false,
+      upcast_dice_increment: dc.upcast_dice_increment ?? null,
+    })) ?? [],
+    upcast_dice_increment: spell.upcast_dice_increment ?? null,
+    upcast_die_size: spell.upcast_die_size ?? null,
+    upcast_base_level: spell.upcast_base_level ?? null,
+    upcast_attacks_increment: spell.upcast_attacks_increment ?? null,
+    upcast_scale_step: spell.upcast_scale_step ?? null,
   };
 }
 
@@ -145,6 +205,7 @@ export function CreateSpellModal({ isOpen, onClose, spellToEdit }: CreateSpellMo
   const [errors, setErrors] = useState<Record<string, string>>({});
   const createSpell = useCreateSpell();
   const updateSpell = useUpdateSpell();
+  const { data: sourcesData } = useSpellSources();
 
   // Re-initialise form whenever the modal opens or the target spell changes
   useEffect(() => {
@@ -181,6 +242,42 @@ export function CreateSpellModal({ isOpen, onClose, spellToEdit }: CreateSpellMo
     }));
   };
 
+  const toggleTag = (tag: string) => {
+    setForm((prev) => ({
+      ...prev,
+      tags: prev.tags.includes(tag)
+        ? prev.tags.filter((t) => t !== tag)
+        : [...prev.tags, tag],
+    }));
+  };
+
+  const addDamageComponent = () => {
+    setForm((prev) => ({
+      ...prev,
+      damage_components: [
+        ...prev.damage_components,
+        { dice_count: 1, die_size: 6, flat_modifier: 0, damage_type: 'fire', timing: 'on_hit', condition_label: '', on_crit_extra: true, uses_spellcasting_modifier: false, scales_with_slot: false, upcast_dice_increment: null },
+      ],
+    }));
+  };
+
+  const removeDamageComponent = (index: number) => {
+    setForm((prev) => ({
+      ...prev,
+      damage_components: prev.damage_components.filter((_, i) => i !== index),
+    }));
+  };
+
+  const setDamageComponent = <K extends keyof DamageComponentEntry>(
+    index: number, field: K, value: DamageComponentEntry[K]
+  ) => {
+    setForm((prev) => {
+      const next = [...prev.damage_components];
+      next[index] = { ...next[index], [field]: value };
+      return { ...prev, damage_components: next };
+    });
+  };
+
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
     if (!form.name.trim()) newErrors.name = 'Name is required.';
@@ -211,6 +308,7 @@ export function CreateSpellModal({ isOpen, onClose, spellToEdit }: CreateSpellMo
     } else {
       await createSpell.mutateAsync(payload);
     }
+    handleClose();
   };
 
   const isPending = isEditMode ? updateSpell.isPending : createSpell.isPending;
@@ -385,6 +483,15 @@ export function CreateSpellModal({ isOpen, onClose, spellToEdit }: CreateSpellMo
                 />
                 Saving Throw
               </label>
+              <label className="flex items-center gap-2 cursor-pointer font-body text-sm text-parchment-300">
+                <input
+                  type="checkbox"
+                  checked={form.is_auto_hit}
+                  onChange={(e) => set('is_auto_hit', e.target.checked)}
+                  className="w-4 h-4 accent-gold-500"
+                />
+                Auto-hit / Guaranteed
+              </label>
             </div>
           </div>
 
@@ -415,6 +522,216 @@ export function CreateSpellModal({ isOpen, onClose, spellToEdit }: CreateSpellMo
             </div>
           )}
 
+          {/* Damage Components */}
+          {(form.is_attack_roll || form.is_saving_throw || form.is_auto_hit) && (
+            <div>
+              <div className="flex items-center justify-between mb-2">
+                <p className={labelCls}>Damage Components</p>
+                <button
+                  type="button"
+                  onClick={addDamageComponent}
+                  className="font-display text-xs text-gold-400 hover:text-gold-300 transition-colors"
+                >
+                  + Add Component
+                </button>
+              </div>
+              {form.damage_components.length === 0 && (
+                <p className="font-body text-xs text-smoke-500 italic">
+                  No damage components yet — click &ldquo;+ Add Component&rdquo; above.
+                </p>
+              )}
+              <div className="space-y-3">
+                {form.damage_components.map((dc, i) => (
+                  <div key={i} className="pl-3 border-l-2 border-gold-800 space-y-2">
+                    <div className="flex items-center gap-2 flex-wrap">
+                      {/* dice_count d die_size */}
+                      <input
+                        type="number"
+                        min={1}
+                        value={dc.dice_count}
+                        onChange={(e) => setDamageComponent(i, 'dice_count', Math.max(1, parseInt(e.target.value) || 1))}
+                        className="dnd-input font-body text-sm w-16"
+                        aria-label="Number of dice"
+                      />
+                      <span className="text-smoke-400 font-body text-sm">d</span>
+                      <select
+                        value={dc.die_size}
+                        onChange={(e) => setDamageComponent(i, 'die_size', parseInt(e.target.value))}
+                        className="dnd-input font-body text-sm w-20"
+                        aria-label="Die size"
+                      >
+                        {DIE_SIZES.map((d) => <option key={d} value={d}>{d}</option>)}
+                      </select>
+                      {/* flat modifier */}
+                      <span className="text-smoke-400 font-body text-sm">+</span>
+                      <input
+                        type="number"
+                        value={dc.flat_modifier}
+                        onChange={(e) => setDamageComponent(i, 'flat_modifier', parseInt(e.target.value) || 0)}
+                        className="dnd-input font-body text-sm w-16"
+                        aria-label="Flat modifier"
+                      />
+                      {/* damage_type */}
+                      <select
+                        value={dc.damage_type}
+                        onChange={(e) => setDamageComponent(i, 'damage_type', e.target.value)}
+                        className="dnd-input font-body text-sm flex-1 min-w-[100px] capitalize"
+                        aria-label="Damage type"
+                      >
+                        {DAMAGE_TYPES.map((t) => (
+                          <option key={t} value={t}>{t.charAt(0).toUpperCase() + t.slice(1)}</option>
+                        ))}
+                      </select>
+                      {/* remove */}
+                      <button
+                        type="button"
+                        onClick={() => removeDamageComponent(i)}
+                        className="text-crimson-500 hover:text-crimson-400 text-xl leading-none"
+                        aria-label="Remove component"
+                      >
+                        ×
+                      </button>
+                    </div>
+                    {/* timing + condition */}
+                    <div className="flex gap-2">
+                      <select
+                        value={dc.timing}
+                        onChange={(e) => setDamageComponent(i, 'timing', e.target.value)}
+                        className="dnd-input font-body text-sm flex-shrink-0"
+                        aria-label="Timing"
+                      >
+                        {TIMING_OPTIONS.map((o) => (
+                          <option key={o.value} value={o.value}>{o.label}</option>
+                        ))}
+                      </select>
+                      <input
+                        type="text"
+                        value={dc.condition_label}
+                        onChange={(e) => setDamageComponent(i, 'condition_label', e.target.value)}
+                        className="dnd-input font-body text-sm flex-1 min-w-0"
+                        placeholder="Condition (optional, e.g. target grappled)"
+                        aria-label="Condition label"
+                      />
+                    </div>
+                    {/* Modifier flag + per-component upcast (task 1 + 2) */}
+                    <div className="flex items-center gap-4 flex-wrap">
+                      <label className="flex items-center gap-1.5 cursor-pointer font-body text-xs text-parchment-300">
+                        <input
+                          type="checkbox"
+                          checked={dc.uses_spellcasting_modifier}
+                          onChange={(e) => setDamageComponent(i, 'uses_spellcasting_modifier', e.target.checked)}
+                          className="w-3.5 h-3.5 accent-gold-500"
+                        />
+                        + Spellcasting mod
+                      </label>
+                      <label className="flex items-center gap-1.5 cursor-pointer font-body text-xs text-parchment-300">
+                        <input
+                          type="checkbox"
+                          checked={dc.scales_with_slot}
+                          onChange={(e) => setDamageComponent(i, 'scales_with_slot', e.target.checked)}
+                          className="w-3.5 h-3.5 accent-gold-500"
+                        />
+                        Scales with slot
+                      </label>
+                      <label className="flex items-center gap-1.5 cursor-pointer font-body text-xs text-parchment-300">
+                        <input
+                          type="checkbox"
+                          checked={dc.on_crit_extra}
+                          onChange={(e) => setDamageComponent(i, 'on_crit_extra', e.target.checked)}
+                          className="w-3.5 h-3.5 accent-gold-500"
+                        />
+                        Can crit
+                      </label>
+                      {dc.scales_with_slot && (
+                        <div className="flex items-center gap-1.5">
+                          <span className="text-smoke-400 font-body text-xs">+</span>
+                          <input
+                            type="number"
+                            min={0}
+                            value={dc.upcast_dice_increment ?? ''}
+                            onChange={(e) => setDamageComponent(i, 'upcast_dice_increment', e.target.value === '' ? null : Math.max(0, parseInt(e.target.value) || 0))}
+                            className="dnd-input font-body text-xs w-14"
+                            aria-label="Upcast dice count per slot"
+                          />
+                          <span className="text-smoke-400 font-body text-xs">d{dc.die_size} / slot</span>
+                        </div>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Upcast Scaling */}
+          {(form.is_attack_roll || form.is_saving_throw || form.is_auto_hit) && form.damage_components.length > 0 && (
+            <div className="pl-3 border-l-2 border-arcane-700 space-y-3">
+              <p className={labelCls}>Upcast Scaling <span className="text-smoke-500 font-normal text-xs ml-1">(optional — applied to all components without their own scaling)</span></p>
+              <div className="grid grid-cols-2 gap-3">
+                <div>
+                  <label className="block font-display text-xs text-smoke-400 mb-1">Dice per slot level</label>
+                  <div className="flex items-center gap-2">
+                    <input
+                      type="number"
+                      min={0}
+                      placeholder="0"
+                      value={form.upcast_dice_increment ?? ''}
+                      onChange={(e) => set('upcast_dice_increment', e.target.value === '' ? null : Math.max(0, parseInt(e.target.value) || 0))}
+                      className="dnd-input font-body text-sm w-16"
+                      aria-label="Upcast dice count"
+                    />
+                    <span className="text-smoke-400 font-body text-sm">d</span>
+                    <select
+                      value={form.upcast_die_size ?? ''}
+                      onChange={(e) => set('upcast_die_size', e.target.value === '' ? null : parseInt(e.target.value))}
+                      className="dnd-input font-body text-sm w-20"
+                      aria-label="Upcast die size"
+                    >
+                      <option value="">— none —</option>
+                      {DIE_SIZES.map((d) => <option key={d} value={d}>d{d}</option>)}
+                    </select>
+                  </div>
+                </div>
+                <div>
+                  <label className="block font-display text-xs text-smoke-400 mb-1">Scale every N levels</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={9}
+                    placeholder="1 (every level)"
+                    value={form.upcast_scale_step ?? ''}
+                    onChange={(e) => set('upcast_scale_step', e.target.value === '' ? null : Math.max(1, parseInt(e.target.value) || 1))}
+                    className="dnd-input font-body text-sm w-full"
+                    aria-label="Upcast scale step"
+                  />
+                </div>
+                <div>
+                  <label className="block font-display text-xs text-smoke-400 mb-1">Scaling starts at slot</label>
+                  <input
+                    type="number"
+                    min={1}
+                    max={9}
+                    placeholder="defaults to spell level"
+                    value={form.upcast_base_level ?? ''}
+                    onChange={(e) => set('upcast_base_level', e.target.value === '' ? null : Math.min(9, Math.max(1, parseInt(e.target.value) || 1)))}
+                    className="dnd-input font-body text-sm w-full"
+                  />
+                </div>
+                <div className="col-span-2">
+                  <label className="block font-display text-xs text-smoke-400 mb-1">Extra attacks per slot</label>
+                  <input
+                    type="number"
+                    min={0}
+                    placeholder="e.g. 1 (Scorching Ray)"
+                    value={form.upcast_attacks_increment ?? ''}
+                    onChange={(e) => set('upcast_attacks_increment', e.target.value === '' ? null : Math.max(0, parseInt(e.target.value) || 0))}
+                    className="dnd-input font-body text-sm w-full"
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+
           {/* Classes */}
           <div>
             <p className={labelCls}>Classes</p>
@@ -433,15 +750,39 @@ export function CreateSpellModal({ isOpen, onClose, spellToEdit }: CreateSpellMo
             </div>
           </div>
 
+          {/* Tags */}
+          <div>
+            <p className={labelCls}>Tags</p>
+            <div className="flex flex-wrap gap-x-5 gap-y-2">
+              {SPELL_TAGS.map((tag) => (
+                <label key={tag} className="flex items-center gap-2 cursor-pointer font-body text-sm text-parchment-300">
+                  <input
+                    type="checkbox"
+                    checked={form.tags.includes(tag)}
+                    onChange={() => toggleTag(tag)}
+                    className="w-4 h-4 accent-gold-500"
+                  />
+                  {tag.replace(/_/g, ' ').replace(/\b\w/g, (c) => c.toUpperCase())}
+                </label>
+              ))}
+            </div>
+          </div>
+
           {/* Source */}
           <div>
             <label className={labelCls}>Source</label>
             <input
+              list="spell-sources"
               value={form.source}
               onChange={(e) => set('source', e.target.value)}
               className={inputCls}
               placeholder="e.g. Player's Handbook, My Campaign"
             />
+            <datalist id="spell-sources">
+              {(sourcesData ?? []).map((s) => (
+                <option key={s} value={s} />
+              ))}
+            </datalist>
           </div>
 
           {/* Description */}

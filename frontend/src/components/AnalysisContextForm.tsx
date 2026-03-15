@@ -77,6 +77,22 @@ export function AnalysisContextForm({ context, onChange, spells }: AnalysisConte
           </div>
         )}
 
+        <div>
+          <label htmlFor="spellcasting_ability_modifier" className="block text-sm font-display font-medium text-parchment-300 mb-1">
+            Spellcasting Mod
+          </label>
+          <input
+            type="number"
+            id="spellcasting_ability_modifier"
+            value={context.spellcasting_ability_modifier ?? ''}
+            onChange={(e) => handleChange('spellcasting_ability_modifier', e.target.value ? parseInt(e.target.value) : undefined)}
+            className="dnd-input font-body"
+            placeholder="+3"
+            min="-5"
+            max="10"
+          />
+        </div>
+
         {showSave && (
           <div>
             <label htmlFor="spell_save_dc" className="block text-sm font-display font-medium text-parchment-300 mb-1">

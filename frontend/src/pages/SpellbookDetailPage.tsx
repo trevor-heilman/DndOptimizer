@@ -13,7 +13,7 @@
  *  - Spell row badges: ⚔ Atk Roll / {type} Save, concentration, ritual
  *  - Tag pills: damage, aoe, healing, crowd_control, utility, concentration, ritual
  */
-import { useState, useMemo } from 'react';
+import { useState, useMemo, useEffect } from 'react';
 import { useParams, Link, useNavigate } from 'react-router-dom';
 import {
   useSpellbook,
@@ -25,7 +25,9 @@ import {
 import { useSpellSources } from '../hooks/useSpells';
 import { useBatchAnalyzeSpells, useGetSpellEfficiency } from '../hooks/useAnalysis';
 import { useCharacter } from '../hooks/useCharacters';
+import { useUpdateSpellSlots, useResetSpellSlots } from '../hooks/useCharacters';
 import { SPELL_SCHOOLS, DND_CLASSES, DAMAGE_TYPES, SPELL_TAGS } from '../constants/spellColors';
+import { getSpellSlots } from '../constants/spellSlots';
 import { SpellCard, SpellCardGrid } from '../components/SpellCard';
 import { MultiSelect } from '../components/MultiSelect';
 import { AddSpellPicker } from '../components/AddSpellPicker';
@@ -52,10 +54,14 @@ interface SpellbookSpellCardProps {
   isUpdating: boolean;
   isEditMode: boolean;
   linkState: object;
+  /** Callback invoked when the user clicks Cast. Only provided for levelled spells with a linked character. */
+  onCast?: () => void;
+  /** Whether at least one slot of the spell's level is available to use. */
+  hasSlotAvailable?: boolean;
 }
 
 function SpellbookSpellCard({
-  ps, onTogglePrepared, onRemove, isUpdating, isEditMode, linkState,
+  ps, onTogglePrepared, onRemove, isUpdating, isEditMode, linkState, onCast, hasSlotAvailable,
 }: SpellbookSpellCardProps) {
   return (
     <div className={`relative flex flex-col transition-opacity ${!ps.prepared ? 'opacity-55 hover:opacity-80' : ''}`}>
@@ -71,6 +77,18 @@ function SpellbookSpellCard({
             <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M6 18L18 6M6 6l12 12" />
             </svg>
+          </button>
+        )}
+        {onCast !== undefined && (
+          <button
+            className={`pointer-events-auto text-sm leading-none transition-all hover:scale-110 active:scale-95 ${
+              hasSlotAvailable ? 'text-arcane-400 hover:text-arcane-300' : 'text-smoke-700 cursor-not-allowed'
+            }`}
+            title={hasSlotAvailable ? 'Cast spell (uses one slot)' : 'No slots available'}
+            disabled={!hasSlotAvailable}
+            onClick={(e) => { e.preventDefault(); e.stopPropagation(); if (hasSlotAvailable) onCast(); }}
+          >
+            ⚡
           </button>
         )}
         <button
@@ -98,10 +116,12 @@ interface LevelSectionProps {
   updatingIds: Set<string>;
   isEditMode: boolean;
   linkState: object;
+  onCast?: (spellLevel: number) => void;
+  slotsAvailable?: number[];
 }
 
 function LevelSection({
-  level, preparedSpells, onTogglePrepared, onRemove, updatingIds, isEditMode, linkState,
+  level, preparedSpells, onTogglePrepared, onRemove, updatingIds, isEditMode, linkState, onCast, slotsAvailable,
 }: LevelSectionProps) {
   const [open, setOpen] = useState(true);
   const preparedCount = preparedSpells.filter(ps => ps.prepared).length;
@@ -144,6 +164,8 @@ function LevelSection({
               isUpdating={updatingIds.has(ps.spell.id)}
               isEditMode={isEditMode}
               linkState={linkState}
+              onCast={onCast && ps.spell.level > 0 ? () => onCast(ps.spell.level) : undefined}
+              hasSlotAvailable={ps.spell.level > 0 ? (slotsAvailable?.[ps.spell.level - 1] ?? 0) > 0 : undefined}
             />
           ))}
         </SpellCardGrid>
@@ -153,97 +175,155 @@ function LevelSection({
   );
 }
 
+// ─── SpellSlotsPanel ──────────────────────────────────────────────────────────
+
+const SLOT_LEVEL_NAMES = ['1st', '2nd', '3rd', '4th', '5th', '6th', '7th', '8th', '9th'];
+
+function SpellSlotsPanel({
+  characterClass,
+  characterLevel,
+  slotsUsed,
+  onToggle,
+  onReset,
+}: {
+  characterClass: string;
+  characterLevel: number;
+  slotsUsed?: number[];
+  onToggle?: (levelIndex: number, newUsed: number) => void;
+  onReset?: () => void;
+}) {
+  const maxSlots = getSpellSlots(characterClass, characterLevel);
+  if (!maxSlots) return null;
+
+  const interactive = !!onToggle;
+
+  return (
+    <div className="mt-4 pt-3 border-t border-smoke-800/60">
+      <div className="flex items-center justify-between mb-2">
+        <p className="font-display text-[10px] uppercase tracking-widest text-smoke-500">Spell Slots</p>
+        {onReset && (
+          <button
+            onClick={onReset}
+            className="font-display text-[10px] text-smoke-500 hover:text-parchment-300 transition-colors"
+            title="Reset all slots"
+          >
+            ↺ reset
+          </button>
+        )}
+      </div>
+      <div className="flex flex-wrap gap-x-5 gap-y-1.5">
+        {maxSlots.map((max, i) => {
+          if (max === 0) return null;
+          const used = slotsUsed?.[i] ?? 0;
+          const available = Math.max(0, max - used);
+          return (
+            <div key={i} className="flex items-center gap-1.5">
+              <span className="font-display text-[10px] text-smoke-400 w-7 shrink-0">{SLOT_LEVEL_NAMES[i]}</span>
+              <div className="flex gap-0.5">
+                {Array.from({ length: max }).map((_, j) => (
+                  <button
+                    key={j}
+                    type="button"
+                    disabled={!interactive}
+                    onClick={() => {
+                      if (!onToggle) return;
+                      // clicking a full dot uses it; clicking an empty dot restores it
+                      const newUsed = j < available ? used + 1 : Math.max(0, used - 1);
+                      onToggle(i, newUsed);
+                    }}
+                    className={`w-2.5 h-2.5 rounded-full border transition-colors ${
+                      interactive ? 'cursor-pointer hover:opacity-70' : 'cursor-default'
+                    }`}
+                    style={j < available
+                      ? { background: 'rgba(109,40,217,0.7)', borderColor: 'rgba(139,92,246,0.8)' }
+                      : { background: 'transparent', borderColor: 'rgba(71,85,105,0.5)' }
+                    }
+                    aria-label={j < available ? `Use ${SLOT_LEVEL_NAMES[i]} slot` : `Restore ${SLOT_LEVEL_NAMES[i]} slot`}
+                  />
+                ))}
+              </div>
+              {slotsUsed && used > 0 && (
+                <span className="font-body text-[10px] text-smoke-500">{available}/{max}</span>
+              )}
+            </div>
+          );
+        })}
+      </div>
+    </div>
+  );
+}
+
 // ─── CopyCostSection ─────────────────────────────────────────────────────────
 
 function CopyCostSection({ spellbookId, characterId }: { spellbookId: string; characterId?: string }) {
-  const [open, setOpen] = useState(false);
-  const { data: cost, isLoading, error } = useSpellbookCopyCost(spellbookId, characterId, open);
+  const [showBreakdown, setShowBreakdown] = useState(false);
+  const { data: cost, isLoading, error } = useSpellbookCopyCost(spellbookId, characterId);
+
+  if (isLoading) {
+    return (
+      <div className="mt-6 pt-4 border-t border-smoke-800/60">
+        <p className="font-display text-[10px] uppercase tracking-widest text-smoke-500 mb-1">📜 Scribing Cost</p>
+        <div className="h-4 w-32 bg-smoke-800 rounded animate-pulse" />
+      </div>
+    );
+  }
+
+  if (error || !cost) return null;
 
   return (
-    <div className="mt-8">
-      <button
-        onClick={() => setOpen(v => !v)}
-        className="font-display text-sm flex items-center gap-2 text-gold-400 hover:text-gold-300 transition-colors mb-3"
-      >
-        <svg
-          className={`w-4 h-4 transition-transform ${open ? 'rotate-90' : ''}`}
-          fill="none" stroke="currentColor" viewBox="0 0 24 24"
-        >
-          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
-        </svg>
-        📜 Spellbook Copy Cost
-      </button>
+    <div className="mt-6 pt-4 border-t border-smoke-800/60">
+      {/* Compact summary row */}
+      <div className="flex items-center gap-3 flex-wrap">
+        <span className="font-display text-[10px] uppercase tracking-widest text-smoke-500">📜 Scribing Cost</span>
+        <span className="font-display font-semibold text-gold-300">{cost.total_gold} gp</span>
+        <span className="font-body text-xs text-smoke-600">·</span>
+        <span className="font-display font-semibold text-parchment-300">{cost.total_hours} hr</span>
+        {cost.scribes_discount_applied && (
+          <span
+            className="font-display text-[10px] px-1.5 py-0.5 rounded"
+            style={{ background: 'rgba(109,40,217,0.25)', color: '#c4b5fd', border: '1px solid rgba(139,92,246,0.35)' }}
+          >
+            Scribes −50%
+          </span>
+        )}
+        {Object.keys(cost.school_discounts_applied).map(s => (
+          <span
+            key={s}
+            className="font-display text-[10px] px-1.5 py-0.5 rounded capitalize"
+            style={{ background: 'rgba(6,78,59,0.35)', color: '#6ee7b7', border: '1px solid rgba(52,211,153,0.3)' }}
+          >
+            {s} −{cost.school_discounts_applied[s]}%
+          </span>
+        ))}
+        {cost.spell_entries.length > 0 && (
+          <button
+            onClick={() => setShowBreakdown(v => !v)}
+            className="font-display text-[10px] text-smoke-400 hover:text-parchment-300 transition-colors ml-auto"
+          >
+            {showBreakdown ? '▴ hide' : '▾ breakdown'}
+          </button>
+        )}
+      </div>
 
-      {open && (
-        <div className="dnd-card p-6 border-l-4 border-gold-700">
-          <h2 className="font-display text-xl font-semibold text-gold-300 mb-4">Copy Cost Estimate</h2>
-
-          {isLoading && <LoadingSpinner />}
-          {error && (
-            <AlertMessage variant="error" title="Could not calculate cost" message="An error occurred fetching copy cost." />
-          )}
-
-          {cost && (
-            <>
-              {/* Summary row */}
-              <div className="flex gap-6 mb-5">
-                <div className="text-center">
-                  <div className="font-display text-2xl font-bold text-gold-300">{cost.total_gold} gp</div>
-                  <div className="font-display text-[10px] uppercase tracking-widest text-smoke-500 mt-0.5">Total Gold</div>
-                </div>
-                <div className="text-center">
-                  <div className="font-display text-2xl font-bold text-parchment-200">{cost.total_hours} hr</div>
-                  <div className="font-display text-[10px] uppercase tracking-widest text-smoke-500 mt-0.5">Total Hours</div>
-                </div>
-                {cost.scribes_discount_applied && (
-                  <div className="flex items-center">
-                    <span
-                      className="font-display text-xs px-2 py-1 rounded"
-                      style={{ background: 'rgba(109,40,217,0.3)', color: '#c4b5fd', border: '1px solid rgba(139,92,246,0.4)' }}
-                    >
-                      Order of Scribes −50%
-                    </span>
-                  </div>
-                )}
-                {Object.keys(cost.school_discounts_applied).length > 0 && (
-                  <div className="flex items-center flex-wrap gap-1">
-                    {Object.keys(cost.school_discounts_applied).map(s => (
-                      <span
-                        key={s}
-                        className="font-display text-[10px] px-1.5 py-0.5 rounded capitalize"
-                        style={{ background: 'rgba(6,78,59,0.4)', color: '#6ee7b7', border: '1px solid rgba(52,211,153,0.3)' }}
-                      >
-                        {s} −{cost.school_discounts_applied[s]}%
-                      </span>
-                    ))}
-                  </div>
-                )}
-              </div>
-
-              {/* Per-spell breakdown */}
-              <div className="border-t border-smoke-700 pt-4">
-                <p className="font-display text-[10px] uppercase tracking-widest text-smoke-500 mb-2">Per-Spell Breakdown</p>
-                <div className="space-y-1">
-                  {cost.spell_entries.map((entry, i) => (
-                    <div key={i} className="flex items-center gap-3 font-body text-sm">
-                      <span className="flex-1 text-parchment-300 truncate">{entry.name}</span>
-                      <span className="text-smoke-500 capitalize text-xs">{entry.school}</span>
-                      <span className="text-gold-400 w-16 text-right">{entry.gold_cost} gp</span>
-                      <span className="text-smoke-400 w-14 text-right">{entry.time_hours} hr</span>
-                      {entry.discount_pct > 0 && (
-                        <span
-                          className="font-display text-[9px] px-1 rounded"
-                          style={{ background: 'rgba(109,40,217,0.25)', color: '#c4b5fd', border: '1px solid rgba(139,92,246,0.3)' }}
-                        >
-                          −{entry.discount_pct}%
-                        </span>
-                      )}
-                    </div>
-                  ))}
-                </div>
-              </div>
-            </>
-          )}
+      {/* Per-spell breakdown (collapsible) */}
+      {showBreakdown && (
+        <div className="mt-3 border-t border-smoke-800/50 pt-3 space-y-1">
+          {cost.spell_entries.map((entry, i) => (
+            <div key={i} className="flex items-center gap-2 font-body text-sm">
+              <span className="flex-1 text-parchment-300 truncate">{entry.name}</span>
+              <span className="text-smoke-500 capitalize text-xs w-20 shrink-0">{entry.school}</span>
+              <span className="text-gold-400 w-16 text-right shrink-0">{entry.gold_cost} gp</span>
+              <span className="text-smoke-400 w-12 text-right shrink-0">{entry.time_hours} hr</span>
+              {entry.discount_pct > 0 && (
+                <span
+                  className="font-display text-[9px] px-1 rounded shrink-0"
+                  style={{ background: 'rgba(109,40,217,0.2)', color: '#c4b5fd', border: '1px solid rgba(139,92,246,0.3)' }}
+                >
+                  −{entry.discount_pct}%
+                </span>
+              )}
+            </div>
+          ))}
         </div>
       )}
     </div>
@@ -260,6 +340,8 @@ export function SpellbookDetailPage() {
   const removeSpell     = useRemoveSpellFromSpellbook(id!);
   const updatePrepared  = useUpdatePreparedSpell(id!);
   const { data: linkedCharacter } = useCharacter(spellbook?.character ?? '', !!spellbook?.character);
+  const updateSlots = useUpdateSpellSlots(linkedCharacter?.id ?? '');
+  const resetSlots  = useResetSpellSlots(linkedCharacter?.id ?? '');
 
   // Edit mode
   const [isEditMode,        setIsEditMode]        = useState(false);
@@ -287,6 +369,7 @@ export function SpellbookDetailPage() {
     crit_enabled: true,
     half_damage_on_save: true,
     evasion_enabled: false,
+    spellcasting_ability_modifier: 3,
   });
 
   // Filter / sort
@@ -312,6 +395,17 @@ export function SpellbookDetailPage() {
   // Misc
   const [isAddSpellOpen, setIsAddSpellOpen] = useState(false);
   const [updatingIds,    setUpdatingIds]    = useState<Set<string>>(new Set());
+
+  // Sync damage context from linked character when it loads
+  useEffect(() => {
+    if (!linkedCharacter) return;
+    setDamageContext(prev => ({
+      ...prev,
+      caster_attack_bonus: linkedCharacter.spell_attack_bonus,
+      spell_save_dc: linkedCharacter.spell_save_dc,
+      spellcasting_ability_modifier: linkedCharacter.spellcasting_ability_modifier,
+    }));
+  }, [linkedCharacter?.id]);
 
   // ── Derived data ────────────────────────────────────────────────────────
 
@@ -379,11 +473,33 @@ export function SpellbookDetailPage() {
     isSavingThrowFilter || hasVFilter || hasSFilter || hasMFilter ||
     sortBy !== 'level' || sortDir !== 'asc');
 
+  // Slots available per level (index 0 = level 1) for the linked character
+  const slotsAvailable = useMemo(() => {
+    if (!linkedCharacter) return [];
+    const cls = linkedCharacter.character_class;
+    const lvl = linkedCharacter.character_level;
+    if (!cls || !lvl) return [];
+    const maxSlots = getSpellSlots(cls, lvl) ?? [];
+    return maxSlots.map((max, i) => Math.max(0, max - (linkedCharacter.spell_slots_used?.[i] ?? 0)));
+  }, [linkedCharacter]);
+
+  const handleCastSpell = (spellLevel: number) => {
+    if (!linkedCharacter || spellLevel === 0) return;
+    const cls = linkedCharacter.character_class;
+    const lvl = linkedCharacter.character_level;
+    if (!cls || !lvl) return;
+    const maxSlots = getSpellSlots(cls, lvl) ?? [];
+    const current = linkedCharacter.spell_slots_used?.slice() ?? Array(9).fill(0);
+    const maxAtLevel = maxSlots[spellLevel - 1] ?? 0;
+    if (current[spellLevel - 1] >= maxAtLevel) return; // no slots left
+    current[spellLevel - 1] = current[spellLevel - 1] + 1;
+    updateSlots.mutate(current);
+  };
+
   // Damage spells eligible for comparison
   const damageSpells = useMemo(() => {
     return preparedSpells.filter(
       ps =>
-        (ps.spell.is_attack_roll || ps.spell.is_saving_throw) &&
         ps.spell.damage_components &&
         ps.spell.damage_components.length > 0
     );
@@ -654,6 +770,26 @@ export function SpellbookDetailPage() {
             ))}
           </div>
         )}
+
+        {/* Spell Slots */}
+        {(() => {
+          const cls = linkedCharacter?.character_class || spellbook.character_class;
+          const lvl = linkedCharacter?.character_level || spellbook.character_level;
+          if (!cls || !lvl) return null;
+          return (
+            <SpellSlotsPanel
+              characterClass={cls}
+              characterLevel={lvl}
+              slotsUsed={linkedCharacter?.spell_slots_used}
+              onToggle={linkedCharacter ? (levelIdx, newUsed) => {
+                const current = linkedCharacter.spell_slots_used?.slice() ?? Array(9).fill(0);
+                current[levelIdx] = newUsed;
+                updateSlots.mutate(current);
+              } : undefined}
+              onReset={linkedCharacter ? () => resetSlots.mutate() : undefined}
+            />
+          );
+        })()}
       </div>
 
       {/* ── Action bar ─────────────────────────────────────────────────── */}
@@ -874,7 +1010,10 @@ export function SpellbookDetailPage() {
                       spellbookName: spellbook.name,
                       saveDC: linkedCharacter?.spell_save_dc,
                       atkBonus: linkedCharacter?.spell_attack_bonus,
+                      spellcastingMod: linkedCharacter?.spellcasting_ability_modifier,
                     }}
+                    onCast={linkedCharacter ? handleCastSpell : undefined}
+                    slotsAvailable={linkedCharacter ? slotsAvailable : undefined}
                   />
                 ))}
               </>
