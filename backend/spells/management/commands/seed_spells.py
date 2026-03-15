@@ -111,7 +111,7 @@ class Command(BaseCommand):
             self.stdout.write(
                 self.style.ERROR(f'Failed to load file: {str(e)}')
             )
-            return (0, 1)
+            return (0, 1, 0)
 
         # Handle different JSON structures
         spells = []

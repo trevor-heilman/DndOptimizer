@@ -697,3 +697,201 @@ class TestSpellParsingService:
         assert (8, 6) in result['parsing_data']['dice_expressions']
         assert result['parsing_data']['upcast_scaling'] == (1, 6)
         assert result['confidence'] > 0.7
+
+
+@pytest.mark.django_db
+class TestCharLevelBreakpoints:
+    """Tests for SpellAnalysisService._apply_char_level_breakpoints.
+
+    Exercises: no-op cases (empty dict / below all thresholds), threshold
+    selection (highest-applicable wins), all three spell-mechanic branches
+    (attack roll, saving throw, auto-hit), resistance halving, flat modifier,
+    and missing-key graceful defaults.
+    """
+
+    # ── Fixtures ────────────────────────────────────────────────────────────
+
+    def _ctx(self, char_level: int = 5, **kwargs) -> 'AnalysisContext':
+        from analysis.models import AnalysisContext
+        defaults = dict(
+            target_ac=15, caster_attack_bonus=5,
+            spell_save_dc=15, target_save_bonus=0,
+            number_of_targets=1, spell_slot_level=1,
+            advantage=False, disadvantage=False,
+            resistance=False,
+        )
+        defaults.update(kwargs)
+        ctx = AnalysisContext(**defaults)
+        ctx.character_level = char_level
+        return ctx
+
+    def _auto_hit_spell(self, name: str, breakpoints: dict) -> Spell:
+        """Auto-hit spell (no attack roll, no save) with given breakpoints."""
+        spell = Spell.objects.create(
+            name=name, level=0, school='evocation',
+            casting_time='1 action', range='5 feet',
+            duration='Instantaneous', description='Cantrip.',
+            is_attack_roll=False, is_saving_throw=False,
+            char_level_breakpoints=breakpoints,
+        )
+        DamageComponent.objects.create(
+            spell=spell, dice_count=1, die_size=8,
+            damage_type='fire', timing='on_hit',
+        )
+        return spell
+
+    def _attack_spell(self, name: str, breakpoints: dict,
+                      number_of_attacks: int = 1) -> Spell:
+        """Attack-roll spell with given breakpoints."""
+        spell = Spell.objects.create(
+            name=name, level=0, school='evocation',
+            casting_time='1 action', range='120 feet',
+            duration='Instantaneous', description='Attack cantrip.',
+            is_attack_roll=True, is_saving_throw=False,
+            number_of_attacks=number_of_attacks,
+            char_level_breakpoints=breakpoints,
+        )
+        DamageComponent.objects.create(
+            spell=spell, dice_count=1, die_size=8,
+            damage_type='fire', timing='on_hit',
+        )
+        return spell
+
+    def _save_spell(self, name: str, breakpoints: dict) -> Spell:
+        """Saving-throw spell with given breakpoints."""
+        spell = Spell.objects.create(
+            name=name, level=0, school='evocation',
+            casting_time='1 action', range='5 feet',
+            duration='Instantaneous', description='Save cantrip.',
+            is_attack_roll=False, is_saving_throw=True,
+            save_type='DEX', half_damage_on_save=False,
+            char_level_breakpoints=breakpoints,
+        )
+        DamageComponent.objects.create(
+            spell=spell, dice_count=1, die_size=8,
+            damage_type='fire', timing='on_fail',
+        )
+        return spell
+
+    # ── No-op cases ─────────────────────────────────────────────────────────
+
+    def test_no_breakpoints_returns_unchanged(self):
+        """Spell with empty breakpoints dict → damage unchanged."""
+        spell = self._auto_hit_spell('No-BP Spell', {})
+        ctx = self._ctx(char_level=10)
+        base = 5.0
+        result = SpellAnalysisService._apply_char_level_breakpoints(spell, ctx, base)
+        assert result == base
+
+    def test_below_all_thresholds_returns_unchanged(self):
+        """Character level below the lowest threshold → no bonus applied."""
+        bp = {'5': {'die_count': 1, 'die_size': 6, 'flat': 0}}
+        spell = self._auto_hit_spell('BP Spell No-Apply', bp)
+        ctx = self._ctx(char_level=4)
+        base = 4.5
+        result = SpellAnalysisService._apply_char_level_breakpoints(spell, ctx, base)
+        assert result == base
+
+    # ── Threshold selection ──────────────────────────────────────────────────
+
+    def test_exactly_at_threshold_applies_it(self):
+        """Character level == threshold → that tier's bonus IS applied."""
+        bp = {'5': {'die_count': 1, 'die_size': 6, 'flat': 0}}  # avg = 3.5
+        spell = self._auto_hit_spell('GFB Level 5', bp)
+        ctx = self._ctx(char_level=5)
+        base = 0.0
+        result = SpellAnalysisService._apply_char_level_breakpoints(spell, ctx, base)
+        assert result == pytest.approx(3.5)
+
+    def test_highest_applicable_threshold_is_used(self):
+        """When multiple thresholds qualify, the highest one wins."""
+        bp = {
+            '5':  {'die_count': 1, 'die_size': 8, 'flat': 0},   # avg 4.5
+            '11': {'die_count': 2, 'die_size': 8, 'flat': 0},   # avg 9.0
+            '17': {'die_count': 3, 'die_size': 8, 'flat': 0},   # avg 13.5
+        }
+        spell = self._auto_hit_spell('GFB Tiers', bp)
+        # char_level=12 → thresholds 5 and 11 qualify; 11 wins (avg 9.0)
+        ctx = self._ctx(char_level=12)
+        result = SpellAnalysisService._apply_char_level_breakpoints(spell, ctx, 0.0)
+        assert result == pytest.approx(9.0)
+
+    def test_tier_below_next_threshold_not_jumped(self):
+        """At level 10 the tier-11 bonus must NOT apply; only tier-5 applies."""
+        bp = {
+            '5':  {'die_count': 1, 'die_size': 8, 'flat': 0},  # avg 4.5
+            '11': {'die_count': 2, 'die_size': 8, 'flat': 0},  # avg 9.0
+        }
+        spell = self._auto_hit_spell('GFB Check', bp)
+        ctx = self._ctx(char_level=10)
+        result = SpellAnalysisService._apply_char_level_breakpoints(spell, ctx, 0.0)
+        assert result == pytest.approx(4.5)
+
+    # ── Spell-mechanic branches ──────────────────────────────────────────────
+
+    def test_auto_hit_spell_gets_raw_bonus(self):
+        """Auto-hit spell bonus = average dice (no probability weighting)."""
+        bp = {'1': {'die_count': 2, 'die_size': 6, 'flat': 0}}  # avg 7.0
+        spell = self._auto_hit_spell('Auto-Hit BP', bp)
+        ctx = self._ctx(char_level=1)
+        result = SpellAnalysisService._apply_char_level_breakpoints(spell, ctx, 0.0)
+        assert result == pytest.approx(7.0)
+
+    def test_attack_spell_bonus_scaled_by_hit_probability(self):
+        """Attack-roll spell bonus is weighted by hit probability."""
+        bp = {'1': {'die_count': 1, 'die_size': 8, 'flat': 0}}  # avg 4.5
+        # AC 15, attack +5 → roll needed = 10 → hit prob = 11/20 = 0.55
+        spell = self._attack_spell('Attack BP', bp, number_of_attacks=1)
+        ctx = self._ctx(char_level=1, target_ac=15, caster_attack_bonus=5)
+        result = SpellAnalysisService._apply_char_level_breakpoints(spell, ctx, 0.0)
+        expected_bonus = 4.5 * 0.55  # hit_prob = 11/20
+        assert result == pytest.approx(expected_bonus, rel=1e-3)
+
+    def test_save_spell_bonus_scaled_by_fail_probability(self):
+        """Save spell bonus is weighted by save-fail probability × targets."""
+        bp = {'1': {'die_count': 1, 'die_size': 8, 'flat': 0}}  # avg 4.5
+        # DC 15, save bonus 0 → target needs 15 → fail prob = 14/20 = 0.70
+        spell = self._save_spell('Save BP', bp)
+        ctx = self._ctx(char_level=1, spell_save_dc=15, target_save_bonus=0,
+                        number_of_targets=1)
+        result = SpellAnalysisService._apply_char_level_breakpoints(spell, ctx, 0.0)
+        expected_bonus = 4.5 * 0.70
+        assert result == pytest.approx(expected_bonus, rel=1e-3)
+
+    def test_auto_hit_multiple_targets_not_applicable(self):
+        """Auto-hit branch uses raw avg (targets not multiplied — cantrip hits one creature)."""
+        bp = {'1': {'die_count': 1, 'die_size': 6, 'flat': 0}}  # avg 3.5
+        spell = self._auto_hit_spell('Auto Multi', bp)
+        ctx = self._ctx(char_level=1, number_of_targets=3)
+        result = SpellAnalysisService._apply_char_level_breakpoints(spell, ctx, 0.0)
+        assert result == pytest.approx(3.5)  # targets don't multiply auto-hit bonus
+
+    # ── Resistance ───────────────────────────────────────────────────────────
+
+    def test_resistance_halves_bonus(self):
+        """With resistance=True the breakpoint bonus is halved before adding."""
+        bp = {'1': {'die_count': 2, 'die_size': 6, 'flat': 0}}  # avg 7.0
+        spell = self._auto_hit_spell('Resist BP', bp)
+        ctx = self._ctx(char_level=1, resistance=True)
+        result = SpellAnalysisService._apply_char_level_breakpoints(spell, ctx, 0.0)
+        assert result == pytest.approx(3.5)  # 7.0 * 0.5
+
+    # ── Flat bonus ───────────────────────────────────────────────────────────
+
+    def test_flat_modifier_included_in_bonus(self):
+        """A breakpoint with die_count=0 and flat=3 contributes exactly 3."""
+        bp = {'1': {'die_count': 0, 'die_size': 6, 'flat': 3}}
+        spell = self._auto_hit_spell('Flat BP', bp)
+        ctx = self._ctx(char_level=1)
+        result = SpellAnalysisService._apply_char_level_breakpoints(spell, ctx, 0.0)
+        assert result == pytest.approx(3.0)
+
+    # ── Graceful defaults ────────────────────────────────────────────────────
+
+    def test_missing_die_keys_use_defaults(self):
+        """A breakpoint missing die_count / die_size falls back to defaults (1d6+0 = 3.5)."""
+        bp = {'1': {}}  # no die_count, no die_size, no flat
+        spell = self._auto_hit_spell('Sparse BP', bp)
+        ctx = self._ctx(char_level=1)
+        result = SpellAnalysisService._apply_char_level_breakpoints(spell, ctx, 0.0)
+        assert result == pytest.approx(3.5)  # default 1d6 avg

@@ -5,7 +5,7 @@ import pytest
 from django.contrib.auth import get_user_model
 
 from analysis.models import AnalysisContext, SpellComparison
-from spellbooks.models import PreparedSpell, Spellbook
+from spellbooks.models import Character, PreparedSpell, Spellbook
 from spells.models import DamageComponent, Spell, SpellParsingMetadata
 
 User = get_user_model()
@@ -414,3 +414,132 @@ class TestAnalysisModels:
         assert comparison.spell_a == spell1
         assert comparison.spell_b == spell2
         assert comparison.results['winner'] == 'tie'
+
+
+@pytest.mark.django_db
+class TestCharacterMaxPreparedSpells:
+    """Tests for the Character.max_prepared_spells computed property.
+
+    Covers every ruleset/class branch: 2024 wizard lookup table, 2014
+    mod+level formula, half-level classes, spells-known (None) classes,
+    ruleset differences (paladin, bard), and the prepared_spells_bonus field.
+    """
+
+    @pytest.fixture
+    def user(self, db):
+        return User.objects.create_user(
+            username='chartest', email='chartest@example.com', password='pass'
+        )
+
+    def _char(self, owner, **kwargs) -> Character:
+        """Instantiate an *unsaved* Character; max_prepared_spells is a pure property."""
+        defaults = dict(
+            name='Test Hero',
+            owner=owner,
+            character_class='wizard',
+            character_level=5,
+            spellcasting_ability_modifier=3,
+            ruleset='2014',
+            prepared_spells_bonus=0,
+        )
+        defaults.update(kwargs)
+        return Character(**defaults)
+
+    # ── 2024 Wizard lookup table ───────────────────────────────────────────
+
+    def test_wizard_2024_uses_lookup_table(self, user):
+        """2024 Wizard returns fixed table values regardless of modifier."""
+        cases = [(1, 4), (5, 9), (10, 15), (20, 25)]
+        for level, expected in cases:
+            char = self._char(
+                user, character_class='wizard', ruleset='2024',
+                character_level=level, spellcasting_ability_modifier=5,
+            )
+            assert char.max_prepared_spells == expected, f"level {level}"
+
+    def test_wizard_2024_mod_ignored(self, user):
+        """2024 Wizard: changing the modifier does not change the result."""
+        char_high = self._char(user, character_class='wizard', ruleset='2024',
+                               character_level=5, spellcasting_ability_modifier=5)
+        char_low = self._char(user, character_class='wizard', ruleset='2024',
+                              character_level=5, spellcasting_ability_modifier=0)
+        assert char_high.max_prepared_spells == char_low.max_prepared_spells == 9
+
+    # ── 2014 Wizard formula ───────────────────────────────────────────────
+
+    def test_wizard_2014_mod_plus_level(self, user):
+        """2014 Wizard uses max(1, mod + level)."""
+        char = self._char(user, character_class='wizard', ruleset='2014',
+                          character_level=5, spellcasting_ability_modifier=3)
+        assert char.max_prepared_spells == 8  # 3 + 5
+
+    def test_wizard_2014_clamped_to_one(self, user):
+        """Negative-modifier 2014 Wizard at level 1 is clamped to 1."""
+        char = self._char(user, character_class='wizard', ruleset='2014',
+                          character_level=1, spellcasting_ability_modifier=-3)
+        assert char.max_prepared_spells == 1  # max(1, -3+1) = 1
+
+    # ── prepared_spells_bonus ─────────────────────────────────────────────
+
+    def test_prepared_spells_bonus_stacks(self, user):
+        """prepared_spells_bonus is always added on top of the class base."""
+        char = self._char(user, character_class='cleric', ruleset='2014',
+                          character_level=4, spellcasting_ability_modifier=2,
+                          prepared_spells_bonus=3)
+        assert char.max_prepared_spells == 9  # (2+4) + 3
+
+    def test_prepared_spells_bonus_on_2024_wizard(self, user):
+        """Bonus also stacks on the fixed 2024 lookup value."""
+        char = self._char(user, character_class='wizard', ruleset='2024',
+                          character_level=5, prepared_spells_bonus=2)
+        assert char.max_prepared_spells == 11  # table[5]=9 + 2
+
+    # ── Paladin ruleset difference ────────────────────────────────────────
+
+    def test_paladin_2014_uses_half_level(self, user):
+        """2014 Paladin uses max(1, mod + level // 2)."""
+        char = self._char(user, character_class='paladin', ruleset='2014',
+                          character_level=6, spellcasting_ability_modifier=4)
+        assert char.max_prepared_spells == 7  # 4 + 6//2 = 4 + 3
+
+    def test_paladin_2024_uses_full_level(self, user):
+        """2024 Paladin uses full level, not half-level."""
+        char = self._char(user, character_class='paladin', ruleset='2024',
+                          character_level=6, spellcasting_ability_modifier=4)
+        assert char.max_prepared_spells == 10  # 4 + 6
+
+    # ── Other class branches ──────────────────────────────────────────────
+
+    def test_artificer_half_level(self, user):
+        """Artificer always uses max(1, mod + level // 2) regardless of ruleset."""
+        char = self._char(user, character_class='artificer', ruleset='2014',
+                          character_level=8, spellcasting_ability_modifier=3)
+        assert char.max_prepared_spells == 7  # 3 + 8//2 = 3 + 4
+
+    def test_bard_2014_returns_none(self, user):
+        """2014 Bard uses a spells-known model → None."""
+        char = self._char(user, character_class='bard', ruleset='2014',
+                          character_level=5, spellcasting_ability_modifier=3)
+        assert char.max_prepared_spells is None
+
+    def test_bard_2024_uses_mod_plus_level(self, user):
+        """2024 Bard gains a prepared-spell model, returns mod + level."""
+        char = self._char(user, character_class='bard', ruleset='2024',
+                          character_level=5, spellcasting_ability_modifier=3)
+        assert char.max_prepared_spells == 8  # 3 + 5
+
+    def test_ranger_2024_half_level(self, user):
+        """2024 Ranger uses max(1, mod + level // 2)."""
+        char = self._char(user, character_class='ranger', ruleset='2024',
+                          character_level=6, spellcasting_ability_modifier=2)
+        assert char.max_prepared_spells == 5  # 2 + 6//2 = 2 + 3
+
+    def test_spells_known_class_returns_none(self, user):
+        """Sorcerer (spells-known model) returns None."""
+        char = self._char(user, character_class='sorcerer')
+        assert char.max_prepared_spells is None
+
+    def test_no_class_returns_none(self, user):
+        """A character with no class set returns None."""
+        char = self._char(user, character_class='')
+        assert char.max_prepared_spells is None
