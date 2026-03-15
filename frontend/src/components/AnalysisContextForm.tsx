@@ -31,6 +31,10 @@ export function AnalysisContextForm({ context, onChange, spells }: AnalysisConte
   // Always show Number of Enemies — relevant whenever you're hitting multiple foes.
   // If every selected spell is a cantrip show Character Level (1–20) instead of Spell Slot Level.
   const isCantrip = hasSpells && spells!.every(s => s.level === 0);
+  // If the selection mixes cantrips and leveled spells, show both level selectors.
+  const hasMixedLevels = hasSpells && spells!.some(s => s.level === 0) && spells!.some(s => s.level > 0);
+  const showCharLevel = isCantrip || hasMixedLevels;
+  const showSlotLevel = !isCantrip;
   // Minimum slot level = lowest spell level among non-cantrip spells (so the dropdown
   // never shows options below the spell's base level).
   const minSlotLevel = (hasSpells && !isCantrip)
@@ -156,7 +160,7 @@ export function AnalysisContextForm({ context, onChange, spells }: AnalysisConte
         </div>
 
         {/* Spell Slot Level (leveled spells) or Character Level (cantrips) */}
-        {isCantrip ? (
+        {showCharLevel && (
           <div>
             <label htmlFor="character_level" className="block text-sm font-display font-medium text-parchment-300 mb-1">
               Character Level
@@ -172,7 +176,8 @@ export function AnalysisContextForm({ context, onChange, spells }: AnalysisConte
               ))}
             </select>
           </div>
-        ) : (
+        )}
+        {showSlotLevel && (
           <div>
             <label htmlFor="spell_slot_level" className="block text-sm font-display font-medium text-parchment-300 mb-1">
               Spell Slot Level

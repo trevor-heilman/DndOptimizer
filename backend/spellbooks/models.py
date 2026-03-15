@@ -106,6 +106,11 @@ class Character(models.Model):
         help_text="School-specific spellbook copy cost discounts (0–100%).",
     )
 
+    prepared_spells_bonus = models.IntegerField(
+        default=0,
+        help_text="Bonus prepared spells from magic items, feats, or boons.",
+    )
+
     ruleset = models.CharField(
         max_length=10, choices=RULESET_CHOICES, default='2014',
         help_text="Rules edition this character uses (2014 or 2024).",
@@ -147,31 +152,28 @@ class Character(models.Model):
         Number of spells this character can have prepared at once.
         Returns None for classes that use a 'spells known' model.
         Branches on self.ruleset ('2014' or '2024').
+        prepared_spells_bonus is always added on top of the base calculation.
         """
         mod = self.spellcasting_ability_modifier
         level = max(1, self.character_level or 1)
         cls = self.character_class
         is_2024 = self.ruleset == '2024'
+        bonus = self.prepared_spells_bonus
 
         if cls == 'wizard':
-            if is_2024:
-                return WIZARD_2024_PREPARED.get(level, max(1, mod + level))
-            return max(1, mod + level)
+            base = WIZARD_2024_PREPARED.get(level, max(1, mod + level)) if is_2024 else max(1, mod + level)
+            return base + bonus
         if cls in ('cleric', 'druid'):
-            # Same formula in both editions
-            return max(1, mod + level)
+            return max(1, mod + level) + bonus
         if cls == 'paladin':
-            # 2024: full level; 2014: half level
-            return max(1, mod + level) if is_2024 else max(1, mod + level // 2)
+            base = max(1, mod + level) if is_2024 else max(1, mod + level // 2)
+            return base + bonus
         if cls == 'artificer':
-            # Same in both editions
-            return max(1, mod + level // 2)
+            return max(1, mod + level // 2) + bonus
         if cls == 'bard' and is_2024:
-            # 2024 Bard now uses prepare model (CHA mod + bard level)
-            return max(1, mod + level)
+            return max(1, mod + level) + bonus
         if cls == 'ranger' and is_2024:
-            # 2024 Ranger now uses prepare model (WIS mod + half ranger level)
-            return max(1, mod + level // 2)
+            return max(1, mod + level // 2) + bonus
         return None  # spells-known model
 
 

@@ -49,6 +49,7 @@ export function CreateCharacterModal({ isOpen, onClose, onSave, existing }: Prop
   const [abilScore,  setAbilScore]  = useState('10');
   const [dcBonus,    setDcBonus]    = useState('0');
   const [atkBonus,   setAtkBonus]   = useState('0');
+  const [prepBonus,  setPrepBonus]  = useState('0');
   const [color,      setColor]      = useState<BookColor>('violet');
   const [ruleset,    setRuleset]    = useState<'2014' | '2024'>('2014');
   const [error,      setError]      = useState('');
@@ -70,14 +71,16 @@ export function CreateCharacterModal({ isOpen, onClose, onSave, existing }: Prop
     const m = derivedMod;
     const l = _lvl;
     const is2024 = ruleset === '2024';
+    const bonus = parseInt(prepBonus, 10) || 0;
     if (cls === 'wizard') {
-      return is2024 ? (WIZARD_2024_PREPARED[l] ?? Math.max(1, m + l)) : Math.max(1, m + l);
+      const base = is2024 ? (WIZARD_2024_PREPARED[l] ?? Math.max(1, m + l)) : Math.max(1, m + l);
+      return base + bonus;
     }
-    if (cls === 'cleric' || cls === 'druid') return Math.max(1, m + l);
-    if (cls === 'paladin') return is2024 ? Math.max(1, m + l) : Math.max(1, m + Math.floor(l / 2));
-    if (cls === 'artificer') return Math.max(1, m + Math.floor(l / 2));
-    if (cls === 'bard' && is2024) return Math.max(1, m + l);
-    if (cls === 'ranger' && is2024) return Math.max(1, m + Math.floor(l / 2));
+    if (cls === 'cleric' || cls === 'druid') return Math.max(1, m + l) + bonus;
+    if (cls === 'paladin') return (is2024 ? Math.max(1, m + l) : Math.max(1, m + Math.floor(l / 2))) + bonus;
+    if (cls === 'artificer') return Math.max(1, m + Math.floor(l / 2)) + bonus;
+    if (cls === 'bard' && is2024) return Math.max(1, m + l) + bonus;
+    if (cls === 'ranger' && is2024) return Math.max(1, m + Math.floor(l / 2)) + bonus;
     return null;
   })();
 
@@ -93,11 +96,12 @@ export function CreateCharacterModal({ isOpen, onClose, onSave, existing }: Prop
       setAbilScore(String(storedMod * 2 + 10));
       setDcBonus(String(existing.dc_bonus ?? 0));
       setAtkBonus(String(existing.attack_bonus_extra ?? 0));
+      setPrepBonus(String(existing.prepared_spells_bonus ?? 0));
       setColor(existing.portrait_color ?? 'violet');
       setRuleset(existing.ruleset ?? '2014');
     } else {
       setName(''); setCls(''); setLevel('1'); setSubclass('');
-      setAbilScore('10'); setDcBonus('0'); setAtkBonus('0'); setColor('violet');
+      setAbilScore('10'); setDcBonus('0'); setAtkBonus('0'); setPrepBonus('0'); setColor('violet');
       setRuleset('2014');
     }
     setError('');
@@ -131,6 +135,7 @@ export function CreateCharacterModal({ isOpen, onClose, onSave, existing }: Prop
         spellcasting_ability_modifier: Math.floor((Math.max(1, Math.min(30, parseInt(abilScore, 10) || 10)) - 10) / 2),
         dc_bonus: parseInt(dcBonus, 10) || 0,
         attack_bonus_extra: parseInt(atkBonus, 10) || 0,
+        prepared_spells_bonus: parseInt(prepBonus, 10) || 0,
       });
       onClose();
     } catch (err: any) {
@@ -298,6 +303,26 @@ export function CreateCharacterModal({ isOpen, onClose, onSave, existing }: Prop
               />
             </div>
           </div>
+
+          {/* Row 2: Extra prepared spells (only for prepare-model classes) */}
+          {derivedPrepared !== null && (
+            <div className="grid grid-cols-3 gap-3 mt-2">
+              <div>
+                <label className="block text-xs font-display text-parchment-400 mb-1">
+                  Extra Prepared
+                  <span className="text-smoke-600 font-normal ml-1">(boons)</span>
+                </label>
+                <input
+                  type="number"
+                  value={prepBonus}
+                  onChange={(e) => setPrepBonus(e.target.value)}
+                  className="dnd-input font-body text-sm"
+                  min={0} max={20}
+                  disabled={submitting}
+                />
+              </div>
+            </div>
+          )}
 
           {/* Live preview row */}
           <div

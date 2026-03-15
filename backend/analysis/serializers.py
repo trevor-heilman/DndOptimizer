@@ -163,8 +163,8 @@ class SpellEfficiencyRequestSerializer(ContextParametersMixin):
     Serializer for analyzing spell efficiency across slot levels.
     """
     spell_id = serializers.UUIDField(required=True)
-    min_slot_level = serializers.IntegerField(default=1, min_value=1, max_value=9)
-    max_slot_level = serializers.IntegerField(default=9, min_value=1, max_value=9)
+    min_slot_level = serializers.IntegerField(default=1, min_value=1, max_value=20)
+    max_slot_level = serializers.IntegerField(default=9, min_value=1, max_value=20)
 
     def validate(self, attrs):
         """Validate efficiency request."""

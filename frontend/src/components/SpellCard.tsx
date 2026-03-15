@@ -5,6 +5,21 @@ import { Link } from 'react-router-dom';
 import type { Spell } from '../types/api';
 import { getSchoolColors, getDamageColors } from '../constants/spellColors';
 
+const SOURCE_ABBREV: Record<string, string> = {
+  "Player's Handbook":                 'PHB',
+  "Player's Handbook (2014)":          'PHB 2014',
+  "Player's Handbook 2014":            'PHB 2014',
+  "Player's Handbook (2024)":          'PHB 2024',
+  "Player's Handbook 2024":            'PHB 2024',
+  "Xanathar's Guide to Everything":    'XGtE',
+  "Tasha's Cauldron of Everything":    'TCoE',
+  "Mordenkainen's Tome of Foes":       'MTF',
+  "Sword Coast Adventurer's Guide":    'SCAG',
+  "Strixhaven: A Curriculum of Chaos": 'SCC',
+  "Systems Reference Document":        'SRD',
+  "SRD 5.1":                           'SRD',
+};
+
 interface SpellCardProps {
   spell: Spell;
   /** Optional router state forwarded to the Link (e.g. spellbook context) */
@@ -54,7 +69,7 @@ export function SpellCard({ spell, linkState, className }: SpellCardProps) {
       </div>
 
       {/* Level + School badges */}
-      <div className="flex items-center gap-2 mb-2">
+      <div className="flex items-center gap-2 mb-2 flex-wrap">
         <span className="text-xs font-display font-medium px-2 py-0.5 rounded"
               style={{ background: '#2a2a35', color: '#fbbf24', border: '1px solid #4b4b58' }}>
           {levelText}
@@ -67,6 +82,12 @@ export function SpellCard({ spell, linkState, className }: SpellCardProps) {
           <span className="text-xs font-display px-1.5 py-0.5 rounded"
                 style={{ background: '#2e1a5f44', color: '#c4b5fd', border: '1px solid #4c1d9544' }}>
             Ritual
+          </span>
+        )}
+        {spell.source && (
+          <span className="text-[10px] font-body px-1.5 py-0.5 rounded ml-auto shrink-0"
+                style={{ background: '#1e1e2e66', color: '#64748b', border: '1px solid #2d3555' }}>
+            {SOURCE_ABBREV[spell.source] ?? (spell.source.length > 10 ? spell.source.slice(0, 10) + '…' : spell.source)}
           </span>
         )}
       </div>

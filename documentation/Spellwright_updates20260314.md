@@ -1,7 +1,7 @@
 # Spellwright — Planned updates (2026-03-14)
 
 > **Dev notes** added 2026-03-14 after codebase audit. Items are grouped roughly by effort.
-> **Progress last updated: 2026-03-14** — all quick wins complete.
+> **Progress last updated: 2026-03-15** — all items complete. 1 open item remains (see Priority Summary).
 
 ---
 
@@ -47,6 +47,14 @@
 
   > ✅ **Done 2026-03-14**: Changed `defaultForm.school` from `'evocation'` to `'abjuration'` in `CreateSpellModal.tsx`.
 
+- ~~Need source tag in spell library~~
+
+  > ✅ **Done 2026-03-15**: Added abbreviated source badge (`PHB 2014`, `XGtE`, etc.) to `SpellCard.tsx`. Badge appears right-aligned in the level/school row, muted and small. Falls back to truncated full `spell.source` when not in the abbreviation map. Source map copied from the existing definition in `AddSpellPicker.tsx`.
+
+- ~~Need class tags in spell view~~
+
+  > ✅ **Done 2026-03-15**: Added class name pills to `SpellDetailPage.tsx` in the header badge row. Each pill links to `/spells?class_name=<class>` to pre-filter the Spell Library. Section is hidden when `spell.classes` is empty.
+
 ---
 
 ## Spellbooks Section
@@ -71,9 +79,9 @@
 
   > ✅ **Done 2026-03-14**: Added `upcast_scale_step` IntegerField (null, default 1) to `Spell` and `DamageComponent` models (migration 0014). `_upcast_extra_dice()` and `_upcast_extra_attacks()` in `backend/analysis/services.py` now compute `(levels_above // step) * increment`. `_effective_dice()` for per-component scaling also respects the step. Added "Scale every N levels" number input to the Upcast Scaling section of `CreateSpellModal.tsx`. Wired through both serializers and the `Spell` TS type. — the step size is implicitly 1. The `Spell` model (`backend/spells/models.py` lines 65–71) has `upcast_base_level`, `upcast_dice_increment`, `upcast_die_size`, and `upcast_attacks_increment`, but **no step field**. `DamageComponent` has a per-component `upcast_dice_increment` override but also no step. **Fix**: (1) add `upcast_scale_step` IntegerField (default=1) to both `Spell` and `DamageComponent`, (2) change `_upcast_extra_dice()` to `(levels_above // scale_step) * increment`, (3) wire the field through `SpellSerializer` / `DamageComponentSerializer`, (4) add a "Scale every N levels" number input to the Upcast Scaling section of `CreateSpellModal.tsx`. Requires migration + backend + serializer + UI. **Effort**: Small–Medium.
 
-- Character-level scaling for non-cantrip spells (e.g. Green-Flame Blade, Booming Blade, Shadow Blade)
+- ~~Character-level scaling for non-cantrip spells (e.g. Green-Flame Blade, Booming Blade, Shadow Blade)~~
 
-  > **Dev note:** Cantrips already scale by character level — `_analyze_spell_at_slot()` in `backend/analysis/services.py` branches at line 278 and uses `context.character_level` via `_cantrip_tier_multiplier()`. Non-cantrip character-level scaling (e.g. GFB adds +CHA mod on level 5, more on level 11) requires a **new data model**: ideally a `char_level_breakpoints` JSONField on `Spell` specifying `{5: {flat_modifier: "mod"}, 11: {dice_count: 1, die_size: 8}}` or similar. The analysis engine would then need a second branch that merges these breakpoints at the provided `context.character_level`. Needs design decision (struct of breakpoints, interaction with existing upcast) before implementation. **Effort**: Medium–Large.
+  > ✅ **Done 2026-03-15**: `char_level_breakpoints` JSONField was already on the `Spell` model (migration 0015) and fully wired into the analysis engine (`_apply_char_level_breakpoints()` called for all spell-type branches). This session added the frontend UI: `CreateSpellModal.tsx` now has a "Character Level Scaling" section (shown for all non-cantrip spells) with an "+ Add Tier" button; each tier row lets users set the character-level threshold, bonus die count, die size, and flat modifier. The array is converted to the `Record<string, {die_count, die_size, flat}>` dict format in `handleSubmit`. `SpellDetailPage.tsx` shows a "Char Level Scaling" row in the Spell Mechanics card when any breakpoints are present.
 
 - ~~Conditional damage triggers (e.g. "When grappling", "After tripping") as alternatives to on-hit timing~~
 
@@ -83,9 +91,11 @@
 
   > **Dev note:** `damageSpells` in `SpellbookDetailPage.tsx` (lines 383–390) filters for: `(is_attack_roll || is_saving_throw) && damage_components.length > 0`. Magic Missile is **neither** an attack roll nor a saving throw — it auto-hits — so it is excluded even if it has damage components. To include it, the filter needs a third condition: spells where `is_attack_roll=false && is_saving_throw=false` but `damage_components` is populated (auto-hit / guaranteed damage spells). A clean solution might be to add a dedicated `is_auto_hit` boolean field to the `Spell` model and include it in the filter: `(is_attack_roll || is_saving_throw || is_auto_hit) && damage_components.length > 0`. Alternatively, simply relax the filter to `damage_components.length > 0` (remove the attack/save requirement) which would include all spells with damage components. **Effort**: if using `is_auto_hit` field: backend migration + frontend = medium; if just relaxing the filter: trivial frontend change (~10 min, but requires verifying no non-damage spells accidentally have damage_components set).
 
-- I am not seeing summoning spells in the "Compare damage spells" section
+- ~~I am not seeing summoning spells in the "Compare damage spells" section~~
 
-  > **Dev note:** Summoning spells use `summon_templates` (not `damage_components`) for their damage model. The current "Compare damage spells" panel only handles `damage_components`-based DPR. Including summoning spells would require a second code path that reads DPR from `analysis.results.per_template[*].expected_dpr` (already calculated by the analysis engine). **Effort**: medium–large. A simpler interim option is to display summoning spells in a separate "Summoning DPR" panel rather than bolting them into the existing compare flow. Requires design decision before implementation.
+  > ✅ **Done 2026-03-15**: The backend analysis engine already computed `expected_damage` for summoning spells (best template DPR) and included `math_breakdown.per_template` in the response. The frontend changes added:
+  > - **Compare at Slot**: summoning spell bars are teal (vs gold/purple for damage spells); an explanatory note distinguishes DPR from expected damage. An expandable **Summoning Template Breakdown** section below the efficiency table lists every available template at the current slot level, sorted by DPR, with the best template highlighted.
+  > - **By Level**: summoning spell lines are teal; a note explains the Y-axis represents best-template DPR at each slot level.
 
 - ~~Source filter when adding spells to a spellbook~~
 
@@ -98,6 +108,22 @@
 - ~~Tags selector when creating or editing a spell~~
 
   > ✅ **Done 2026-03-14**: `SPELL_TAGS` constant already existed in `frontend/src/constants/spellColors.ts`. `Spell.tags` is a JSONField on the backend model and was already in `SpellCreateUpdateSerializer`. `CreateSpellModal.tsx` had no tags UI. **Fix**: added `tags: string[]` to `SpellFormState`, `defaultForm`, and `spellToFormState()`; added `toggleTag()` helper; added a checkbox group after the Classes section using `SPELL_TAGS` with human-readable labels.
+
+- ~~Color Spray was appearing in the spellbook damage comparison chart~~
+
+  > ✅ **Done 2026-03-15**: `compareSpells` useMemo in `SpellbookDetailPage.tsx` now filters on `tags.includes('damage') || tags.includes('summoning')`, falling back to spells with `damage_components` only when the spell has no tags (backward compat for legacy custom spells). Previously filtered on `damage_components.length > 0` alone, which included any spell with damage data regardless of gameplay type.
+
+- ~~Cantrip damage (e.g. Mind Sliver) miscalculated in the Compare panel~~
+
+  > ✅ **Done 2026-03-15**: `damageContext` in `SpellbookDetailPage.tsx` was initialised with `character_level: 1` hardcoded regardless of the linked character's actual level. The existing `useEffect` that syncs from `linkedCharacter` now also sets `character_level`, so cantrips are evaluated at the correct tier (×1 at 1–4, ×2 at 5–10, etc.).
+
+- ~~Prepared spell count showing raw total with no max context (e.g. "16 prepared" when limit is 15)~~
+
+  > ✅ **Done 2026-03-15**: Spellbook header now shows `★ {prepared}/{max}` (turns red when over limit). Added `prepared_spells_bonus = IntegerField(default=0)` to the `Character` model (migration `0011`); `max_prepared_spells` adds this bonus to the computed base. When bonus > 0 the display reads `16/15 +1`. Wired through `CharacterSerializer`, `CharacterCreateUpdateSerializer`, `Character` TS interface, and `CreateCharacterModal` (new "Extra Prepared" numeric field, only shown for prepare-model classes).
+
+- ~~New spellbook creation modal missing spine text color picker~~
+
+  > ✅ **Done 2026-03-15**: `Spellbook.label_color` and `SpellbookCreate.label_color` were already in the backend model and TypeScript types. `CreateSpellbookModal.tsx` only had a `book_color` picker. Added `labelColor` state + `<input type="color">` with a "Reset" link; hex value is passed as `label_color` in `onCreate`.
 
 ---
 
@@ -159,18 +185,25 @@
 | Auto-close CreateSpellModal on success | ~~Trivial~~ | ✅ Done — `CreateSpellModal.tsx` `handleSubmit` |
 | Faster rebuild (remove `--no-cache`) | ~~Trivial~~ | ✅ Done — `rebuild.sh` 1-line fix |
 | "Not in spellbooks" filter | ~~Medium~~ | ✅ Done — `?not_in_spellbook=<uuid>` in `SpellViewSet` + dropdown in `SpellsPage` sidebar |
-| Summoning spells in Compare | Medium–Large | New DPR rendering path |
+| Summoning spells in Compare | ~~Medium–Large~~ | ✅ Done — teal bars, per-template breakdown, By Level teal lines |
 | Spell slot tracking (cast spells) | ~~Medium~~ | ✅ Done — ⚡ Cast button on each spell card; increments `spell_slots_used` via `updateSlots`; grayed when no slots remain |
-| Efficiency sort (best at X level) | Large | Batch analysis + sort |
-| Hit/miss tracking + enemy stat inference | Large | New model + analysis layer |
+| Efficiency sort (best at X level) | ~~Large~~ | ✅ Done — `SpellsPage` "⚡ Best Efficiency" sort option; sidebar Efficiency Settings (slot level, AC, attack bonus, save DC, target save bonus); fetches up to 500 spells, runs batch analysis via `analysisService.analyzeSpell` with 5-way concurrency, sorts by `expected_damage` desc, renders ranked list with expected damage badge |
+| Hit/miss tracking + enemy stat inference | ~~Large~~ | ✅ Done — `SpellbookDetailPage`: `CombatRoll` interface + `inferAC` Bayesian estimator (AC 5–30 discrete uniform prior); `pendingCast` + `combatRolls` state with `localStorage` persistence keyed by spellbook ID; hit/miss overlay on `SpellbookSpellCard` for attack-roll spells after cast; "🎯 Combat Log" collapsible panel with hit rate, MAP AC estimate, 95% credible interval, roll history pills, and Clear Log |
 | Uneven upcast scaling (every N levels) | ~~Small–Medium~~ | ✅ Done — `upcast_scale_step` on `Spell` + `DamageComponent`; analysis engine uses `levels_above // step`; modal "Scale every N levels" input |
-| Character-level scaling for non-cantrips | Medium–Large | New `char_level_breakpoints` JSONField + engine branch |
+| Character-level scaling for non-cantrips | ~~Medium–Large~~ | ✅ Done — `char_level_breakpoints` JSONField + analysis engine already complete; added UI in `CreateSpellModal` + display in `SpellDetailPage` |
 | Conditional damage triggers (grapple, trip…) | ~~Small~~ | ✅ Done — `condition_label` CharField on `DamageComponent`; inline text input in modal; badge in `SpellDetailPage` |
 | Classify imported spells PHB 2014 vs 2024 | ~~Trivial–Small~~ | ✅ Done — `classify_phb_editions` mgmt command; 396 PHB (2014) spells updated |
 | Auto-hit spells missing from Create/Edit modal (Fist of Cold bug) | ~~Small~~ | ✅ Done — `is_auto_hit` added to `SpellFormState`, checkbox added, Damage Components condition extended |
 | Tags selector in Create/Edit spell modal | ~~Trivial~~ | ✅ Done — `tags` field + `toggleTag()` + checkbox group using `SPELL_TAGS` |
 | Import PHB 2024 spells with correct source | ~~Small–Medium~~ | ✅ Done — `seed_spells.py` deduplicates on `(name, source)`; `fetch_phb2024.py` + `import_phb2024_spells` mgmt command ready to run |
+| Source badge in spell library | ~~Trivial~~ | ✅ Done — `SpellCard.tsx` muted source abbreviation badge (`PHB 2014`, `XGtE`, etc.) |
+| Class tags in spell detail view | ~~Trivial~~ | ✅ Done — `SpellDetailPage.tsx` class pills linking to filtered library |
+| Color Spray in damage compare | ~~Trivial~~ | ✅ Done — `compareSpells` filters by `damage`/`summoning` tags |
+| Cantrip level miscalculation in Compare | ~~Trivial~~ | ✅ Done — `damageContext` now syncs `character_level` from linked character |
+| Prepared count display + bonus field | ~~Small~~ | ✅ Done — `★ prepared/max` header; `prepared_spells_bonus` model field + migration `0011` |
+| Spellbook label color in create modal | ~~Trivial~~ | ✅ Done — `CreateSpellbookModal.tsx` `<input type="color">` for spine text colour |
 
 
 # Objective Staging
 
+_Drop new unclassified requests here. Items will be classified with a dev note and effort label, then moved to the appropriate section above._

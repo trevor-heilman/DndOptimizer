@@ -112,7 +112,9 @@ class AnalysisContext(models.Model):
         """Build an unsaved AnalysisContext for in-memory use (e.g. efficiency loop)."""
         fields = {k: data[k] for k in cls._CONTEXT_FIELDS if k != 'spell_slot_level' and k in data}
         fields['spell_slot_level'] = slot_override if slot_override is not None else data.get('spell_slot_level', 1)
-        return cls(**fields)
+        ctx = cls(**fields)
+        ctx.character_level = data.get('character_level', 1)
+        return ctx
 
 
 class SpellComparison(models.Model):

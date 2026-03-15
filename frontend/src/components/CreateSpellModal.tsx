@@ -7,6 +7,13 @@ import { ModalShell, AlertMessage } from './ui';
 import { DAMAGE_TYPES, SPELL_TAGS } from '../constants/spellColors';
 import type { Spell } from '../types/api';
 
+interface CharLevelBreakpointEntry {
+  char_level: number;
+  die_count: number;
+  die_size: number;
+  flat: number;
+}
+
 interface DamageComponentEntry {
   dice_count: number;
   die_size: number;
@@ -113,6 +120,7 @@ interface SpellFormState {
   upcast_base_level: number | null;
   upcast_attacks_increment: number | null;
   upcast_scale_step: number | null;
+  char_level_breakpoints: CharLevelBreakpointEntry[];
 }
 
 const defaultForm: SpellFormState = {
@@ -146,6 +154,7 @@ const defaultForm: SpellFormState = {
   upcast_base_level: null,
   upcast_attacks_increment: null,
   upcast_scale_step: null,
+  char_level_breakpoints: [],
 };
 
 /** Map a Spell back into the editable SpellFormState. */
@@ -194,6 +203,14 @@ function spellToFormState(spell: Spell): SpellFormState {
     upcast_base_level: spell.upcast_base_level ?? null,
     upcast_attacks_increment: spell.upcast_attacks_increment ?? null,
     upcast_scale_step: spell.upcast_scale_step ?? null,
+    char_level_breakpoints: Object.entries(spell.char_level_breakpoints ?? {})
+      .map(([lvl, bp]) => ({
+        char_level: Number(lvl),
+        die_count: bp.die_count,
+        die_size: bp.die_size,
+        flat: bp.flat ?? 0,
+      }))
+      .sort((a, b) => a.char_level - b.char_level),
   };
 }
 
@@ -278,6 +295,23 @@ export function CreateSpellModal({ isOpen, onClose, spellToEdit }: CreateSpellMo
     });
   };
 
+  const addBreakpoint = () => setForm(prev => ({
+    ...prev,
+    char_level_breakpoints: [...prev.char_level_breakpoints, { char_level: 5, die_count: 1, die_size: 8, flat: 0 }],
+  }));
+
+  const removeBreakpoint = (i: number) => setForm(prev => ({
+    ...prev,
+    char_level_breakpoints: prev.char_level_breakpoints.filter((_, idx) => idx !== i),
+  }));
+
+  const setBreakpoint = <K extends keyof CharLevelBreakpointEntry>(i: number, field: K, value: CharLevelBreakpointEntry[K]) =>
+    setForm(prev => {
+      const next = [...prev.char_level_breakpoints];
+      next[i] = { ...next[i], [field]: value };
+      return { ...prev, char_level_breakpoints: next };
+    });
+
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
     if (!form.name.trim()) newErrors.name = 'Name is required.';
@@ -296,8 +330,13 @@ export function CreateSpellModal({ isOpen, onClose, spellToEdit }: CreateSpellMo
     e.preventDefault();
     if (!validate()) return;
 
+    const bpDict: Record<string, { die_count: number; die_size: number; flat: number }> = {};
+    form.char_level_breakpoints.forEach(bp => {
+      bpDict[String(bp.char_level)] = { die_count: bp.die_count, die_size: bp.die_size, flat: bp.flat };
+    });
     const payload = {
       ...form,
+      char_level_breakpoints: bpDict,
       casting_time: form.casting_time === 'Other' ? form.casting_time_custom.trim() : form.casting_time,
       range: form.range === 'Other' ? form.range_custom.trim() : form.range,
       save_type: form.is_saving_throw ? form.save_type : undefined,
@@ -729,6 +768,81 @@ export function CreateSpellModal({ isOpen, onClose, spellToEdit }: CreateSpellMo
                   />
                 </div>
               </div>
+            </div>
+          )}
+
+          {/* Character Level Scaling */}
+          {form.level > 0 && (
+            <div className="pl-3 border-l-2 border-arcane-700 space-y-3">
+              <div className="flex items-center justify-between">
+                <p className={labelCls}>
+                  Character Level Scaling{' '}
+                  <span className="text-smoke-500 font-normal text-xs ml-1">
+                    (e.g. Green-Flame Blade adds 1d8 at level 5, 2d8 at level 11)
+                  </span>
+                </p>
+                <button
+                  type="button"
+                  onClick={addBreakpoint}
+                  className="text-xs font-body text-arcane-400 hover:text-arcane-300 cursor-pointer shrink-0"
+                >
+                  + Add Tier
+                </button>
+              </div>
+              {form.char_level_breakpoints.length === 0 && (
+                <p className="font-body text-xs text-smoke-600 italic">
+                  No character level breakpoints. Click "+ Add Tier" to add one.
+                </p>
+              )}
+              {form.char_level_breakpoints.map((bp, i) => (
+                <div key={i} className="flex items-center gap-2 flex-wrap">
+                  <label className="font-display text-xs text-smoke-400">Level</label>
+                  <input
+                    type="number"
+                    min={2}
+                    max={20}
+                    value={bp.char_level}
+                    onChange={(e) => setBreakpoint(i, 'char_level', Math.min(20, Math.max(2, parseInt(e.target.value) || 2)))}
+                    className="dnd-input font-body text-xs w-14"
+                    aria-label="Character level threshold"
+                  />
+                  <span className="text-smoke-400 font-body text-xs">+:</span>
+                  <input
+                    type="number"
+                    min={1}
+                    value={bp.die_count}
+                    onChange={(e) => setBreakpoint(i, 'die_count', Math.max(1, parseInt(e.target.value) || 1))}
+                    className="dnd-input font-body text-xs w-12"
+                    aria-label="Bonus die count"
+                  />
+                  <span className="text-smoke-400 font-body text-xs">d</span>
+                  <select
+                    value={bp.die_size}
+                    onChange={(e) => setBreakpoint(i, 'die_size', parseInt(e.target.value))}
+                    className="dnd-input font-body text-xs w-20"
+                    aria-label="Bonus die size"
+                  >
+                    {DIE_SIZES.map((d) => <option key={d} value={d}>d{d}</option>)}
+                  </select>
+                  <span className="text-smoke-400 font-body text-xs">+</span>
+                  <input
+                    type="number"
+                    value={bp.flat}
+                    onChange={(e) => setBreakpoint(i, 'flat', parseInt(e.target.value) || 0)}
+                    className="dnd-input font-body text-xs w-12"
+                    aria-label="Bonus flat modifier"
+                  />
+                  <span className="text-smoke-400 font-body text-xs">flat</span>
+                  <button
+                    type="button"
+                    onClick={() => removeBreakpoint(i)}
+                    className="text-smoke-500 hover:text-crimson-400 font-body text-xs ml-auto cursor-pointer"
+                    aria-label="Remove tier"
+                  >
+                    ✕
+                  </button>
+                </div>
+              ))}
             </div>
           )}
 

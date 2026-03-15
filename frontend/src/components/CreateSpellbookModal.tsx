@@ -23,6 +23,7 @@ export function CreateSpellbookModal({
   const [description,    setDescription]    = useState('');
   const [characterId,    setCharacterId]    = useState(defaultCharacterId ?? '');
   const [bookColor,      setBookColor]      = useState<BookColor>('violet');
+  const [labelColor,     setLabelColor]     = useState('');
   const [isSubmitting,   setIsSubmitting]   = useState(false);
   const [error,          setError]          = useState('');
 
@@ -40,8 +41,9 @@ export function CreateSpellbookModal({
         description: description.trim() || undefined,
         character: characterId || undefined,
         book_color: bookColor,
+        label_color: labelColor || undefined,
       });
-      setName(''); setDescription(''); setCharacterId(defaultCharacterId ?? ''); setBookColor('violet');
+      setName(''); setDescription(''); setCharacterId(defaultCharacterId ?? ''); setBookColor('violet'); setLabelColor('');
       onClose();
     } catch (err: any) {
       setError(err.response?.data?.detail || 'Failed to create spellbook');
@@ -52,7 +54,7 @@ export function CreateSpellbookModal({
 
   const handleClose = () => {
     if (!isSubmitting) {
-      setName(''); setDescription(''); setCharacterId(defaultCharacterId ?? ''); setBookColor('violet');
+      setName(''); setDescription(''); setCharacterId(defaultCharacterId ?? ''); setBookColor('violet'); setLabelColor('');
       setError('');
       onClose();
     }
@@ -121,6 +123,39 @@ export function CreateSpellbookModal({
             Book Color
           </label>
           <BookColorPicker value={bookColor} onChange={setBookColor} disabled={isSubmitting} />
+        </div>
+
+        {/* Spine text color */}
+        <div>
+          <label className="block text-sm font-display font-medium text-parchment-300 mb-2">
+            Spine Text Color{' '}
+            <span className="text-smoke-500 font-normal text-xs">(optional)</span>
+          </label>
+          <div className="flex items-center gap-2">
+            <input
+              type="color"
+              value={labelColor || '#e8d5a3'}
+              onChange={(e) => setLabelColor(e.target.value)}
+              className="h-9 w-14 rounded cursor-pointer bg-surface-700 border border-surface-600 p-0.5"
+              disabled={isSubmitting}
+            />
+            {labelColor && (
+              <button
+                type="button"
+                onClick={() => setLabelColor('')}
+                className="text-xs font-body text-smoke-500 hover:text-parchment-400 transition-colors"
+                disabled={isSubmitting}
+              >
+                Reset
+              </button>
+            )}
+            {labelColor && (
+              <span className="font-body text-xs text-smoke-500">{labelColor}</span>
+            )}
+            {!labelColor && (
+              <span className="font-body text-xs text-smoke-600 italic">using palette default</span>
+            )}
+          </div>
         </div>
 
         {error && <AlertMessage variant="error" message={error} />}
