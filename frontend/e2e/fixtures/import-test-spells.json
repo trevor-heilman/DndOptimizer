@@ -1,0 +1,16 @@
+[
+  {
+    "name": "E2E Test — Arcane Volt",
+    "level": 1,
+    "school": "evocation",
+    "casting_time": "1 action",
+    "range": "60 feet",
+    "duration": "Instantaneous",
+    "description": "A test spell created by the Playwright E2E import test suite. Safe to delete.",
+    "verbal": true,
+    "somatic": false,
+    "material": false,
+    "concentration": false,
+    "classes": ["wizard"]
+  }
+]

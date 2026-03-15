@@ -205,8 +205,8 @@ A D&D 5e spell optimization platform: browse the PHB 2014/XGtE/TCoE/PHB 2024 spe
 | F8 | Frontend unit | `useCharacters.test.tsx` | Hook state + error handling | Small | ✅ Done — 9 tests |
 | F9 | Frontend unit | `SpellsPage.test.tsx` (expand) | Search filter, pagination, efficiency sort, "not in spellbook" filter | Medium | ✅ Done — 18 tests |
 | F10 | Frontend unit | `SpellCard.test.tsx` (extend) | Source badge, class pills, all timing labels | Small | ✅ Done — 27 tests |
-| E3 | E2E | `spell-import.spec.ts` | Import JSON file → verify spells appear + counts update | Medium | ⏳ Not started |
-| E4 | E2E | `spell-detail-analysis.spec.ts` | Open spell detail → run Analyze → verify expected damage result | Medium | ⏳ Not started |
+| E3 | E2E | `spell-import.spec.ts` | Import JSON file → verify spells appear + counts update | Medium | ✅ Done — 10 tests (modal UI, file upload, paste JSON flows) |
+| E4 | E2E | `spell-detail-analysis.spec.ts` | Open spell detail → run Analyze → verify expected damage result | Medium | ✅ Done — 14 tests (Combat Parameters, Analysis Results, slot controls, advanced options) |
 
 **Subtotal: ~56 new tests**
 
@@ -249,7 +249,8 @@ Phase 4 — Polish + CI
 - **Priority 1 complete** — all 9 items (B1/B2/B3/F1/F2/F3/F4/E1/E2) ✅ done; 337 backend tests, 226 frontend unit tests, ~40 E2E tests
 - B6 (management commands) was ✅ complete before this session — 43 tests already written
 - **Priority 2 complete** — all 8 items (B4/B5/F5/F6/F7/F8/F9/F10) ✅ done; **349 backend tests, 295 frontend unit tests** as of this session
-- Next up: Phase 4 (Priority 2 E-items + Priority 3) — E3/E4/B7/F11/F12/F13/E5/E6/E7
+- **E3/E4 complete** — `spell-import.spec.ts` (10 tests) + `spell-detail-analysis.spec.ts` (14 tests) added
+- Next up: Phase 4 — B7/F11/F12/F13/E5/E6/E7
 
 ---
 
