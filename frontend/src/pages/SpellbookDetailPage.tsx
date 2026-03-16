@@ -37,6 +37,7 @@ import { AnalysisContextForm } from '../components/AnalysisContextForm';
 import { LoadingSpinner, AlertMessage, EmptyState, ChartCard } from '../components/ui';
 import { BookColorPicker } from '../components/BookColorPicker';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LineChart, Line, Legend } from 'recharts';
+import type { PreparedSpell, BookColor, AnalysisContext, SpellbookUpdate } from '../types/api';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
