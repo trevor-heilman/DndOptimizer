@@ -81,10 +81,12 @@ jobs:
         run: docker compose exec -T backend python manage.py migrate --no-input
 
       # ── 8. Seed spell data ───────────────────────────────────────────────────
-      # Seeds spells.json + TCoE_spells.json from backend/data/ so the spell
-      # library tests (search, card navigation, etc.) have real data to work with.
+      # Seeds a minimal set of spells from the committed fixture file so the
+      # spell library tests (search, card navigation, analysis, compare) have
+      # real data. The full backend/data/*.json files are gitignored (too large);
+      # only this small fixture is committed.
       - name: Seed spell library
-        run: docker compose exec -T backend python manage.py seed_spells --all
+        run: docker compose exec -T backend python manage.py seed_spells --file /app/fixtures/e2e_spells.json
 
       # ── 9. Wait until the Django API is reachable ────────────────────────────
       # /api/spells/spells/ returns 401 when the backend is up, auth is required,
