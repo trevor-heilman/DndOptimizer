@@ -36,7 +36,7 @@ test.describe('Compare Spells', () => {
     await expect(page.getByRole('button', { name: 'Fireball' }).first()).toBeVisible({ timeout: 8_000 });
     await page.getByRole('button', { name: 'Fireball' }).first().click();
 
-    const inputB = page.getByPlaceholder(/search spells/i).nth(1);
+    const inputB = page.getByPlaceholder(/search spells/i).first();
     await inputB.fill('Magic Missile');
     await expect(page.getByRole('button', { name: 'Magic Missile' }).first()).toBeVisible({ timeout: 8_000 });
     await page.getByRole('button', { name: 'Magic Missile' }).first().click();
@@ -56,7 +56,7 @@ test.describe('Compare Spells', () => {
     await expect(page.getByRole('button', { name: 'Fireball' }).first()).toBeVisible({ timeout: 8_000 });
     await page.getByRole('button', { name: 'Fireball' }).first().click();
 
-    const inputB = page.getByPlaceholder(/search spells/i).nth(1);
+    const inputB = page.getByPlaceholder(/search spells/i).first();
     await inputB.fill('Magic Missile');
     await expect(page.getByRole('button', { name: 'Magic Missile' }).first()).toBeVisible({ timeout: 8_000 });
     await page.getByRole('button', { name: 'Magic Missile' }).first().click();
@@ -85,7 +85,7 @@ test.describe('Compare Spells — analysis results', () => {
     await expect(page.getByRole('button', { name: 'Fireball' }).first()).toBeVisible({ timeout: 8_000 });
     await page.getByRole('button', { name: 'Fireball' }).first().click();
 
-    const inputB = page.getByPlaceholder(/search spells/i).nth(1);
+    const inputB = page.getByPlaceholder(/search spells/i).first();
     await inputB.fill('Magic Missile');
     await expect(page.getByRole('button', { name: 'Magic Missile' }).first()).toBeVisible({ timeout: 8_000 });
     await page.getByRole('button', { name: 'Magic Missile' }).first().click();

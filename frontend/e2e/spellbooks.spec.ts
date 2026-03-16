@@ -30,7 +30,7 @@ test.describe('My Library', () => {
 
   test('navigates to spellbook detail when a book is clicked', async ({ page }) => {
     // Only run if at least one spellbook card exists
-    const bookLinks = page.getByRole('link', { name: /grimoire|tome|book/i });
+    const bookLinks = page.getByRole('link', { name: /open spellbook:/i });
     const count = await bookLinks.count();
     if (count === 0) {
       test.skip();

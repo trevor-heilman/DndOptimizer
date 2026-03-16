@@ -78,7 +78,7 @@ test.describe('Spell Detail — Analysis Results', () => {
 
   test('shows Expected Damage stat after analysis', async ({ page }) => {
     await runAnalysis(page, '3');
-    await expect(page.getByText(/expected damage/i)).toBeVisible();
+    await expect(page.locator('div').filter({ hasText: /^Expected Damage$/ })).toBeVisible();
   });
 
   test('shows a Math Breakdown section after analysis', async ({ page }) => {
@@ -99,7 +99,7 @@ test.describe('Spell Detail — Analysis Results', () => {
 
     // Re-run at a higher slot
     await runAnalysis(page, '5');
-    await expect(page.getByText(/expected damage/i)).toBeVisible();
+    await expect(page.locator('div').filter({ hasText: /^Expected Damage$/ })).toBeVisible();
   });
 });
 
@@ -123,7 +123,7 @@ test.describe('Spell Detail — Slot Level Controls', () => {
   test('changing slot level after an analysis reruns and refreshes results', async ({ page }) => {
     // First analysis at slot 3
     await runAnalysis(page, '3');
-    await expect(page.getByText(/expected damage/i)).toBeVisible();
+    await expect(page.locator('div').filter({ hasText: /^Expected Damage$/ })).toBeVisible();
 
     // Change to slot 5 and re-analyze
     await page.getByLabel(/spell slot level/i).selectOption('5');
@@ -131,7 +131,7 @@ test.describe('Spell Detail — Slot Level Controls', () => {
 
     // Results section must still be present after re-run
     await expect(page.getByText(/analysis results/i)).toBeVisible({ timeout: 15_000 });
-    await expect(page.getByText(/expected damage/i)).toBeVisible();
+    await expect(page.locator('div').filter({ hasText: /^Expected Damage$/ })).toBeVisible();
   });
 });
 
@@ -158,6 +158,6 @@ test.describe('Spell Detail — Advanced Analysis Options', () => {
     await halfDamage.check();
 
     await runAnalysis(page, '3');
-    await expect(page.getByText(/expected damage/i)).toBeVisible();
+    await expect(page.locator('div').filter({ hasText: /^Expected Damage$/ })).toBeVisible();
   });
 });

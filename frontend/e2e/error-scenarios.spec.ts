@@ -82,7 +82,7 @@ test.describe('Error scenarios — form errors', () => {
   }) => {
     await page.goto('/register');
     await page.getByLabel('Email Address').fill('test@example.invalid');
-    await page.getByLabel('Password').fill('Password1!');
+    await page.getByLabel('Password', { exact: true }).fill('Password1!');
     await page.getByLabel('Confirm Password').fill('Password2!');
     await page.getByRole('button', { name: /create account/i }).click();
 
@@ -94,7 +94,7 @@ test.describe('Error scenarios — form errors', () => {
   }) => {
     await page.goto('/register');
     await page.getByLabel('Email Address').fill('test@example.invalid');
-    await page.getByLabel('Password').fill('short');
+    await page.getByLabel('Password', { exact: true }).fill('short');
     await page.getByLabel('Confirm Password').fill('short');
     await page.getByRole('button', { name: /create account/i }).click();
 
