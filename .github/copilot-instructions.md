@@ -86,6 +86,13 @@
 - Generate and maintain OpenAPI schema for backend API.
 - Document API endpoints and expected request/response formats.
 - Provide user-facing documentation for import/export formats and error messages.
+- **Filename date suffix**: All new documentation files must end with the date in `yyyymmdd` format (e.g., `Spellwright_Progress20260316.md`). Never create a doc file without a date suffix.
+- **Document header**: The top of every documentation file must include a brief description/summary of the file's purpose, contents, and the date it was created or last significantly updated. Format:
+  ```
+  # <Title>
+  **Date:** yyyy-MM-dd  
+  **Summary:** <1–3 sentence description of what this document covers and why it exists.>
+  ```
 
 ## 10. Logging & Monitoring
 - Use structured JSON logging in production.
@@ -107,12 +114,13 @@
 - Prepare for future i18n/l10n support.
 
 ## 13. Objective Staging & Doc Classification
-- The file `documentation/Spellwright_updates20260314.md` contains a **"# Objective Staging"** section where the user drops raw, unclassified requests.
-- **Whenever new items appear there without a dev note**, classify them before or alongside implementation:
-  1. Move or copy the item into the appropriate section (Spells, Spellbooks, Calculations, Project Organisation, etc.).
+- **Active staging file**: `documentation/Spellwright_Objectives` is the single source of truth for unclassified and in-progress objectives. `Spellwright_updates20260314.md` is retired from staging.
+- **Whenever new items appear in `Spellwright_Objectives` without a dev note**, classify them before or alongside implementation:
+  1. Group the item under an appropriate category heading (UI, Spells, Spellbooks, Calculations, Infrastructure, Testing, etc.) — create a new category if no suitable one exists.
   2. Add a `> **Dev note:**` block covering: what currently exists in the codebase relevant to this request, what files/models/hooks would need to change, estimated effort (Trivial / Quick win / Small / Medium / Large), and any design decisions or alternatives.
-  3. Add the item to the **Priority Summary** table with the correct effort label.
-  4. Leave the original line in "Objective Staging" struck-through with a `✅ Done` or `→ Classified` note so the staging section stays clean.
+  3. Mark completed items with `✅ Done — <date>` and leave them in place so history is preserved.
+  4. Leave unclassified raw drops struck-through with a `→ Classified` note pointing to the section they were moved to.
+- **Progress updates**: After completing any objective, update `Spellwright_Objectives` immediately — mark it done, add any relevant notes.
 - When an item is too vague to classify accurately, add a `> **Needs clarification:**` note and ask the user before implementing.
 
 ---

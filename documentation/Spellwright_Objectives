@@ -1,0 +1,75 @@
+# Spellwright Objectives
+**Date:** 2026-03-16  
+**Summary:** Active staging and tracking file for all in-progress and upcoming objectives. New requests are dropped here first, then classified with a dev note and effort estimate. Completed items are marked ✅ Done and left in place for history.
+
+---
+
+## UI — Spellbook
+
+### Copy cost UI redesign
+> **Dev note:** `CopyCostSection` in `SpellbookDetailPage.tsx` was an inline accordion at the bottom of the page. `useSpellbookCopyCost` hook calls `/api/spellbooks/{id}/copy_cost/`. Redesign: compact totals row (gold + hours + discount badges) now lives in the header beneath spell slots panel; clicking "view breakdown →" opens a modal overlay with per-spell table. Files: `SpellbookDetailPage.tsx`. Effort: **Small**.
+
+✅ Done — 2026-03-16
+
+---
+
+## Infrastructure / Project Hygiene
+
+### Remove spell JSONs from GitHub commit history
+> **Dev note:** `backend/data/*.json` files (phb2024_spells.json, spells.json, XGtE_Spells_fixed.json, TCoE_spells.json) were once tracked and are still in git history. Git itself still stores all blob history — `git rm` only stops future tracking. To purge blobs from history requires `git filter-repo --path backend/data/ --invert-paths` (or BFG Repo-Cleaner). This rewrites all commits touching those blobs, requiring a force-push to all branches and every contributor to reclone. **Prerequisite:** ensure the files are in `.gitignore` first. Effort: **Small** (well-defined tooling, but it's a rewrite — confirm before running).
+
+### Clean up files no longer needed
+> **Dev note:** Look for orphaned scripts, unused fixture files, stale migration backups, or dead code that accumulated from earlier development phases. Candidates: `backend/data/convert_phb2024.py`, `backend/data/convert_xgte.py` (post-import conversion scripts no longer needed), `backend/data/fetch_open5e.py`, `backend/data/fetch_phb2024.py`. Also review `documentation/` for files that can be archived. Do NOT delete any documentation. Effort: **Quick win**.
+
+---
+
+## Documentation
+
+### Update Copilot instructions
+> **Dev note:** Instructions needed: filename date suffix `yyyymmdd`; doc header format with date + summary; switch active staging file from `Spellwright_updates20260314` to `Spellwright_Objectives`; classification workflow for new objectives. Files: `.github/copilot-instructions.md`. Effort: **Trivial**.
+
+✅ Done — 2026-03-16
+
+### AWS launch summary document
+> **Dev note:** Create a document summarising the minimum-cost AWS deployment options for this stack (Django + PostgreSQL + React/nginx + Redis). Focus on Free Tier and near-free approaches: EC2 t3.micro (1yr free), RDS Free Tier (db.t3.micro, 20 GB SSD), Elastic Beanstalk vs manual EC2, ECR/ECS Fargate pricing comparison, and Route 53 basics. Document should include estimated monthly ongoing cost after free tier expires. Output file: `documentation/Spellwright_AWS_Launch_yyyymmdd.md`. Effort: **Small**.
+
+### Update README
+> **Dev note:** Remove the large "Completed Backend/Frontend (Phase 1-4)" checkbox sections and session update history — those are now covered by the `documentation/` progress files. Also remove the stale "Next Steps" bullets (Plotly mention, etc.). Update the Features list to reflect current state (spell slots, combat log, copy cost calculator, scribing cost). Add a brief pointer to `documentation/Spellwright_Objectives` for active roadmap. Effort: **Quick win**.
+
+✅ Done — 2026-03-16
+
+---
+
+## Features — Import / Export
+
+### JSON export for spell library, spellbook, and character
+> **Dev note:** New feature — three export targets: (1) entire user spell library, (2) a single spellbook (including prepared spells), (3) a character (including all linked spellbooks). Backend: three new DRF endpoints returning structured JSON — `GET /api/spells/export/`, `GET /api/spellbooks/{id}/export/`, `GET /api/characters/{id}/export/`. Frontend: download-trigger buttons in the Spell Library toolbar, Spellbook detail header, and Character detail page (or modal). The JSON format should be human-readable and re-importable (round-trip safe). Effort: **Medium**.
+
+### JSON import for spellbook and character
+> **Dev note:** Companion to the export feature. Two import targets: (1) spellbook (creates a new spellbook from a JSON file, linking matching spells by name/source), (2) character with spellbooks. Backend: `POST /api/spellbooks/import/` and `POST /api/characters/import/` endpoints with validation. Frontend: file-picker modal on Spellbooks page and Characters page — show a preview/summary before committing. Rate-limit these endpoints. Effort: **Medium**.
+
+---
+
+## UI — Spell Comparison
+
+### Version / source tags in spell dropdown
+> **Dev note:** `SpellCombobox` in `ComparePage.tsx` currently shows level and school badges but not the spell source. The `Spell` model has a `source` CharField (`backend/spells/models.py` line 91). The `Spell` API serializer exposes it. The `Spell` TypeScript type needs `source?: string` added. Dropdown items should add a small source badge alongside `Lvl X` and school badges (e.g. "PHB 2024", "XGtE"). This helps users disambiguate duplicate-named spells from different books. Files: `ComparePage.tsx`, `frontend/src/types/api.ts`. Effort: **Quick win**.
+
+✅ Done — 2026-03-16 — source badge added to selected pill and all dropdown list items
+
+### Source / version filter in spell comparison dropdowns
+> **Dev note:** `SpellsPage.tsx` has a `sources` filter backed by `useSpellSources()`. The `SpellFilterBar` inside `ComparePage.tsx` does NOT include a source filter — it only has levels, schools, classes, damage types, and concentration. Add `sources: string[]` to `SpellFilter`, fetch available sources via `useSpellSources()`, and render a `MultiSelect` for it in `SpellFilterBar`. The `applySpellFilter` function already runs client-side against the 1000-spell payload, so no backend changes needed. Files: `ComparePage.tsx`, `frontend/src/hooks/useSpells.ts`. Effort: **Quick win**.
+
+✅ Done — 2026-03-16 — source MultiSelect added to both filter bars; `useSpellSources` wired in
+
+### Bug: Magic Missile shows no damage in spell comparison
+> **Dev note:** Root cause — `fix_auto_hit_spells` management command sets `is_auto_hit=True` and `number_of_attacks=3`, and applies `component_flat_modifier=1` to *existing* `DamageComponent` objects. But if the parser extracted zero `DamageComponent` records for a given Magic Missile spell (likely the PHB 2024 version, whose damage text is "1 force damage + your spellcasting ability modifier" with no standard dice pattern), the loop in `SpellAnalysisService` iterates over an empty list and returns `expected_damage=0`. Fix: update `fix_auto_hit_spells` to create a `DamageComponent(dice_count=1, die_size=4, damage_type="force")` if none exist. Affects both the comparison page and the standard analysis endpoint. Files: `backend/spells/management/commands/fix_auto_hit_spells.py`, possibly `backend/analysis/services.py`. Effort: **Quick win**.
+
+✅ Done — 2026-03-16 — `fix_auto_hit_spells` now creates a default `1d4+1 force` `DamageComponent` when none exist; command must be re-run in the container after rebuild
+
+---
+
+## Testing
+
+### Address minor test gaps
+> **Dev note:** Known coverage gaps: (1) `SpellbookDetailPage` unit tests don't cover cast button behavior, hit/miss overlay, or combat log panel; (2) no unit tests for `ImportSpellsModal`, `ClearSpellsModal`, `GrowthChart3D`, `HitChanceHeatmap`, `CantripScalingChart`; (3) backend: `upcast_scale_step=0` not validated — division-by-zero risk in analysis engine. For (3), add a validator on `Spell.upcast_scale_step` and/or a guard in the analysis service. Effort: **Medium** total.

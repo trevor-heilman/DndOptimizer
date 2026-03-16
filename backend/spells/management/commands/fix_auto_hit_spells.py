@@ -9,6 +9,7 @@ from django.db import transaction
 # Each entry: (name, number_of_attacks, upcast_attacks_increment, upcast_base_level,
 #               dart_flat_modifier)
 # dart_flat_modifier: added to *every* DamageComponent on the spell.
+# default_component: created only if the spell has zero DamageComponent rows.
 AUTO_HIT_CORRECTIONS = [
     {
         "name": "Magic Missile",
@@ -18,6 +19,15 @@ AUTO_HIT_CORRECTIONS = [
         "upcast_base_level": 1,
         "upcast_dice_increment": None,  # scaling is via extra darts, not extra dice
         "component_flat_modifier": 1,  # each dart: 1d4+1
+        # Created if the spell has no DamageComponent rows (e.g. PHB 2024 text has no
+        # standard dice pattern so the parser extracts nothing).
+        "default_component": {
+            "dice_count": 1,
+            "die_size": 4,
+            "flat_modifier": 1,
+            "damage_type": "force",
+            "timing": "on_hit",
+        },
     },
 ]
 
@@ -78,6 +88,20 @@ class Command(BaseCommand):
                     setattr(spell, field, desired)
 
         flat_mod = cfg.get("component_flat_modifier")
+        default_comp_spec = cfg.get("default_component")
+
+        if default_comp_spec is not None and spell.damage_components.count() == 0:
+            # Parser produced no DamageComponent rows — create one from the spec.
+            from spells.models import DamageComponent
+
+            fields_changed.append(
+                f"  created default DamageComponent: "
+                f"{default_comp_spec['dice_count']}d{default_comp_spec['die_size']}"
+                f"+{default_comp_spec['flat_modifier']} {default_comp_spec['damage_type']}"
+            )
+            if not dry_run:
+                DamageComponent.objects.create(spell=spell, **default_comp_spec)
+
         if flat_mod is not None:
             for comp in spell.damage_components.all():
                 if comp.flat_modifier != flat_mod:

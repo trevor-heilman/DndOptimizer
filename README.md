@@ -7,18 +7,17 @@ A full-stack web application for managing D&D 5e spells, creating spellbooks, an
 ## Features
 
 - **User Authentication**: JWT-based auth with automatic token refresh
-- **Spell Management**: Import/export spells from JSON, create custom spells with full CRUD
-- **Spell Browsing**: Search, filter by level/school, paginated spell list with detailed view
-- **Spellbook Management**: Create, edit, and manage prepared spell collections
-- **Spell Preparation**: Mark spells as prepared, add notes, duplicate spellbooks
-- **Level Breakdown**: Per-level spell count summary displayed in each spellbook
-- **Custom Spell Creation**: Class selection, casting time/range dropdowns, V/S/M component checkboxes
-- **Mathematical Analysis**: Expected damage calculations for attack rolls and saving throws
-- **Spell Comparison**: Side-by-side comparison with combat parameters and winner determination
-- **Data Visualization**: Interactive charts showing damage distribution and comparisons
-- **Efficiency Analysis**: Determine optimal spell usage per slot level
+- **Spell Library**: Search, filter by level/school/source/class, paginated list with detailed view
+- **Custom Spell Creation**: Class selector, casting time/range dropdowns, V/S/M component checkboxes
+- **Spellbook Management**: Create, edit, duplicate, and delete prepared spell collections
+- **Spell Preparation**: Mark spells as prepared, add notes, view per-level breakdown
+- **Spell Slots Tracker**: Track remaining spell slots per level with class-aware defaults; reset on rest
+- **Copy Cost Calculator**: Inline scribing cost totals (gold + time) with detailed modal breakdown
+- **Mathematical Analysis**: Expected damage calculations for attack rolls, saving throws, and auto-hit spells
+- **Spell Comparison**: Side-by-side comparison with per-spell overrides, breakeven analysis, and growth charts
+- **Data Visualization**: Interactive charts (damage distribution, cantrip scaling, hit-chance heatmap, 3D growth)
+- **Efficiency Analysis**: Damage-per-slot ratings for all comparison scenarios
 - **Dynamic Schema Support**: Accept heterogeneous JSON spell schemas with flexible storage
-- **Full-Stack Integration**: Seamless React frontend with Django REST API backend
 
 ## Tech Stack
 
@@ -178,83 +177,7 @@ mypy .
 
 ## Documentation
 
-See the [documentation/](documentation/) folder for requirements and architecture docs.
-
-## Latest Session Update (2026-03-12)
-
-- **SpellDetailPage visual rebalance:**
-  - Stat cards (Casting Time / Range / Duration) moved from full-width grid above the columns into the top of the right column, stacked vertically
-  - Expected Damage Analysis moved to a full-width section below the two-column grid; has its own internal 2-col layout at xl breakpoints
-  - Left column: Description, Spell Mechanics, Damage Components — Right column: stat cards + Damage Distribution chart
-  - Parsing Information section removed from detail page
-- **SpellDetailPage styling cleanup:**
-  - Replaced remaining `dnd-card` grey boxes (analysis result Type/Expected Damage/Efficiency) with dark arcane gradient cards
-  - Stat card label text updated to `text-gold-400` (matching section title color); values to `text-gold-300`
-
-### Next Steps
-- [ ] Build out automation test suite (Vitest / React Testing Library + pytest coverage expansion)
-- [ ] Investigate long loading screens — profile Plotly bundle, consider dynamic import / code splitting
-- [ ] Code quality sweep (ruff, black, mypy, TypeScript strict, N+1 query audit)
-- [ ] Final spell comparison concept adjustments (UX review, winner callout)
-
-✅ **Phase 1-4 Complete: Full-Stack Production-Ready Application**
-
-### Completed Backend (Phase 1-3)
-✅ Django project structure with modular apps  
-✅ Custom User model with UUID primary keys  
-✅ Spell model with dynamic JSON schema support  
-✅ Spellbook and PreparedSpell models  
-✅ Analysis models and mathematical engine  
-✅ Complete REST API with DRF  
-✅ JWT authentication with token refresh  
-✅ All serializers and viewsets  
-✅ URL routing and API endpoints (30+)  
-✅ Spell parsing service with regex damage extraction  
-✅ Confidence scoring system  
-✅ Management command for seed data  
-✅ Comprehensive test suite (models, API, services)  
-✅ Test coverage reporting (80% minimum)  
-✅ Podman compose configuration  
-✅ CI/CD pipeline with GitHub Actions  
-✅ Testing framework with pytest  
-✅ Code quality tools (black, ruff, mypy)
-
-### Completed Frontend (Phase 4) ⭐ NEW
-✅ React 18 + TypeScript + Vite setup  
-✅ TailwindCSS with custom design system  
-✅ React Router with protected routes  
-✅ Authentication pages (login/register)  
-✅ JWT authentication flow with auto-refresh  
-✅ API client with Axios interceptors  
-✅ Spell list page with search/filtering/pagination  
-✅ Spell detail page with full spell information  
-✅ Spellbook management (create/edit/delete/duplicate)  
-✅ Spellbook detail with add/remove/prepared spells  
-✅ Spell comparison UI with analysis context  
-✅ Data visualization with Recharts (damage charts)  
-✅ 33 frontend source files  
-✅ 0 TypeScript errors  
-✅ Production container build with nginx (Podman)
-
-### Session Updates (2026-03-09)
-✅ Fixed infinite-spinner page loads (removed `[::1]:80:80` IPv6 binding)  
-✅ Fixed AddSpellPicker showing only 16 spells (custom `SpellPagination` class with `page_size_query_param`)  
-✅ Fixed 502 Bad Gateway after backend rebuild (documented nginx IP cache — restart frontend after any backend recreation)  
-✅ Spellbook detail: per-level spell count breakdown pills in header  
-✅ Create Spell modal: V/S/M component checkboxes (M reveals material text field)  
-✅ Create Spell modal: Casting Time and Range converted to dropdowns (with "Other" free-text fallback)  
-✅ Create Spell modal: Class selector (9 class checkboxes)  
-✅ Backend: `components_v`, `components_s`, `components_m`, `material` fields added to Spell model  
-✅ Backend: Migration `0004_spell_components` and serializers updated
-
-### Next Steps (carried forward)
-- [ ] Build out automation test suite (Vitest / React Testing Library + pytest coverage expansion)
-- [ ] Investigate long loading screens — profile Plotly bundle, consider dynamic import / code splitting
-- [ ] Code quality sweep (ruff, black, mypy, TypeScript strict, N+1 query audit)
-- [ ] Final spell comparison concept adjustments (UX review, winner callout)
-- [ ] User dashboard with statistics
-- [ ] Advanced filtering and search
-- [ ] Deploy to production environment
-
-See [TESTING.md](TESTING.md) for testing guide.  
-See [documentation/API_LAYER_COMPLETE.md](documentation/API_LAYER_COMPLETE.md) for complete API documentation.
+See the [documentation/](documentation/) folder for architecture docs and historical progress notes.  
+See [TESTING.md](TESTING.md) for the testing guide.  
+See [documentation/API_LAYER_COMPLETE.md](documentation/API_LAYER_COMPLETE.md) for complete API documentation.  
+See [documentation/Spellwright_Objectives](documentation/Spellwright_Objectives) for the active roadmap and in-progress objectives.

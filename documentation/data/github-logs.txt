@@ -1,0 +1,192 @@
+Current runner version: '2.332.0'
+Runner Image Provisioner
+Operating System
+Runner Image
+GITHUB_TOKEN Permissions
+Secret source: Actions
+Prepare workflow directory
+Prepare all required actions
+Getting action download info
+Download action repository 'actions/checkout@v3' (SHA:f43a0e5ff2bd294095638e18286ca9a3d1956744)
+Download action repository 'actions/setup-python@v4' (SHA:7f4fc3e22c37d6ff65e88745f38bd3157c663f7c)
+Download action repository 'actions/cache@v3' (SHA:6f8efc29b200d32929f49075959781ed54ec270c)
+Download action repository 'codecov/codecov-action@v3' (SHA:ab904c41d6ece82784817410c45d8b8c02684457)
+Complete job name: backend
+23s
+Checking docker version
+Clean up resources from previous jobs
+Create local container network
+Starting postgres service container
+Waiting for all services to be ready
+1s
+Run actions/checkout@v3
+Syncing repository: trevor-heilman/DndOptimizer
+Getting Git version info
+Temporarily overriding HOME='/home/runner/work/_temp/fabfe424-24fe-4e61-9c32-775d24eeeb66' before making global git config changes
+Adding repository directory to the temporary git global config as a safe directory
+/usr/bin/git config --global --add safe.directory /home/runner/work/DndOptimizer/DndOptimizer
+Deleting the contents of '/home/runner/work/DndOptimizer/DndOptimizer'
+Initializing the repository
+Disabling automatic garbage collection
+Setting up auth
+Fetching the repository
+Determining the checkout info
+Checking out the ref
+/usr/bin/git log -1 --format='%H'
+'3b4192dddfd8e6cc1d403a73af05fe8e8bdabb9b'
+0s
+2s
+13s
+  Using cached rpds_py-0.30.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl.metadata (4.1 kB)
+Using cached django-6.0.3-py3-none-any.whl (8.4 MB)
+Using cached psycopg2_binary-2.9.11-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.whl (4.2 MB)
+Using cached django_redis-6.0.0-py3-none-any.whl (33 kB)
+Using cached djangorestframework-3.16.1-py3-none-any.whl (1.1 MB)
+Using cached django_environ-0.13.0-py3-none-any.whl (20 kB)
+Using cached djangorestframework_simplejwt-5.5.1-py3-none-any.whl (107 kB)
+Using cached django_filter-25.2-py3-none-any.whl (94 kB)
+Using cached django_cors_headers-4.9.0-py3-none-any.whl (12 kB)
+Using cached drf_spectacular-0.29.0-py3-none-any.whl (105 kB)
+Using cached gunicorn-25.1.0-py3-none-any.whl (197 kB)
+Using cached pytest-9.0.2-py3-none-any.whl (374 kB)
+Using cached pluggy-1.6.0-py3-none-any.whl (20 kB)
+Using cached pytest_django-4.12.0-py3-none-any.whl (26 kB)
+Using cached pytest_cov-7.0.0-py3-none-any.whl (22 kB)
+Using cached black-26.3.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (1.8 MB)
+Using cached pytokens-0.4.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (269 kB)
+Using cached ruff-0.15.6-py3-none-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (11.3 MB)
+Using cached mypy-1.19.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (13.6 MB)
+Using cached django_stubs-5.2.9-py3-none-any.whl (508 kB)
+Using cached asgiref-3.11.1-py3-none-any.whl (24 kB)
+Using cached click-8.3.1-py3-none-any.whl (108 kB)
+Using cached coverage-7.13.4-cp312-cp312-manylinux1_x86_64.manylinux_2_28_x86_64.manylinux_2_5_x86_64.whl (254 kB)
+Using cached django_stubs_ext-5.2.9-py3-none-any.whl (10.0 kB)
+Using cached inflection-0.5.1-py2.py3-none-any.whl (9.5 kB)
+Using cached iniconfig-2.3.0-py3-none-any.whl (7.5 kB)
+Using cached jsonschema-4.26.0-py3-none-any.whl (90 kB)
+Using cached attrs-25.4.0-py3-none-any.whl (67 kB)
+Using cached jsonschema_specifications-2025.9.1-py3-none-any.whl (18 kB)
+Using cached librt-0.8.1-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (224 kB)
+Using cached mypy_extensions-1.1.0-py3-none-any.whl (5.0 kB)
+Using cached packaging-26.0-py3-none-any.whl (74 kB)
+Using cached pathspec-1.0.4-py3-none-any.whl (55 kB)
+Using cached platformdirs-4.9.4-py3-none-any.whl (21 kB)
+Using cached pygments-2.19.2-py3-none-any.whl (1.2 MB)
+Using cached pyjwt-2.12.1-py3-none-any.whl (29 kB)
+Using cached pyyaml-6.0.3-cp312-cp312-manylinux2014_x86_64.manylinux_2_17_x86_64.manylinux_2_28_x86_64.whl (807 kB)
+Using cached redis-7.3.0-py3-none-any.whl (404 kB)
+Using cached referencing-0.37.0-py3-none-any.whl (26 kB)
+Using cached rpds_py-0.30.0-cp312-cp312-manylinux_2_17_x86_64.manylinux2014_x86_64.whl (394 kB)
+Using cached sqlparse-0.5.5-py3-none-any.whl (46 kB)
+Using cached typing_extensions-4.15.0-py3-none-any.whl (44 kB)
+Using cached uritemplate-4.2.0-py3-none-any.whl (11 kB)
+Using cached types_pyyaml-6.0.12.20250915-py3-none-any.whl (20 kB)
+Installing collected packages: uritemplate, typing_extensions, types-pyyaml, sqlparse, ruff, rpds-py, redis, PyYAML, pytokens, pyjwt, pygments, psycopg2-binary, pluggy, platformdirs, pathspec, packaging, mypy-extensions, librt, iniconfig, inflection, django-environ, coverage, click, attrs, asgiref, referencing, pytest, mypy, gunicorn, Django, black, pytest-django, pytest-cov, jsonschema-specifications, djangorestframework, django-stubs-ext, django-redis, django-filter, django-cors-headers, jsonschema, djangorestframework-simplejwt, django-stubs, drf-spectacular
+
+Successfully installed Django-6.0.3 PyYAML-6.0.3 asgiref-3.11.1 attrs-25.4.0 black-26.3.1 click-8.3.1 coverage-7.13.4 django-cors-headers-4.9.0 django-environ-0.13.0 django-filter-25.2 django-redis-6.0.0 django-stubs-5.2.9 django-stubs-ext-5.2.9 djangorestframework-3.16.1 djangorestframework-simplejwt-5.5.1 drf-spectacular-0.29.0 gunicorn-25.1.0 inflection-0.5.1 iniconfig-2.3.0 jsonschema-4.26.0 jsonschema-specifications-2025.9.1 librt-0.8.1 mypy-1.19.1 mypy-extensions-1.1.0 packaging-26.0 pathspec-1.0.4 platformdirs-4.9.4 pluggy-1.6.0 psycopg2-binary-2.9.11 pygments-2.19.2 pyjwt-2.12.1 pytest-9.0.2 pytest-cov-7.0.0 pytest-django-4.12.0 pytokens-0.4.1 redis-7.3.0 referencing-0.37.0 rpds-py-0.30.0 ruff-0.15.6 sqlparse-0.5.5 types-pyyaml-6.0.12.20250915 typing_extensions-4.15.0 uritemplate-4.2.0
+Requirement already satisfied: pytest-cov in /opt/hostedtoolcache/Python/3.12.12/x64/lib/python3.12/site-packages (7.0.0)
+Requirement already satisfied: coverage>=7.10.6 in /opt/hostedtoolcache/Python/3.12.12/x64/lib/python3.12/site-packages (from coverage[toml]>=7.10.6->pytest-cov) (7.13.4)
+Requirement already satisfied: pluggy>=1.2 in /opt/hostedtoolcache/Python/3.12.12/x64/lib/python3.12/site-packages (from pytest-cov) (1.6.0)
+Requirement already satisfied: pytest>=7 in /opt/hostedtoolcache/Python/3.12.12/x64/lib/python3.12/site-packages (from pytest-cov) (9.0.2)
+Requirement already satisfied: iniconfig>=1.0.1 in /opt/hostedtoolcache/Python/3.12.12/x64/lib/python3.12/site-packages (from pytest>=7->pytest-cov) (2.3.0)
+Requirement already satisfied: packaging>=22 in /opt/hostedtoolcache/Python/3.12.12/x64/lib/python3.12/site-packages (from pytest>=7->pytest-cov) (26.0)
+Requirement already satisfied: pygments>=2.7.2 in /opt/hostedtoolcache/Python/3.12.12/x64/lib/python3.12/site-packages (from pytest>=7->pytest-cov) (2.19.2)
+0s
+Run cd backend
+All checks passed!
+2s
+Run cd backend
+would reformat /home/runner/work/DndOptimizer/DndOptimizer/backend/users/management/commands/create_e2e_user.py
+
+Oh no! 💥 💔 💥
+1 file would be reformatted, 76 files would be left unchanged.
+Error: Process completed with exit code 1.
+0s
+0s
+0s
+0s
+0s
+0s
+Post job cleanup.
+/usr/bin/git version
+git version 2.53.0
+Temporarily overriding HOME='/home/runner/work/_temp/7b1c22af-b44d-4e74-99ee-34635c352c41' before making global git config changes
+Adding repository directory to the temporary git global config as a safe directory
+/usr/bin/git config --global --add safe.directory /home/runner/work/DndOptimizer/DndOptimizer
+/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+http.https://github.com/.extraheader
+/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+0s
+Print service container logs: 599189862b3c4385a4244a86db1310dd_postgres16_d53e37
+/usr/bin/docker logs --details da9e993b4833e8e2c58a63753bf06daedc1339a455bc8f994cdaafb245ea6693
+ The files belonging to this database system will be owned by user "postgres".
+ initdb: warning: enabling "trust" authentication for local connections
+ initdb: hint: You can change this by editing pg_hba.conf or using the option -A, or --auth-local and --auth-host, the next time you run initdb.
+ 2026-03-16 16:12:22.536 UTC [1] LOG:  starting PostgreSQL 16.13 (Debian 16.13-1.pgdg13+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
+ 2026-03-16 16:12:22.536 UTC [1] LOG:  listening on IPv4 address "0.0.0.0", port 5432
+ 2026-03-16 16:12:22.536 UTC [1] LOG:  listening on IPv6 address "::", port 5432
+ 2026-03-16 16:12:22.537 UTC [1] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+ 2026-03-16 16:12:22.540 UTC [65] LOG:  database system was shut down at 2026-03-16 16:12:22 UTC
+ 2026-03-16 16:12:22.544 UTC [1] LOG:  database system is ready to accept connections
+ 2026-03-16 16:12:31.654 UTC [76] FATAL:  role "root" does not exist
+ 2026-03-16 16:12:41.733 UTC [84] FATAL:  role "root" does not exist
+ 2026-03-16 16:12:51.855 UTC [92] FATAL:  role "root" does not exist
+ This user must also own the server process.
+ 
+ The database cluster will be initialized with locale "en_US.utf8".
+ The default database encoding has accordingly been set to "UTF8".
+ The default text search configuration will be set to "english".
+ 
+ Data page checksums are disabled.
+ 
+ fixing permissions on existing directory /var/lib/postgresql/data ... ok
+ creating subdirectories ... ok
+ selecting dynamic shared memory implementation ... posix
+ selecting default max_connections ... 100
+ selecting default shared_buffers ... 128MB
+ selecting default time zone ... Etc/UTC
+ creating configuration files ... ok
+ running bootstrap script ... ok
+ performing post-bootstrap initialization ... ok
+ syncing data to disk ... ok
+ 
+ 
+ Success. You can now start the database server using:
+ 
+     pg_ctl -D /var/lib/postgresql/data -l logfile start
+ 
+ waiting for server to start....2026-03-16 16:12:22.228 UTC [49] LOG:  starting PostgreSQL 16.13 (Debian 16.13-1.pgdg13+1) on x86_64-pc-linux-gnu, compiled by gcc (Debian 14.2.0-19) 14.2.0, 64-bit
+ 2026-03-16 16:12:22.229 UTC [49] LOG:  listening on Unix socket "/var/run/postgresql/.s.PGSQL.5432"
+ 2026-03-16 16:12:22.231 UTC [52] LOG:  database system was shut down at 2026-03-16 16:12:22 UTC
+ 2026-03-16 16:12:22.235 UTC [49] LOG:  database system is ready to accept connections
+  done
+ server started
+ CREATE DATABASE
+ 
+ 
+ /usr/local/bin/docker-entrypoint.sh: ignoring /docker-entrypoint-initdb.d/*
+ 
+ waiting for server to shut down...2026-03-16 16:12:22.416 UTC [49] LOG:  received fast shutdown request
+ .2026-03-16 16:12:22.417 UTC [49] LOG:  aborting any active transactions
+ 2026-03-16 16:12:22.419 UTC [49] LOG:  background worker "logical replication launcher" (PID 55) exited with exit code 1
+ 2026-03-16 16:12:22.419 UTC [50] LOG:  shutting down
+ 2026-03-16 16:12:22.420 UTC [50] LOG:  checkpoint starting: shutdown immediate
+ 2026-03-16 16:12:22.437 UTC [50] LOG:  checkpoint complete: wrote 926 buffers (5.7%); 0 WAL file(s) added, 0 removed, 0 recycled; write=0.013 s, sync=0.002 s, total=0.018 s; sync files=301, longest=0.001 s, average=0.001 s; distance=4273 kB, estimate=4273 kB; lsn=0/191F0F8, redo lsn=0/191F0F8
+ 2026-03-16 16:12:22.443 UTC [49] LOG:  database system is shut down
+  done
+ server stopped
+ 
+ PostgreSQL init process complete; ready for start up.
+ 
+Stop and remove container: 599189862b3c4385a4244a86db1310dd_postgres16_d53e37
+/usr/bin/docker rm --force da9e993b4833e8e2c58a63753bf06daedc1339a455bc8f994cdaafb245ea6693
+da9e993b4833e8e2c58a63753bf06daedc1339a455bc8f994cdaafb245ea6693
+Remove container network: github_network_92ac4829c190465487104a493c6250fa
+/usr/bin/docker network rm github_network_92ac4829c190465487104a493c6250fa
+github_network_92ac4829c190465487104a493c6250fa
+0s
+Cleaning up orphan processes
+Warning: Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/cache@v3, actions/checkout@v3, actions/setup-python@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

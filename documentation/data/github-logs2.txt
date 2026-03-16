@@ -1,0 +1,2061 @@
+Run cd frontend && npx playwright test
+
+Running 83 tests using 1 worker
+
+  ✓   1 [setup] › e2e/auth.setup.ts:32:1 › authenticate (1.4s)
+  ✓   2 [chromium] › e2e/auth.spec.ts:11:3 › Login page › shows the login form (879ms)
+  ✓   3 [chromium] › e2e/auth.spec.ts:18:3 › Login page › shows an error on invalid credentials (680ms)
+  ✓   4 [chromium] › e2e/auth.spec.ts:28:3 › Login page › redirects unauthenticated users to /login (338ms)
+  ✓   5 [chromium] › e2e/auth.spec.ts:33:3 › Login page › navigates to register page via link (356ms)
+  ✓   6 [chromium] › e2e/compare.spec.ts:12:3 › Compare Spells › renders the page heading (458ms)
+  ✓   7 [chromium] › e2e/compare.spec.ts:16:3 › Compare Spells › renders two spell search inputs (488ms)
+  ✓   8 [chromium] › e2e/compare.spec.ts:22:3 › Compare Spells › renders the Spell 1 and Spell 2 labels (418ms)
+  ✓   9 [chromium] › e2e/compare.spec.ts:27:3 › Compare Spells › Analyze button is disabled until both spells are selected (452ms)
+  ✘  10 [chromium] › e2e/compare.spec.ts:32:3 › Compare Spells › can select spells and run an analysis (30.1s)
+  ✘  11 [chromium] › e2e/compare.spec.ts:32:3 › Compare Spells › can select spells and run an analysis (retry #1) (31.5s)
+  ✘  12 [chromium] › e2e/compare.spec.ts:32:3 › Compare Spells › can select spells and run an analysis (retry #2) (30.1s)
+  ✘  13 [chromium] › e2e/compare.spec.ts:53:3 › Compare Spells › Analyze button becomes disabled again after clearing a spell selection (30.1s)
+  ✘  14 [chromium] › e2e/compare.spec.ts:53:3 › Compare Spells › Analyze button becomes disabled again after clearing a spell selection (retry #1) (31.5s)
+  ✘  15 [chromium] › e2e/compare.spec.ts:53:3 › Compare Spells › Analyze button becomes disabled again after clearing a spell selection (retry #2) (30.1s)
+  ✘  16 [chromium] › e2e/compare.spec.ts:98:3 › Compare Spells — analysis results › shows Expected Damage labels for both spells (30.1s)
+  ✘  17 [chromium] › e2e/compare.spec.ts:98:3 › Compare Spells — analysis results › shows Expected Damage labels for both spells (retry #1) (31.5s)
+  ✘  18 [chromium] › e2e/compare.spec.ts:98:3 › Compare Spells — analysis results › shows Expected Damage labels for both spells (retry #2) (30.1s)
+  ✘  19 [chromium] › e2e/compare.spec.ts:104:3 › Compare Spells — analysis results › shows Efficiency labels for both spells (30.1s)
+  ✘  20 [chromium] › e2e/compare.spec.ts:104:3 › Compare Spells — analysis results › shows Efficiency labels for both spells (retry #1) (31.7s)
+  ✘  21 [chromium] › e2e/compare.spec.ts:104:3 › Compare Spells — analysis results › shows Efficiency labels for both spells (retry #2) (30.1s)
+  ✘  22 [chromium] › e2e/compare.spec.ts:110:3 › Compare Spells — analysis results › shows spell names Fireball and Magic Missile in the results cards (30.1s)
+  ✘  23 [chromium] › e2e/compare.spec.ts:110:3 › Compare Spells — analysis results › shows spell names Fireball and Magic Missile in the results cards (retry #1) (31.6s)
+  ✘  24 [chromium] › e2e/compare.spec.ts:110:3 › Compare Spells — analysis results › shows spell names Fireball and Magic Missile in the results cards (retry #2) (30.1s)
+  ✘  25 [chromium] › e2e/compare.spec.ts:115:3 › Compare Spells — analysis results › shows the Breakeven Analysis section (30.1s)
+  ✘  26 [chromium] › e2e/compare.spec.ts:115:3 › Compare Spells — analysis results › shows the Breakeven Analysis section (retry #1) (31.6s)
+  ✘  27 [chromium] › e2e/compare.spec.ts:115:3 › Compare Spells — analysis results › shows the Breakeven Analysis section (retry #2) (30.1s)
+  ✘  28 [chromium] › e2e/compare.spec.ts:119:3 › Compare Spells — analysis results › shows the Spell Growth Analysis section (30.1s)
+  ✘  29 [chromium] › e2e/compare.spec.ts:119:3 › Compare Spells — analysis results › shows the Spell Growth Analysis section (retry #1) (31.5s)
+  ✘  30 [chromium] › e2e/compare.spec.ts:119:3 › Compare Spells — analysis results › shows the Spell Growth Analysis section (retry #2) (30.1s)
+  ✘  31 [chromium] › e2e/compare.spec.ts:123:3 › Compare Spells — analysis results › renders a growth chart container inside Spell Growth Analysis (30.1s)
+  ✘  32 [chromium] › e2e/compare.spec.ts:123:3 › Compare Spells — analysis results › renders a growth chart container inside Spell Growth Analysis (retry #1) (31.7s)
+  ✘  33 [chromium] › e2e/compare.spec.ts:123:3 › Compare Spells — analysis results › renders a growth chart container inside Spell Growth Analysis (retry #2) (30.1s)
+  ✘  34 [chromium] › e2e/compare.spec.ts:130:3 › Compare Spells — analysis results › shows numeric expected damage values (not zero or placeholder) after analysis (30.1s)
+  ✘  35 [chromium] › e2e/compare.spec.ts:130:3 › Compare Spells — analysis results › shows numeric expected damage values (not zero or placeholder) after analysis (retry #1) (31.4s)
+  ✘  36 [chromium] › e2e/compare.spec.ts:130:3 › Compare Spells — analysis results › shows numeric expected damage values (not zero or placeholder) after analysis (retry #2) (30.1s)
+  ✓  37 [chromium] › e2e/error-scenarios.spec.ts:18:3 › Error scenarios — API failures › spell library shows error alert when the spells API is unreachable (2.2s)
+  ✓  38 [chromium] › e2e/error-scenarios.spec.ts:29:3 › Error scenarios — API failures › spellbooks page shows error alert when the spellbooks API is unreachable (2.2s)
+  ✓  39 [chromium] › e2e/error-scenarios.spec.ts:46:3 › Error scenarios — empty results › spell library shows empty state when a search matches nothing (501ms)
+  ✓  40 [chromium] › e2e/error-scenarios.spec.ts:68:3 › Error scenarios — form errors › login with wrong credentials shows an error message (676ms)
+  ✘  41 [chromium] › e2e/error-scenarios.spec.ts:80:3 › Error scenarios — form errors › register with mismatched passwords shows a client-side validation error (366ms)
+  ✘  42 [chromium] › e2e/error-scenarios.spec.ts:80:3 › Error scenarios — form errors › register with mismatched passwords shows a client-side validation error (retry #1) (546ms)
+  ✘  43 [chromium] › e2e/error-scenarios.spec.ts:80:3 › Error scenarios — form errors › register with mismatched passwords shows a client-side validation error (retry #2) (418ms)
+  ✘  44 [chromium] › e2e/error-scenarios.spec.ts:92:3 › Error scenarios — form errors › register with a too-short password shows a client-side validation error (388ms)
+  ✘  45 [chromium] › e2e/error-scenarios.spec.ts:92:3 › Error scenarios — form errors › register with a too-short password shows a client-side validation error (retry #1) (827ms)
+  ✘  46 [chromium] › e2e/error-scenarios.spec.ts:92:3 › Error scenarios — form errors › register with a too-short password shows a client-side validation error (retry #2) (387ms)
+  ✓  47 [chromium] › e2e/mobile.spec.ts:20:3 › Mobile — auth (unauthenticated) › login page heading is visible at 375px (394ms)
+  ✓  48 [chromium] › e2e/mobile.spec.ts:25:3 › Mobile — auth (unauthenticated) › login form fields and submit button are usable at 375px (2.2s)
+  ✓  49 [chromium] › e2e/mobile.spec.ts:32:3 › Mobile — auth (unauthenticated) › unauthenticated navigation redirects to /login (336ms)
+  ✓  50 [chromium] › e2e/mobile.spec.ts:37:3 › Mobile — auth (unauthenticated) › register page link is reachable from the login page (346ms)
+  ✓  51 [chromium] › e2e/mobile.spec.ts:47:3 › Mobile — layout (authenticated) › brand logo is visible at 375px (391ms)
+  ✓  52 [chromium] › e2e/mobile.spec.ts:52:3 › Mobile — layout (authenticated) › desktop nav links are hidden at 375px (404ms)
+  ✓  53 [chromium] › e2e/mobile.spec.ts:58:3 › Mobile — layout (authenticated) › logout button is accessible at 375px (388ms)
+  ✓  54 [chromium] › e2e/mobile.spec.ts:72:3 › Mobile — spell library (375px) › page heading is visible (422ms)
+  ✓  55 [chromium] › e2e/mobile.spec.ts:76:3 › Mobile — spell library (375px) › spell count renders after load (403ms)
+  ✓  56 [chromium] › e2e/mobile.spec.ts:80:3 › Mobile — spell library (375px) › search input is accessible and usable (537ms)
+  ✓  57 [chromium] › e2e/mobile.spec.ts:87:3 › Mobile — spell library (375px) › clicking a spell card navigates to its detail page (498ms)
+  ✓  58 [chromium] › e2e/mobile.spec.ts:96:3 › Mobile — spell library (375px) › no horizontal overflow (page width stays within viewport) (374ms)
+  ✓  59 [chromium] › e2e/mobile.spec.ts:111:3 › Mobile — spellbooks library (375px) › page heading is visible (426ms)
+  ✓  60 [chromium] › e2e/mobile.spec.ts:115:3 › Mobile — spellbooks library (375px) › New Character button is visible at 375px (404ms)
+  ✓  61 [chromium] › e2e/mobile.spec.ts:119:3 › Mobile — spellbooks library (375px) › Bind New Tome button is visible at 375px (1.4s)
+  ✓  62 [chromium] › e2e/mobile.spec.ts:123:3 › Mobile — spellbooks library (375px) › no horizontal overflow on spellbooks page (414ms)
+  ✓  63 [chromium] › e2e/mobile.spec.ts:138:3 › Mobile — compare page (375px) › page heading is visible at 375px (413ms)
+  ✓  64 [chromium] › e2e/mobile.spec.ts:142:3 › Mobile — compare page (375px) › spell selection inputs render at 375px (554ms)
+  ✓  65 [chromium] › e2e/mobile.spec.ts:146:3 › Mobile — compare page (375px) › no horizontal overflow on compare page (385ms)
+  ✓  66 [chromium] › e2e/spell-detail-analysis.spec.ts:47:3 › Spell Detail — Combat Parameters › shows the Combat Parameters section heading (2.6s)
+  ✓  67 [chromium] › e2e/spell-detail-analysis.spec.ts:51:3 › Spell Detail — Combat Parameters › shows Spellcasting Mod and Spell Save DC inputs for a save spell (820ms)
+  ✓  68 [chromium] › e2e/spell-detail-analysis.spec.ts:58:3 › Spell Detail — Combat Parameters › shows the Spell Slot Level selector (765ms)
+  ✓  69 [chromium] › e2e/spell-detail-analysis.spec.ts:62:3 › Spell Detail — Combat Parameters › shows the ⚡ Analyze button (730ms)
+  ✓  70 [chromium] › e2e/spell-detail-analysis.spec.ts:74:3 › Spell Detail — Analysis Results › running Analyze at slot 3 shows the Analysis Results section (2.0s)
+  ✘  71 [chromium] › e2e/spell-detail-analysis.spec.ts:79:3 › Spell Detail — Analysis Results › shows Expected Damage stat after analysis (2.1s)
+  ✘  72 [chromium] › e2e/spell-detail-analysis.spec.ts:79:3 › Spell Detail — Analysis Results › shows Expected Damage stat after analysis (retry #1) (3.0s)
+  ✘  73 [chromium] › e2e/spell-detail-analysis.spec.ts:79:3 › Spell Detail — Analysis Results › shows Expected Damage stat after analysis (retry #2) (2.1s)
+  ✓  74 [chromium] › e2e/spell-detail-analysis.spec.ts:84:3 › Spell Detail — Analysis Results › shows a Math Breakdown section after analysis (2.0s)
+  ✓  75 [chromium] › e2e/spell-detail-analysis.spec.ts:90:3 › Spell Detail — Analysis Results › shows a numeric damage value in the results (2.0s)
+  ✘  76 [chromium] › e2e/spell-detail-analysis.spec.ts:96:3 › Spell Detail — Analysis Results › upcasting Fireball to slot 5 still produces results (2.4s)
+  ✘  77 [chromium] › e2e/spell-detail-analysis.spec.ts:96:3 › Spell Detail — Analysis Results › upcasting Fireball to slot 5 still produces results (retry #1) (3.5s)
+  ✘  78 [chromium] › e2e/spell-detail-analysis.spec.ts:96:3 › Spell Detail — Analysis Results › upcasting Fireball to slot 5 still produces results (retry #2) (2.5s)
+  ✓  79 [chromium] › e2e/spell-detail-analysis.spec.ts:113:3 › Spell Detail — Slot Level Controls › Spell Slot Level select accepts values from 3 to 9 for Fireball (1.8s)
+  ✘  80 [chromium] › e2e/spell-detail-analysis.spec.ts:123:3 › Spell Detail — Slot Level Controls › changing slot level after an analysis reruns and refreshes results (2.2s)
+  ✘  81 [chromium] › e2e/spell-detail-analysis.spec.ts:123:3 › Spell Detail — Slot Level Controls › changing slot level after an analysis reruns and refreshes results (retry #1) (2.9s)
+  ✘  82 [chromium] › e2e/spell-detail-analysis.spec.ts:123:3 › Spell Detail — Slot Level Controls › changing slot level after an analysis reruns and refreshes results (retry #2) (3.9s)
+  ✓  83 [chromium] › e2e/spell-detail-analysis.spec.ts:145:3 › Spell Detail — Advanced Analysis Options › Advanced toggle reveals additional analysis fields (1.8s)
+  ✘  84 [chromium] › e2e/spell-detail-analysis.spec.ts:154:3 › Spell Detail — Advanced Analysis Options › analysis with Half damage on save enabled still returns results (2.1s)
+  ✘  85 [chromium] › e2e/spell-detail-analysis.spec.ts:154:3 › Spell Detail — Advanced Analysis Options › analysis with Half damage on save enabled still returns results (retry #1) (3.0s)
+  ✘  86 [chromium] › e2e/spell-detail-analysis.spec.ts:154:3 › Spell Detail — Advanced Analysis Options › analysis with Half damage on save enabled still returns results (retry #2) (2.3s)
+  ✓  87 [chromium] › e2e/spell-import.spec.ts:27:3 › Spell Import — modal UI › opens with Upload File tab active and a file input (583ms)
+  ✓  88 [chromium] › e2e/spell-import.spec.ts:33:3 › Spell Import — modal UI › Cancel button closes the modal (530ms)
+  ✓  89 [chromium] › e2e/spell-import.spec.ts:38:3 › Spell Import — modal UI › switching to Paste JSON tab shows a textarea and Parse JSON button (783ms)
+  ✓  90 [chromium] › e2e/spell-import.spec.ts:44:3 › Spell Import — modal UI › shows a parse error when pasting malformed JSON (838ms)
+  ✓  91 [chromium] › e2e/spell-import.spec.ts:51:3 › Spell Import — modal UI › shows a parse error when pasted JSON contains no spells (1.2s)
+  ✓  92 [chromium] › e2e/spell-import.spec.ts:63:3 › Spell Import — file upload flow › shows the parsed-spell preview count before importing (792ms)
+  ✓  93 [chromium] › e2e/spell-import.spec.ts:79:3 › Spell Import — file upload flow › imports the fixture file and shows the success message (902ms)
+  ✓  94 [chromium] › e2e/spell-import.spec.ts:99:3 › Spell Import — file upload flow › imported spell is searchable in the library after closing the modal (801ms)
+  ✓  95 [chromium] › e2e/spell-import.spec.ts:125:3 › Spell Import — paste JSON flow › parses pasted JSON and imports successfully (758ms)
+  ✓  96 [chromium] › e2e/spellbook-creation.spec.ts:30:3 › Create character modal › opens with the correct title and closes on Cancel (559ms)
+  ✓  97 [chromium] › e2e/spellbook-creation.spec.ts:38:3 › Create character modal › creates a new character and shows it on the shelf (841ms)
+  ✓  98 [chromium] › e2e/spellbook-creation.spec.ts:63:3 › Create spellbook modal › opens with the correct title and closes on Cancel (584ms)
+  ✓  99 [chromium] › e2e/spellbook-creation.spec.ts:71:3 › Create spellbook modal › creates a new spellbook and shows the card on the shelf (641ms)
+  ✓  100 [chromium] › e2e/spellbook-creation.spec.ts:96:3 › Spellbook detail page › navigates to the detail page when a book card is clicked (490ms)
+  ✓  101 [chromium] › e2e/spellbook-creation.spec.ts:107:3 › Spellbook detail page › shows the Add Spells button on the detail page (604ms)
+  -  102 [chromium] › e2e/spellbook-creation.spec.ts:123:3 › Add Spells picker › opens the picker and filters by spell name
+  -  103 [chromium] › e2e/spellbook-creation.spec.ts:141:3 › Add Spells picker › adds a spell and the row flips to ✓ Added
+  ✓  104 [chromium] › e2e/spellbook-creation.spec.ts:170:3 › Full spellbook lifecycle › create character + spellbook, navigate to detail, add a spell, verify it appears (1.4s)
+  ✓  105 [chromium] › e2e/spellbooks.spec.ts:12:3 › My Library › renders the page heading (515ms)
+  ✓  106 [chromium] › e2e/spellbooks.spec.ts:16:3 › My Library › shows New Character and Bind New Tome buttons (569ms)
+  ✓  107 [chromium] › e2e/spellbooks.spec.ts:21:3 › My Library › empty state is shown when no data exists (520ms)
+  ✘  108 [chromium] › e2e/spellbooks.spec.ts:31:3 › My Library › navigates to spellbook detail when a book is clicked (5.5s)
+  ✘  109 [chromium] › e2e/spellbooks.spec.ts:31:3 › My Library › navigates to spellbook detail when a book is clicked (retry #1) (6.1s)
+  ✘  110 [chromium] › e2e/spellbooks.spec.ts:31:3 › My Library › navigates to spellbook detail when a book is clicked (retry #2) (5.6s)
+  ✓  111 [chromium] › e2e/spells.spec.ts:13:3 › Spell Library › renders the page heading and action buttons (471ms)
+  ✓  112 [chromium] › e2e/spells.spec.ts:18:3 › Spell Library › shows a result count after spells load (456ms)
+  ✓  113 [chromium] › e2e/spells.spec.ts:23:3 › Spell Library › search by spell name narrows results (577ms)
+  ✓  114 [chromium] › e2e/spells.spec.ts:33:3 › Spell Library › clicking a spell card navigates to the detail page (721ms)
+  ✓  115 [chromium] › e2e/spells.spec.ts:42:3 › Spell Library › shows empty state when search yields no results (567ms)
+
+
+  1) [chromium] › e2e/compare.spec.ts:32:3 › Compare Spells › can select spells and run an analysis 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.fill: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByPlaceholder(/search spells/i).nth(1)
+
+
+      38 |
+      39 |     const inputB = page.getByPlaceholder(/search spells/i).nth(1);
+    > 40 |     await inputB.fill('Magic Missile');
+         |                  ^
+      41 |     await expect(page.getByRole('button', { name: 'Magic Missile' }).first()).toBeVisible({ timeout: 8_000 });
+      42 |     await page.getByRole('button', { name: 'Magic Missile' }).first().click();
+      43 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/compare.spec.ts:40:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/compare-Compare-Spells-can-select-spells-and-run-an-analysis-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/compare-Compare-Spells-can-select-spells-and-run-an-analysis-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.fill: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByPlaceholder(/search spells/i).nth(1)
+
+
+      38 |
+      39 |     const inputB = page.getByPlaceholder(/search spells/i).nth(1);
+    > 40 |     await inputB.fill('Magic Missile');
+         |                  ^
+      41 |     await expect(page.getByRole('button', { name: 'Magic Missile' }).first()).toBeVisible({ timeout: 8_000 });
+      42 |     await page.getByRole('button', { name: 'Magic Missile' }).first().click();
+      43 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/compare.spec.ts:40:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/compare-Compare-Spells-can-select-spells-and-run-an-analysis-chromium-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/compare-Compare-Spells-can-select-spells-and-run-an-analysis-chromium-retry1/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/compare-Compare-Spells-can-select-spells-and-run-an-analysis-chromium-retry1/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/compare-Compare-Spells-can-select-spells-and-run-an-analysis-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/compare-Compare-Spells-can-select-spells-and-run-an-analysis-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Retry #2 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.fill: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByPlaceholder(/search spells/i).nth(1)
+
+
+      38 |
+      39 |     const inputB = page.getByPlaceholder(/search spells/i).nth(1);
+    > 40 |     await inputB.fill('Magic Missile');
+         |                  ^
+      41 |     await expect(page.getByRole('button', { name: 'Magic Missile' }).first()).toBeVisible({ timeout: 8_000 });
+      42 |     await page.getByRole('button', { name: 'Magic Missile' }).first().click();
+      43 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/compare.spec.ts:40:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/compare-Compare-Spells-can-select-spells-and-run-an-analysis-chromium-retry2/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/compare-Compare-Spells-can-select-spells-and-run-an-analysis-chromium-retry2/error-context.md
+
+  2) [chromium] › e2e/compare.spec.ts:53:3 › Compare Spells › Analyze button becomes disabled again after clearing a spell selection 
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.fill: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByPlaceholder(/search spells/i).nth(1)
+
+
+      58 |
+      59 |     const inputB = page.getByPlaceholder(/search spells/i).nth(1);
+    > 60 |     await inputB.fill('Magic Missile');
+         |                  ^
+      61 |     await expect(page.getByRole('button', { name: 'Magic Missile' }).first()).toBeVisible({ timeout: 8_000 });
+      62 |     await page.getByRole('button', { name: 'Magic Missile' }).first().click();
+      63 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/compare.spec.ts:60:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/compare-Compare-Spells-Ana-c8d91--clearing-a-spell-selection-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/compare-Compare-Spells-Ana-c8d91--clearing-a-spell-selection-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.fill: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByPlaceholder(/search spells/i).nth(1)
+
+
+      58 |
+      59 |     const inputB = page.getByPlaceholder(/search spells/i).nth(1);
+    > 60 |     await inputB.fill('Magic Missile');
+         |                  ^
+      61 |     await expect(page.getByRole('button', { name: 'Magic Missile' }).first()).toBeVisible({ timeout: 8_000 });
+      62 |     await page.getByRole('button', { name: 'Magic Missile' }).first().click();
+      63 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/compare.spec.ts:60:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/compare-Compare-Spells-Ana-c8d91--clearing-a-spell-selection-chromium-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/compare-Compare-Spells-Ana-c8d91--clearing-a-spell-selection-chromium-retry1/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/compare-Compare-Spells-Ana-c8d91--clearing-a-spell-selection-chromium-retry1/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/compare-Compare-Spells-Ana-c8d91--clearing-a-spell-selection-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/compare-Compare-Spells-Ana-c8d91--clearing-a-spell-selection-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Retry #2 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Test timeout of 30000ms exceeded.
+
+    Error: locator.fill: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByPlaceholder(/search spells/i).nth(1)
+
+
+      58 |
+      59 |     const inputB = page.getByPlaceholder(/search spells/i).nth(1);
+    > 60 |     await inputB.fill('Magic Missile');
+         |                  ^
+      61 |     await expect(page.getByRole('button', { name: 'Magic Missile' }).first()).toBeVisible({ timeout: 8_000 });
+      62 |     await page.getByRole('button', { name: 'Magic Missile' }).first().click();
+      63 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/compare.spec.ts:60:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/compare-Compare-Spells-Ana-c8d91--clearing-a-spell-selection-chromium-retry2/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/compare-Compare-Spells-Ana-c8d91--clearing-a-spell-selection-chromium-retry2/error-context.md
+
+  3) [chromium] › e2e/compare.spec.ts:98:3 › Compare Spells — analysis results › shows Expected Damage labels for both spells 
+
+    Test timeout of 30000ms exceeded while running "beforeEach" hook.
+
+      77 |   const ANALYSIS_TIMEOUT = 20_000;
+      78 |
+    > 79 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      80 |     await page.goto('/compare');
+      81 |     await expect(page.getByRole('heading', { name: /compare spells/i })).toBeVisible({ timeout: 8_000 });
+      82 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/compare.spec.ts:79:8
+
+    Error: locator.fill: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByPlaceholder(/search spells/i).nth(1)
+
+
+      87 |
+      88 |     const inputB = page.getByPlaceholder(/search spells/i).nth(1);
+    > 89 |     await inputB.fill('Magic Missile');
+         |                  ^
+      90 |     await expect(page.getByRole('button', { name: 'Magic Missile' }).first()).toBeVisible({ timeout: 8_000 });
+      91 |     await page.getByRole('button', { name: 'Magic Missile' }).first().click();
+      92 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/compare.spec.ts:89:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/compare-Compare-Spells-—-a-8fc75-mage-labels-for-both-spells-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/compare-Compare-Spells-—-a-8fc75-mage-labels-for-both-spells-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Test timeout of 30000ms exceeded while running "beforeEach" hook.
+
+      77 |   const ANALYSIS_TIMEOUT = 20_000;
+      78 |
+    > 79 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      80 |     await page.goto('/compare');
+      81 |     await expect(page.getByRole('heading', { name: /compare spells/i })).toBeVisible({ timeout: 8_000 });
+      82 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/compare.spec.ts:79:8
+
+    Error: locator.fill: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByPlaceholder(/search spells/i).nth(1)
+
+
+      87 |
+      88 |     const inputB = page.getByPlaceholder(/search spells/i).nth(1);
+    > 89 |     await inputB.fill('Magic Missile');
+         |                  ^
+      90 |     await expect(page.getByRole('button', { name: 'Magic Missile' }).first()).toBeVisible({ timeout: 8_000 });
+      91 |     await page.getByRole('button', { name: 'Magic Missile' }).first().click();
+      92 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/compare.spec.ts:89:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/compare-Compare-Spells-—-a-8fc75-mage-labels-for-both-spells-chromium-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/compare-Compare-Spells-—-a-8fc75-mage-labels-for-both-spells-chromium-retry1/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/compare-Compare-Spells-—-a-8fc75-mage-labels-for-both-spells-chromium-retry1/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/compare-Compare-Spells-—-a-8fc75-mage-labels-for-both-spells-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/compare-Compare-Spells-—-a-8fc75-mage-labels-for-both-spells-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Retry #2 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Test timeout of 30000ms exceeded while running "beforeEach" hook.
+
+      77 |   const ANALYSIS_TIMEOUT = 20_000;
+      78 |
+    > 79 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      80 |     await page.goto('/compare');
+      81 |     await expect(page.getByRole('heading', { name: /compare spells/i })).toBeVisible({ timeout: 8_000 });
+      82 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/compare.spec.ts:79:8
+
+    Error: locator.fill: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByPlaceholder(/search spells/i).nth(1)
+
+
+      87 |
+      88 |     const inputB = page.getByPlaceholder(/search spells/i).nth(1);
+    > 89 |     await inputB.fill('Magic Missile');
+         |                  ^
+      90 |     await expect(page.getByRole('button', { name: 'Magic Missile' }).first()).toBeVisible({ timeout: 8_000 });
+      91 |     await page.getByRole('button', { name: 'Magic Missile' }).first().click();
+      92 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/compare.spec.ts:89:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/compare-Compare-Spells-—-a-8fc75-mage-labels-for-both-spells-chromium-retry2/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/compare-Compare-Spells-—-a-8fc75-mage-labels-for-both-spells-chromium-retry2/error-context.md
+
+  4) [chromium] › e2e/compare.spec.ts:104:3 › Compare Spells — analysis results › shows Efficiency labels for both spells 
+
+    Test timeout of 30000ms exceeded while running "beforeEach" hook.
+
+      77 |   const ANALYSIS_TIMEOUT = 20_000;
+      78 |
+    > 79 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      80 |     await page.goto('/compare');
+      81 |     await expect(page.getByRole('heading', { name: /compare spells/i })).toBeVisible({ timeout: 8_000 });
+      82 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/compare.spec.ts:79:8
+
+    Error: locator.fill: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByPlaceholder(/search spells/i).nth(1)
+
+
+      87 |
+      88 |     const inputB = page.getByPlaceholder(/search spells/i).nth(1);
+    > 89 |     await inputB.fill('Magic Missile');
+         |                  ^
+      90 |     await expect(page.getByRole('button', { name: 'Magic Missile' }).first()).toBeVisible({ timeout: 8_000 });
+      91 |     await page.getByRole('button', { name: 'Magic Missile' }).first().click();
+      92 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/compare.spec.ts:89:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/compare-Compare-Spells-—-a-86f42-ency-labels-for-both-spells-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/compare-Compare-Spells-—-a-86f42-ency-labels-for-both-spells-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Test timeout of 30000ms exceeded while running "beforeEach" hook.
+
+      77 |   const ANALYSIS_TIMEOUT = 20_000;
+      78 |
+    > 79 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      80 |     await page.goto('/compare');
+      81 |     await expect(page.getByRole('heading', { name: /compare spells/i })).toBeVisible({ timeout: 8_000 });
+      82 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/compare.spec.ts:79:8
+
+    Error: locator.fill: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByPlaceholder(/search spells/i).nth(1)
+
+
+      87 |
+      88 |     const inputB = page.getByPlaceholder(/search spells/i).nth(1);
+    > 89 |     await inputB.fill('Magic Missile');
+         |                  ^
+      90 |     await expect(page.getByRole('button', { name: 'Magic Missile' }).first()).toBeVisible({ timeout: 8_000 });
+      91 |     await page.getByRole('button', { name: 'Magic Missile' }).first().click();
+      92 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/compare.spec.ts:89:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/compare-Compare-Spells-—-a-86f42-ency-labels-for-both-spells-chromium-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/compare-Compare-Spells-—-a-86f42-ency-labels-for-both-spells-chromium-retry1/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/compare-Compare-Spells-—-a-86f42-ency-labels-for-both-spells-chromium-retry1/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/compare-Compare-Spells-—-a-86f42-ency-labels-for-both-spells-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/compare-Compare-Spells-—-a-86f42-ency-labels-for-both-spells-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Retry #2 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Test timeout of 30000ms exceeded while running "beforeEach" hook.
+
+      77 |   const ANALYSIS_TIMEOUT = 20_000;
+      78 |
+    > 79 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      80 |     await page.goto('/compare');
+      81 |     await expect(page.getByRole('heading', { name: /compare spells/i })).toBeVisible({ timeout: 8_000 });
+      82 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/compare.spec.ts:79:8
+
+    Error: locator.fill: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByPlaceholder(/search spells/i).nth(1)
+
+
+      87 |
+      88 |     const inputB = page.getByPlaceholder(/search spells/i).nth(1);
+    > 89 |     await inputB.fill('Magic Missile');
+         |                  ^
+      90 |     await expect(page.getByRole('button', { name: 'Magic Missile' }).first()).toBeVisible({ timeout: 8_000 });
+      91 |     await page.getByRole('button', { name: 'Magic Missile' }).first().click();
+      92 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/compare.spec.ts:89:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/compare-Compare-Spells-—-a-86f42-ency-labels-for-both-spells-chromium-retry2/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/compare-Compare-Spells-—-a-86f42-ency-labels-for-both-spells-chromium-retry2/error-context.md
+
+  5) [chromium] › e2e/compare.spec.ts:110:3 › Compare Spells — analysis results › shows spell names Fireball and Magic Missile in the results cards 
+
+    Test timeout of 30000ms exceeded while running "beforeEach" hook.
+
+      77 |   const ANALYSIS_TIMEOUT = 20_000;
+      78 |
+    > 79 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      80 |     await page.goto('/compare');
+      81 |     await expect(page.getByRole('heading', { name: /compare spells/i })).toBeVisible({ timeout: 8_000 });
+      82 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/compare.spec.ts:79:8
+
+    Error: locator.fill: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByPlaceholder(/search spells/i).nth(1)
+
+
+      87 |
+      88 |     const inputB = page.getByPlaceholder(/search spells/i).nth(1);
+    > 89 |     await inputB.fill('Magic Missile');
+         |                  ^
+      90 |     await expect(page.getByRole('button', { name: 'Magic Missile' }).first()).toBeVisible({ timeout: 8_000 });
+      91 |     await page.getByRole('button', { name: 'Magic Missile' }).first().click();
+      92 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/compare.spec.ts:89:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/compare-Compare-Spells-—-a-9834e-issile-in-the-results-cards-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/compare-Compare-Spells-—-a-9834e-issile-in-the-results-cards-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Test timeout of 30000ms exceeded while running "beforeEach" hook.
+
+      77 |   const ANALYSIS_TIMEOUT = 20_000;
+      78 |
+    > 79 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      80 |     await page.goto('/compare');
+      81 |     await expect(page.getByRole('heading', { name: /compare spells/i })).toBeVisible({ timeout: 8_000 });
+      82 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/compare.spec.ts:79:8
+
+    Error: locator.fill: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByPlaceholder(/search spells/i).nth(1)
+
+
+      87 |
+      88 |     const inputB = page.getByPlaceholder(/search spells/i).nth(1);
+    > 89 |     await inputB.fill('Magic Missile');
+         |                  ^
+      90 |     await expect(page.getByRole('button', { name: 'Magic Missile' }).first()).toBeVisible({ timeout: 8_000 });
+      91 |     await page.getByRole('button', { name: 'Magic Missile' }).first().click();
+      92 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/compare.spec.ts:89:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/compare-Compare-Spells-—-a-9834e-issile-in-the-results-cards-chromium-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/compare-Compare-Spells-—-a-9834e-issile-in-the-results-cards-chromium-retry1/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/compare-Compare-Spells-—-a-9834e-issile-in-the-results-cards-chromium-retry1/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/compare-Compare-Spells-—-a-9834e-issile-in-the-results-cards-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/compare-Compare-Spells-—-a-9834e-issile-in-the-results-cards-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Retry #2 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Test timeout of 30000ms exceeded while running "beforeEach" hook.
+
+      77 |   const ANALYSIS_TIMEOUT = 20_000;
+      78 |
+    > 79 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      80 |     await page.goto('/compare');
+      81 |     await expect(page.getByRole('heading', { name: /compare spells/i })).toBeVisible({ timeout: 8_000 });
+      82 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/compare.spec.ts:79:8
+
+    Error: locator.fill: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByPlaceholder(/search spells/i).nth(1)
+
+
+      87 |
+      88 |     const inputB = page.getByPlaceholder(/search spells/i).nth(1);
+    > 89 |     await inputB.fill('Magic Missile');
+         |                  ^
+      90 |     await expect(page.getByRole('button', { name: 'Magic Missile' }).first()).toBeVisible({ timeout: 8_000 });
+      91 |     await page.getByRole('button', { name: 'Magic Missile' }).first().click();
+      92 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/compare.spec.ts:89:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/compare-Compare-Spells-—-a-9834e-issile-in-the-results-cards-chromium-retry2/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/compare-Compare-Spells-—-a-9834e-issile-in-the-results-cards-chromium-retry2/error-context.md
+
+  6) [chromium] › e2e/compare.spec.ts:115:3 › Compare Spells — analysis results › shows the Breakeven Analysis section 
+
+    Test timeout of 30000ms exceeded while running "beforeEach" hook.
+
+      77 |   const ANALYSIS_TIMEOUT = 20_000;
+      78 |
+    > 79 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      80 |     await page.goto('/compare');
+      81 |     await expect(page.getByRole('heading', { name: /compare spells/i })).toBeVisible({ timeout: 8_000 });
+      82 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/compare.spec.ts:79:8
+
+    Error: locator.fill: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByPlaceholder(/search spells/i).nth(1)
+
+
+      87 |
+      88 |     const inputB = page.getByPlaceholder(/search spells/i).nth(1);
+    > 89 |     await inputB.fill('Magic Missile');
+         |                  ^
+      90 |     await expect(page.getByRole('button', { name: 'Magic Missile' }).first()).toBeVisible({ timeout: 8_000 });
+      91 |     await page.getByRole('button', { name: 'Magic Missile' }).first().click();
+      92 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/compare.spec.ts:89:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/compare-Compare-Spells-—-a-903f4--Breakeven-Analysis-section-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/compare-Compare-Spells-—-a-903f4--Breakeven-Analysis-section-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Test timeout of 30000ms exceeded while running "beforeEach" hook.
+
+      77 |   const ANALYSIS_TIMEOUT = 20_000;
+      78 |
+    > 79 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      80 |     await page.goto('/compare');
+      81 |     await expect(page.getByRole('heading', { name: /compare spells/i })).toBeVisible({ timeout: 8_000 });
+      82 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/compare.spec.ts:79:8
+
+    Error: locator.fill: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByPlaceholder(/search spells/i).nth(1)
+
+
+      87 |
+      88 |     const inputB = page.getByPlaceholder(/search spells/i).nth(1);
+    > 89 |     await inputB.fill('Magic Missile');
+         |                  ^
+      90 |     await expect(page.getByRole('button', { name: 'Magic Missile' }).first()).toBeVisible({ timeout: 8_000 });
+      91 |     await page.getByRole('button', { name: 'Magic Missile' }).first().click();
+      92 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/compare.spec.ts:89:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/compare-Compare-Spells-—-a-903f4--Breakeven-Analysis-section-chromium-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/compare-Compare-Spells-—-a-903f4--Breakeven-Analysis-section-chromium-retry1/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/compare-Compare-Spells-—-a-903f4--Breakeven-Analysis-section-chromium-retry1/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/compare-Compare-Spells-—-a-903f4--Breakeven-Analysis-section-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/compare-Compare-Spells-—-a-903f4--Breakeven-Analysis-section-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Retry #2 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Test timeout of 30000ms exceeded while running "beforeEach" hook.
+
+      77 |   const ANALYSIS_TIMEOUT = 20_000;
+      78 |
+    > 79 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      80 |     await page.goto('/compare');
+      81 |     await expect(page.getByRole('heading', { name: /compare spells/i })).toBeVisible({ timeout: 8_000 });
+      82 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/compare.spec.ts:79:8
+
+    Error: locator.fill: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByPlaceholder(/search spells/i).nth(1)
+
+
+      87 |
+      88 |     const inputB = page.getByPlaceholder(/search spells/i).nth(1);
+    > 89 |     await inputB.fill('Magic Missile');
+         |                  ^
+      90 |     await expect(page.getByRole('button', { name: 'Magic Missile' }).first()).toBeVisible({ timeout: 8_000 });
+      91 |     await page.getByRole('button', { name: 'Magic Missile' }).first().click();
+      92 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/compare.spec.ts:89:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/compare-Compare-Spells-—-a-903f4--Breakeven-Analysis-section-chromium-retry2/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/compare-Compare-Spells-—-a-903f4--Breakeven-Analysis-section-chromium-retry2/error-context.md
+
+  7) [chromium] › e2e/compare.spec.ts:119:3 › Compare Spells — analysis results › shows the Spell Growth Analysis section 
+
+    Test timeout of 30000ms exceeded while running "beforeEach" hook.
+
+      77 |   const ANALYSIS_TIMEOUT = 20_000;
+      78 |
+    > 79 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      80 |     await page.goto('/compare');
+      81 |     await expect(page.getByRole('heading', { name: /compare spells/i })).toBeVisible({ timeout: 8_000 });
+      82 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/compare.spec.ts:79:8
+
+    Error: locator.fill: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByPlaceholder(/search spells/i).nth(1)
+
+
+      87 |
+      88 |     const inputB = page.getByPlaceholder(/search spells/i).nth(1);
+    > 89 |     await inputB.fill('Magic Missile');
+         |                  ^
+      90 |     await expect(page.getByRole('button', { name: 'Magic Missile' }).first()).toBeVisible({ timeout: 8_000 });
+      91 |     await page.getByRole('button', { name: 'Magic Missile' }).first().click();
+      92 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/compare.spec.ts:89:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/compare-Compare-Spells-—-a-66ed3-ell-Growth-Analysis-section-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/compare-Compare-Spells-—-a-66ed3-ell-Growth-Analysis-section-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Test timeout of 30000ms exceeded while running "beforeEach" hook.
+
+      77 |   const ANALYSIS_TIMEOUT = 20_000;
+      78 |
+    > 79 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      80 |     await page.goto('/compare');
+      81 |     await expect(page.getByRole('heading', { name: /compare spells/i })).toBeVisible({ timeout: 8_000 });
+      82 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/compare.spec.ts:79:8
+
+    Error: locator.fill: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByPlaceholder(/search spells/i).nth(1)
+
+
+      87 |
+      88 |     const inputB = page.getByPlaceholder(/search spells/i).nth(1);
+    > 89 |     await inputB.fill('Magic Missile');
+         |                  ^
+      90 |     await expect(page.getByRole('button', { name: 'Magic Missile' }).first()).toBeVisible({ timeout: 8_000 });
+      91 |     await page.getByRole('button', { name: 'Magic Missile' }).first().click();
+      92 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/compare.spec.ts:89:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/compare-Compare-Spells-—-a-66ed3-ell-Growth-Analysis-section-chromium-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/compare-Compare-Spells-—-a-66ed3-ell-Growth-Analysis-section-chromium-retry1/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/compare-Compare-Spells-—-a-66ed3-ell-Growth-Analysis-section-chromium-retry1/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/compare-Compare-Spells-—-a-66ed3-ell-Growth-Analysis-section-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/compare-Compare-Spells-—-a-66ed3-ell-Growth-Analysis-section-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Retry #2 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Test timeout of 30000ms exceeded while running "beforeEach" hook.
+
+      77 |   const ANALYSIS_TIMEOUT = 20_000;
+      78 |
+    > 79 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      80 |     await page.goto('/compare');
+      81 |     await expect(page.getByRole('heading', { name: /compare spells/i })).toBeVisible({ timeout: 8_000 });
+      82 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/compare.spec.ts:79:8
+
+    Error: locator.fill: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByPlaceholder(/search spells/i).nth(1)
+
+
+      87 |
+      88 |     const inputB = page.getByPlaceholder(/search spells/i).nth(1);
+    > 89 |     await inputB.fill('Magic Missile');
+         |                  ^
+      90 |     await expect(page.getByRole('button', { name: 'Magic Missile' }).first()).toBeVisible({ timeout: 8_000 });
+      91 |     await page.getByRole('button', { name: 'Magic Missile' }).first().click();
+      92 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/compare.spec.ts:89:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/compare-Compare-Spells-—-a-66ed3-ell-Growth-Analysis-section-chromium-retry2/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/compare-Compare-Spells-—-a-66ed3-ell-Growth-Analysis-section-chromium-retry2/error-context.md
+
+  8) [chromium] › e2e/compare.spec.ts:123:3 › Compare Spells — analysis results › renders a growth chart container inside Spell Growth Analysis 
+
+    Test timeout of 30000ms exceeded while running "beforeEach" hook.
+
+      77 |   const ANALYSIS_TIMEOUT = 20_000;
+      78 |
+    > 79 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      80 |     await page.goto('/compare');
+      81 |     await expect(page.getByRole('heading', { name: /compare spells/i })).toBeVisible({ timeout: 8_000 });
+      82 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/compare.spec.ts:79:8
+
+    Error: locator.fill: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByPlaceholder(/search spells/i).nth(1)
+
+
+      87 |
+      88 |     const inputB = page.getByPlaceholder(/search spells/i).nth(1);
+    > 89 |     await inputB.fill('Magic Missile');
+         |                  ^
+      90 |     await expect(page.getByRole('button', { name: 'Magic Missile' }).first()).toBeVisible({ timeout: 8_000 });
+      91 |     await page.getByRole('button', { name: 'Magic Missile' }).first().click();
+      92 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/compare.spec.ts:89:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/compare-Compare-Spells-—-a-e292f-nside-Spell-Growth-Analysis-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/compare-Compare-Spells-—-a-e292f-nside-Spell-Growth-Analysis-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Test timeout of 30000ms exceeded while running "beforeEach" hook.
+
+      77 |   const ANALYSIS_TIMEOUT = 20_000;
+      78 |
+    > 79 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      80 |     await page.goto('/compare');
+      81 |     await expect(page.getByRole('heading', { name: /compare spells/i })).toBeVisible({ timeout: 8_000 });
+      82 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/compare.spec.ts:79:8
+
+    Error: locator.fill: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByPlaceholder(/search spells/i).nth(1)
+
+
+      87 |
+      88 |     const inputB = page.getByPlaceholder(/search spells/i).nth(1);
+    > 89 |     await inputB.fill('Magic Missile');
+         |                  ^
+      90 |     await expect(page.getByRole('button', { name: 'Magic Missile' }).first()).toBeVisible({ timeout: 8_000 });
+      91 |     await page.getByRole('button', { name: 'Magic Missile' }).first().click();
+      92 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/compare.spec.ts:89:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/compare-Compare-Spells-—-a-e292f-nside-Spell-Growth-Analysis-chromium-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/compare-Compare-Spells-—-a-e292f-nside-Spell-Growth-Analysis-chromium-retry1/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/compare-Compare-Spells-—-a-e292f-nside-Spell-Growth-Analysis-chromium-retry1/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/compare-Compare-Spells-—-a-e292f-nside-Spell-Growth-Analysis-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/compare-Compare-Spells-—-a-e292f-nside-Spell-Growth-Analysis-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Retry #2 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Test timeout of 30000ms exceeded while running "beforeEach" hook.
+
+      77 |   const ANALYSIS_TIMEOUT = 20_000;
+      78 |
+    > 79 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      80 |     await page.goto('/compare');
+      81 |     await expect(page.getByRole('heading', { name: /compare spells/i })).toBeVisible({ timeout: 8_000 });
+      82 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/compare.spec.ts:79:8
+
+    Error: locator.fill: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByPlaceholder(/search spells/i).nth(1)
+
+
+      87 |
+      88 |     const inputB = page.getByPlaceholder(/search spells/i).nth(1);
+    > 89 |     await inputB.fill('Magic Missile');
+         |                  ^
+      90 |     await expect(page.getByRole('button', { name: 'Magic Missile' }).first()).toBeVisible({ timeout: 8_000 });
+      91 |     await page.getByRole('button', { name: 'Magic Missile' }).first().click();
+      92 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/compare.spec.ts:89:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/compare-Compare-Spells-—-a-e292f-nside-Spell-Growth-Analysis-chromium-retry2/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/compare-Compare-Spells-—-a-e292f-nside-Spell-Growth-Analysis-chromium-retry2/error-context.md
+
+  9) [chromium] › e2e/compare.spec.ts:130:3 › Compare Spells — analysis results › shows numeric expected damage values (not zero or placeholder) after analysis 
+
+    Test timeout of 30000ms exceeded while running "beforeEach" hook.
+
+      77 |   const ANALYSIS_TIMEOUT = 20_000;
+      78 |
+    > 79 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      80 |     await page.goto('/compare');
+      81 |     await expect(page.getByRole('heading', { name: /compare spells/i })).toBeVisible({ timeout: 8_000 });
+      82 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/compare.spec.ts:79:8
+
+    Error: locator.fill: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByPlaceholder(/search spells/i).nth(1)
+
+
+      87 |
+      88 |     const inputB = page.getByPlaceholder(/search spells/i).nth(1);
+    > 89 |     await inputB.fill('Magic Missile');
+         |                  ^
+      90 |     await expect(page.getByRole('button', { name: 'Magic Missile' }).first()).toBeVisible({ timeout: 8_000 });
+      91 |     await page.getByRole('button', { name: 'Magic Missile' }).first().click();
+      92 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/compare.spec.ts:89:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/compare-Compare-Spells-—-a-e5a98--placeholder-after-analysis-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/compare-Compare-Spells-—-a-e5a98--placeholder-after-analysis-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Test timeout of 30000ms exceeded while running "beforeEach" hook.
+
+      77 |   const ANALYSIS_TIMEOUT = 20_000;
+      78 |
+    > 79 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      80 |     await page.goto('/compare');
+      81 |     await expect(page.getByRole('heading', { name: /compare spells/i })).toBeVisible({ timeout: 8_000 });
+      82 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/compare.spec.ts:79:8
+
+    Error: locator.fill: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByPlaceholder(/search spells/i).nth(1)
+
+
+      87 |
+      88 |     const inputB = page.getByPlaceholder(/search spells/i).nth(1);
+    > 89 |     await inputB.fill('Magic Missile');
+         |                  ^
+      90 |     await expect(page.getByRole('button', { name: 'Magic Missile' }).first()).toBeVisible({ timeout: 8_000 });
+      91 |     await page.getByRole('button', { name: 'Magic Missile' }).first().click();
+      92 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/compare.spec.ts:89:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/compare-Compare-Spells-—-a-e5a98--placeholder-after-analysis-chromium-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/compare-Compare-Spells-—-a-e5a98--placeholder-after-analysis-chromium-retry1/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/compare-Compare-Spells-—-a-e5a98--placeholder-after-analysis-chromium-retry1/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/compare-Compare-Spells-—-a-e5a98--placeholder-after-analysis-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/compare-Compare-Spells-—-a-e5a98--placeholder-after-analysis-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Retry #2 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Test timeout of 30000ms exceeded while running "beforeEach" hook.
+
+      77 |   const ANALYSIS_TIMEOUT = 20_000;
+      78 |
+    > 79 |   test.beforeEach(async ({ page }) => {
+         |        ^
+      80 |     await page.goto('/compare');
+      81 |     await expect(page.getByRole('heading', { name: /compare spells/i })).toBeVisible({ timeout: 8_000 });
+      82 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/compare.spec.ts:79:8
+
+    Error: locator.fill: Test timeout of 30000ms exceeded.
+    Call log:
+      - waiting for getByPlaceholder(/search spells/i).nth(1)
+
+
+      87 |
+      88 |     const inputB = page.getByPlaceholder(/search spells/i).nth(1);
+    > 89 |     await inputB.fill('Magic Missile');
+         |                  ^
+      90 |     await expect(page.getByRole('button', { name: 'Magic Missile' }).first()).toBeVisible({ timeout: 8_000 });
+      91 |     await page.getByRole('button', { name: 'Magic Missile' }).first().click();
+      92 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/compare.spec.ts:89:18
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/compare-Compare-Spells-—-a-e5a98--placeholder-after-analysis-chromium-retry2/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/compare-Compare-Spells-—-a-e5a98--placeholder-after-analysis-chromium-retry2/error-context.md
+
+  10) [chromium] › e2e/error-scenarios.spec.ts:80:3 › Error scenarios — form errors › register with mismatched passwords shows a client-side validation error 
+
+    Error: locator.fill: Error: strict mode violation: getByLabel('Password') resolved to 2 elements:
+        1) <input value="" required="" id="password" type="password" name="password" placeholder="••••••••" autocomplete="new-password" class="dnd-input font-body"/> aka getByRole('textbox', { name: 'Password', exact: true })
+        2) <input value="" required="" type="password" id="password-confirm" placeholder="••••••••" name="password-confirm" autocomplete="new-password" class="dnd-input font-body"/> aka getByRole('textbox', { name: 'Confirm Password' })
+
+    Call log:
+      - waiting for getByLabel('Password')
+
+
+      83 |     await page.goto('/register');
+      84 |     await page.getByLabel('Email Address').fill('test@example.invalid');
+    > 85 |     await page.getByLabel('Password').fill('Password1!');
+         |                                       ^
+      86 |     await page.getByLabel('Confirm Password').fill('Password2!');
+      87 |     await page.getByRole('button', { name: /create account/i }).click();
+      88 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/error-scenarios.spec.ts:85:39
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/error-scenarios-Error-scen-e1581-lient-side-validation-error-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/error-scenarios-Error-scen-e1581-lient-side-validation-error-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Error: locator.fill: Error: strict mode violation: getByLabel('Password') resolved to 2 elements:
+        1) <input value="" required="" id="password" type="password" name="password" placeholder="••••••••" autocomplete="new-password" class="dnd-input font-body"/> aka getByRole('textbox', { name: 'Password', exact: true })
+        2) <input value="" required="" type="password" id="password-confirm" placeholder="••••••••" name="password-confirm" autocomplete="new-password" class="dnd-input font-body"/> aka getByRole('textbox', { name: 'Confirm Password' })
+
+    Call log:
+      - waiting for getByLabel('Password')
+
+
+      83 |     await page.goto('/register');
+      84 |     await page.getByLabel('Email Address').fill('test@example.invalid');
+    > 85 |     await page.getByLabel('Password').fill('Password1!');
+         |                                       ^
+      86 |     await page.getByLabel('Confirm Password').fill('Password2!');
+      87 |     await page.getByRole('button', { name: /create account/i }).click();
+      88 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/error-scenarios.spec.ts:85:39
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/error-scenarios-Error-scen-e1581-lient-side-validation-error-chromium-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/error-scenarios-Error-scen-e1581-lient-side-validation-error-chromium-retry1/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/error-scenarios-Error-scen-e1581-lient-side-validation-error-chromium-retry1/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/error-scenarios-Error-scen-e1581-lient-side-validation-error-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/error-scenarios-Error-scen-e1581-lient-side-validation-error-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Retry #2 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Error: locator.fill: Error: strict mode violation: getByLabel('Password') resolved to 2 elements:
+        1) <input value="" required="" id="password" type="password" name="password" placeholder="••••••••" autocomplete="new-password" class="dnd-input font-body"/> aka getByRole('textbox', { name: 'Password', exact: true })
+        2) <input value="" required="" type="password" id="password-confirm" placeholder="••••••••" name="password-confirm" autocomplete="new-password" class="dnd-input font-body"/> aka getByRole('textbox', { name: 'Confirm Password' })
+
+    Call log:
+      - waiting for getByLabel('Password')
+
+
+      83 |     await page.goto('/register');
+      84 |     await page.getByLabel('Email Address').fill('test@example.invalid');
+    > 85 |     await page.getByLabel('Password').fill('Password1!');
+         |                                       ^
+      86 |     await page.getByLabel('Confirm Password').fill('Password2!');
+      87 |     await page.getByRole('button', { name: /create account/i }).click();
+      88 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/error-scenarios.spec.ts:85:39
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/error-scenarios-Error-scen-e1581-lient-side-validation-error-chromium-retry2/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/error-scenarios-Error-scen-e1581-lient-side-validation-error-chromium-retry2/error-context.md
+
+  11) [chromium] › e2e/error-scenarios.spec.ts:92:3 › Error scenarios — form errors › register with a too-short password shows a client-side validation error 
+
+    Error: locator.fill: Error: strict mode violation: getByLabel('Password') resolved to 2 elements:
+        1) <input value="" required="" id="password" type="password" name="password" placeholder="••••••••" autocomplete="new-password" class="dnd-input font-body"/> aka getByRole('textbox', { name: 'Password', exact: true })
+        2) <input value="" required="" type="password" id="password-confirm" placeholder="••••••••" name="password-confirm" autocomplete="new-password" class="dnd-input font-body"/> aka getByRole('textbox', { name: 'Confirm Password' })
+
+    Call log:
+      - waiting for getByLabel('Password')
+
+
+       95 |     await page.goto('/register');
+       96 |     await page.getByLabel('Email Address').fill('test@example.invalid');
+    >  97 |     await page.getByLabel('Password').fill('short');
+          |                                       ^
+       98 |     await page.getByLabel('Confirm Password').fill('short');
+       99 |     await page.getByRole('button', { name: /create account/i }).click();
+      100 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/error-scenarios.spec.ts:97:39
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/error-scenarios-Error-scen-6217e-lient-side-validation-error-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/error-scenarios-Error-scen-6217e-lient-side-validation-error-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Error: locator.fill: Error: strict mode violation: getByLabel('Password') resolved to 2 elements:
+        1) <input value="" required="" id="password" type="password" name="password" placeholder="••••••••" autocomplete="new-password" class="dnd-input font-body"/> aka getByRole('textbox', { name: 'Password', exact: true })
+        2) <input value="" required="" type="password" id="password-confirm" placeholder="••••••••" name="password-confirm" autocomplete="new-password" class="dnd-input font-body"/> aka getByRole('textbox', { name: 'Confirm Password' })
+
+    Call log:
+      - waiting for getByLabel('Password')
+
+
+       95 |     await page.goto('/register');
+       96 |     await page.getByLabel('Email Address').fill('test@example.invalid');
+    >  97 |     await page.getByLabel('Password').fill('short');
+          |                                       ^
+       98 |     await page.getByLabel('Confirm Password').fill('short');
+       99 |     await page.getByRole('button', { name: /create account/i }).click();
+      100 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/error-scenarios.spec.ts:97:39
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/error-scenarios-Error-scen-6217e-lient-side-validation-error-chromium-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/error-scenarios-Error-scen-6217e-lient-side-validation-error-chromium-retry1/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/error-scenarios-Error-scen-6217e-lient-side-validation-error-chromium-retry1/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/error-scenarios-Error-scen-6217e-lient-side-validation-error-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/error-scenarios-Error-scen-6217e-lient-side-validation-error-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Retry #2 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Error: locator.fill: Error: strict mode violation: getByLabel('Password') resolved to 2 elements:
+        1) <input value="" required="" id="password" type="password" name="password" placeholder="••••••••" autocomplete="new-password" class="dnd-input font-body"/> aka getByRole('textbox', { name: 'Password', exact: true })
+        2) <input value="" required="" type="password" id="password-confirm" placeholder="••••••••" name="password-confirm" autocomplete="new-password" class="dnd-input font-body"/> aka getByRole('textbox', { name: 'Confirm Password' })
+
+    Call log:
+      - waiting for getByLabel('Password')
+
+
+       95 |     await page.goto('/register');
+       96 |     await page.getByLabel('Email Address').fill('test@example.invalid');
+    >  97 |     await page.getByLabel('Password').fill('short');
+          |                                       ^
+       98 |     await page.getByLabel('Confirm Password').fill('short');
+       99 |     await page.getByRole('button', { name: /create account/i }).click();
+      100 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/error-scenarios.spec.ts:97:39
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/error-scenarios-Error-scen-6217e-lient-side-validation-error-chromium-retry2/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/error-scenarios-Error-scen-6217e-lient-side-validation-error-chromium-retry2/error-context.md
+
+  12) [chromium] › e2e/spell-detail-analysis.spec.ts:79:3 › Spell Detail — Analysis Results › shows Expected Damage stat after analysis 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText(/expected damage/i)
+    Expected: visible
+    Error: strict mode violation: getByText(/expected damage/i) resolved to 4 elements:
+        1) <div class="font-display text-xs text-smoke-400 uppercase tracking-widest mb-1">Expected Damage</div> aka locator('div').filter({ hasText: /^Expected Damage$/ })
+        2) <p class="font-body text-sm text-parchment-500 mb-4">Bars = expected damage at each slot level · Line …</p> aka getByText('Bars = expected damage at')
+        3) <span class="recharts-legend-item-text">Expected Damage</span> aka locator('span').filter({ hasText: 'Expected Damage' })
+        4) <tspan x="15" dy="0.355em">Expected Damage</tspan> aka locator('tspan').filter({ hasText: 'Expected Damage' })
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for getByText(/expected damage/i)
+
+
+      79 |   test('shows Expected Damage stat after analysis', async ({ page }) => {
+      80 |     await runAnalysis(page, '3');
+    > 81 |     await expect(page.getByText(/expected damage/i)).toBeVisible();
+         |                                                      ^
+      82 |   });
+      83 |
+      84 |   test('shows a Math Breakdown section after analysis', async ({ page }) => {
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/spell-detail-analysis.spec.ts:81:54
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/spell-detail-analysis-Spel-047c9--Damage-stat-after-analysis-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/spell-detail-analysis-Spel-047c9--Damage-stat-after-analysis-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText(/expected damage/i)
+    Expected: visible
+    Error: strict mode violation: getByText(/expected damage/i) resolved to 4 elements:
+        1) <div class="font-display text-xs text-smoke-400 uppercase tracking-widest mb-1">Expected Damage</div> aka locator('div').filter({ hasText: /^Expected Damage$/ })
+        2) <p class="font-body text-sm text-parchment-500 mb-4">Bars = expected damage at each slot level · Line …</p> aka getByText('Bars = expected damage at')
+        3) <span class="recharts-legend-item-text">Expected Damage</span> aka locator('span').filter({ hasText: 'Expected Damage' })
+        4) <tspan x="15" dy="0.355em">Expected Damage</tspan> aka locator('tspan').filter({ hasText: 'Expected Damage' })
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for getByText(/expected damage/i)
+
+
+      79 |   test('shows Expected Damage stat after analysis', async ({ page }) => {
+      80 |     await runAnalysis(page, '3');
+    > 81 |     await expect(page.getByText(/expected damage/i)).toBeVisible();
+         |                                                      ^
+      82 |   });
+      83 |
+      84 |   test('shows a Math Breakdown section after analysis', async ({ page }) => {
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/spell-detail-analysis.spec.ts:81:54
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/spell-detail-analysis-Spel-047c9--Damage-stat-after-analysis-chromium-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/spell-detail-analysis-Spel-047c9--Damage-stat-after-analysis-chromium-retry1/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/spell-detail-analysis-Spel-047c9--Damage-stat-after-analysis-chromium-retry1/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/spell-detail-analysis-Spel-047c9--Damage-stat-after-analysis-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/spell-detail-analysis-Spel-047c9--Damage-stat-after-analysis-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Retry #2 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText(/expected damage/i)
+    Expected: visible
+    Error: strict mode violation: getByText(/expected damage/i) resolved to 4 elements:
+        1) <div class="font-display text-xs text-smoke-400 uppercase tracking-widest mb-1">Expected Damage</div> aka locator('div').filter({ hasText: /^Expected Damage$/ })
+        2) <p class="font-body text-sm text-parchment-500 mb-4">Bars = expected damage at each slot level · Line …</p> aka getByText('Bars = expected damage at')
+        3) <span class="recharts-legend-item-text">Expected Damage</span> aka locator('span').filter({ hasText: 'Expected Damage' })
+        4) <tspan x="15" dy="0.355em">Expected Damage</tspan> aka locator('tspan').filter({ hasText: 'Expected Damage' })
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for getByText(/expected damage/i)
+
+
+      79 |   test('shows Expected Damage stat after analysis', async ({ page }) => {
+      80 |     await runAnalysis(page, '3');
+    > 81 |     await expect(page.getByText(/expected damage/i)).toBeVisible();
+         |                                                      ^
+      82 |   });
+      83 |
+      84 |   test('shows a Math Breakdown section after analysis', async ({ page }) => {
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/spell-detail-analysis.spec.ts:81:54
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/spell-detail-analysis-Spel-047c9--Damage-stat-after-analysis-chromium-retry2/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/spell-detail-analysis-Spel-047c9--Damage-stat-after-analysis-chromium-retry2/error-context.md
+
+  13) [chromium] › e2e/spell-detail-analysis.spec.ts:96:3 › Spell Detail — Analysis Results › upcasting Fireball to slot 5 still produces results 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText(/expected damage/i)
+    Expected: visible
+    Error: strict mode violation: getByText(/expected damage/i) resolved to 4 elements:
+        1) <div class="font-display text-xs text-smoke-400 uppercase tracking-widest mb-1">Expected Damage</div> aka locator('div').filter({ hasText: /^Expected Damage$/ })
+        2) <p class="font-body text-sm text-parchment-500 mb-4">Bars = expected damage at each slot level · Line …</p> aka getByText('Bars = expected damage at')
+        3) <span class="recharts-legend-item-text">Expected Damage</span> aka locator('span').filter({ hasText: 'Expected Damage' })
+        4) <tspan x="15" dy="0.355em">Expected Damage</tspan> aka locator('tspan').filter({ hasText: 'Expected Damage' })
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for getByText(/expected damage/i)
+
+
+      100 |     // Re-run at a higher slot
+      101 |     await runAnalysis(page, '5');
+    > 102 |     await expect(page.getByText(/expected damage/i)).toBeVisible();
+          |                                                      ^
+      103 |   });
+      104 | });
+      105 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/spell-detail-analysis.spec.ts:102:54
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/spell-detail-analysis-Spel-650e5-ot-5-still-produces-results-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/spell-detail-analysis-Spel-650e5-ot-5-still-produces-results-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText(/expected damage/i)
+    Expected: visible
+    Error: strict mode violation: getByText(/expected damage/i) resolved to 4 elements:
+        1) <div class="font-display text-xs text-smoke-400 uppercase tracking-widest mb-1">Expected Damage</div> aka locator('div').filter({ hasText: /^Expected Damage$/ })
+        2) <p class="font-body text-sm text-parchment-500 mb-4">Bars = expected damage at each slot level · Line …</p> aka getByText('Bars = expected damage at')
+        3) <span class="recharts-legend-item-text">Expected Damage</span> aka locator('span').filter({ hasText: 'Expected Damage' })
+        4) <tspan x="15" dy="0.355em">Expected Damage</tspan> aka locator('tspan').filter({ hasText: 'Expected Damage' })
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for getByText(/expected damage/i)
+
+
+      100 |     // Re-run at a higher slot
+      101 |     await runAnalysis(page, '5');
+    > 102 |     await expect(page.getByText(/expected damage/i)).toBeVisible();
+          |                                                      ^
+      103 |   });
+      104 | });
+      105 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/spell-detail-analysis.spec.ts:102:54
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/spell-detail-analysis-Spel-650e5-ot-5-still-produces-results-chromium-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/spell-detail-analysis-Spel-650e5-ot-5-still-produces-results-chromium-retry1/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/spell-detail-analysis-Spel-650e5-ot-5-still-produces-results-chromium-retry1/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/spell-detail-analysis-Spel-650e5-ot-5-still-produces-results-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/spell-detail-analysis-Spel-650e5-ot-5-still-produces-results-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Retry #2 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText(/expected damage/i)
+    Expected: visible
+    Error: strict mode violation: getByText(/expected damage/i) resolved to 4 elements:
+        1) <div class="font-display text-xs text-smoke-400 uppercase tracking-widest mb-1">Expected Damage</div> aka locator('div').filter({ hasText: /^Expected Damage$/ })
+        2) <p class="font-body text-sm text-parchment-500 mb-4">Bars = expected damage at each slot level · Line …</p> aka getByText('Bars = expected damage at')
+        3) <span class="recharts-legend-item-text">Expected Damage</span> aka locator('span').filter({ hasText: 'Expected Damage' })
+        4) <tspan x="15" dy="0.355em">Expected Damage</tspan> aka locator('tspan').filter({ hasText: 'Expected Damage' })
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for getByText(/expected damage/i)
+
+
+      100 |     // Re-run at a higher slot
+      101 |     await runAnalysis(page, '5');
+    > 102 |     await expect(page.getByText(/expected damage/i)).toBeVisible();
+          |                                                      ^
+      103 |   });
+      104 | });
+      105 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/spell-detail-analysis.spec.ts:102:54
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/spell-detail-analysis-Spel-650e5-ot-5-still-produces-results-chromium-retry2/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/spell-detail-analysis-Spel-650e5-ot-5-still-produces-results-chromium-retry2/error-context.md
+
+  14) [chromium] › e2e/spell-detail-analysis.spec.ts:123:3 › Spell Detail — Slot Level Controls › changing slot level after an analysis reruns and refreshes results 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText(/expected damage/i)
+    Expected: visible
+    Error: strict mode violation: getByText(/expected damage/i) resolved to 4 elements:
+        1) <div class="font-display text-xs text-smoke-400 uppercase tracking-widest mb-1">Expected Damage</div> aka locator('div').filter({ hasText: /^Expected Damage$/ })
+        2) <p class="font-body text-sm text-parchment-500 mb-4">Bars = expected damage at each slot level · Line …</p> aka getByText('Bars = expected damage at')
+        3) <span class="recharts-legend-item-text">Expected Damage</span> aka locator('span').filter({ hasText: 'Expected Damage' })
+        4) <tspan x="15" dy="0.355em">Expected Damage</tspan> aka locator('tspan').filter({ hasText: 'Expected Damage' })
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for getByText(/expected damage/i)
+
+
+      124 |     // First analysis at slot 3
+      125 |     await runAnalysis(page, '3');
+    > 126 |     await expect(page.getByText(/expected damage/i)).toBeVisible();
+          |                                                      ^
+      127 |
+      128 |     // Change to slot 5 and re-analyze
+      129 |     await page.getByLabel(/spell slot level/i).selectOption('5');
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/spell-detail-analysis.spec.ts:126:54
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/spell-detail-analysis-Spel-62b46-eruns-and-refreshes-results-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/spell-detail-analysis-Spel-62b46-eruns-and-refreshes-results-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText(/expected damage/i)
+    Expected: visible
+    Error: strict mode violation: getByText(/expected damage/i) resolved to 4 elements:
+        1) <div class="font-display text-xs text-smoke-400 uppercase tracking-widest mb-1">Expected Damage</div> aka locator('div').filter({ hasText: /^Expected Damage$/ })
+        2) <p class="font-body text-sm text-parchment-500 mb-4">Bars = expected damage at each slot level · Line …</p> aka getByText('Bars = expected damage at')
+        3) <span class="recharts-legend-item-text">Expected Damage</span> aka locator('span').filter({ hasText: 'Expected Damage' })
+        4) <tspan x="15" dy="0.355em">Expected Damage</tspan> aka locator('tspan').filter({ hasText: 'Expected Damage' })
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for getByText(/expected damage/i)
+
+
+      124 |     // First analysis at slot 3
+      125 |     await runAnalysis(page, '3');
+    > 126 |     await expect(page.getByText(/expected damage/i)).toBeVisible();
+          |                                                      ^
+      127 |
+      128 |     // Change to slot 5 and re-analyze
+      129 |     await page.getByLabel(/spell slot level/i).selectOption('5');
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/spell-detail-analysis.spec.ts:126:54
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/spell-detail-analysis-Spel-62b46-eruns-and-refreshes-results-chromium-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/spell-detail-analysis-Spel-62b46-eruns-and-refreshes-results-chromium-retry1/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/spell-detail-analysis-Spel-62b46-eruns-and-refreshes-results-chromium-retry1/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/spell-detail-analysis-Spel-62b46-eruns-and-refreshes-results-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/spell-detail-analysis-Spel-62b46-eruns-and-refreshes-results-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Retry #2 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText(/expected damage/i)
+    Expected: visible
+    Error: strict mode violation: getByText(/expected damage/i) resolved to 4 elements:
+        1) <div class="font-display text-xs text-smoke-400 uppercase tracking-widest mb-1">Expected Damage</div> aka locator('div').filter({ hasText: /^Expected Damage$/ })
+        2) <p class="font-body text-sm text-parchment-500 mb-4">Bars = expected damage at each slot level · Line …</p> aka getByText('Bars = expected damage at')
+        3) <span class="recharts-legend-item-text">Expected Damage</span> aka locator('span').filter({ hasText: 'Expected Damage' })
+        4) <tspan x="15" dy="0.355em">Expected Damage</tspan> aka locator('tspan').filter({ hasText: 'Expected Damage' })
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for getByText(/expected damage/i)
+
+
+      124 |     // First analysis at slot 3
+      125 |     await runAnalysis(page, '3');
+    > 126 |     await expect(page.getByText(/expected damage/i)).toBeVisible();
+          |                                                      ^
+      127 |
+      128 |     // Change to slot 5 and re-analyze
+      129 |     await page.getByLabel(/spell slot level/i).selectOption('5');
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/spell-detail-analysis.spec.ts:126:54
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/spell-detail-analysis-Spel-62b46-eruns-and-refreshes-results-chromium-retry2/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/spell-detail-analysis-Spel-62b46-eruns-and-refreshes-results-chromium-retry2/error-context.md
+
+  15) [chromium] › e2e/spell-detail-analysis.spec.ts:154:3 › Spell Detail — Advanced Analysis Options › analysis with Half damage on save enabled still returns results 
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText(/expected damage/i)
+    Expected: visible
+    Error: strict mode violation: getByText(/expected damage/i) resolved to 4 elements:
+        1) <div class="font-display text-xs text-smoke-400 uppercase tracking-widest mb-1">Expected Damage</div> aka locator('div').filter({ hasText: /^Expected Damage$/ })
+        2) <p class="font-body text-sm text-parchment-500 mb-4">Bars = expected damage at each slot level · Line …</p> aka getByText('Bars = expected damage at')
+        3) <span class="recharts-legend-item-text">Expected Damage</span> aka locator('span').filter({ hasText: 'Expected Damage' })
+        4) <tspan x="15" dy="0.355em">Expected Damage</tspan> aka locator('tspan').filter({ hasText: 'Expected Damage' })
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for getByText(/expected damage/i)
+
+
+      159 |
+      160 |     await runAnalysis(page, '3');
+    > 161 |     await expect(page.getByText(/expected damage/i)).toBeVisible();
+          |                                                      ^
+      162 |   });
+      163 | });
+      164 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/spell-detail-analysis.spec.ts:161:54
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/spell-detail-analysis-Spel-5add4-abled-still-returns-results-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/spell-detail-analysis-Spel-5add4-abled-still-returns-results-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText(/expected damage/i)
+    Expected: visible
+    Error: strict mode violation: getByText(/expected damage/i) resolved to 4 elements:
+        1) <div class="font-display text-xs text-smoke-400 uppercase tracking-widest mb-1">Expected Damage</div> aka locator('div').filter({ hasText: /^Expected Damage$/ })
+        2) <p class="font-body text-sm text-parchment-500 mb-4">Bars = expected damage at each slot level · Line …</p> aka getByText('Bars = expected damage at')
+        3) <span class="recharts-legend-item-text">Expected Damage</span> aka locator('span').filter({ hasText: 'Expected Damage' })
+        4) <tspan x="15" dy="0.355em">Expected Damage</tspan> aka locator('tspan').filter({ hasText: 'Expected Damage' })
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for getByText(/expected damage/i)
+
+
+      159 |
+      160 |     await runAnalysis(page, '3');
+    > 161 |     await expect(page.getByText(/expected damage/i)).toBeVisible();
+          |                                                      ^
+      162 |   });
+      163 | });
+      164 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/spell-detail-analysis.spec.ts:161:54
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/spell-detail-analysis-Spel-5add4-abled-still-returns-results-chromium-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/spell-detail-analysis-Spel-5add4-abled-still-returns-results-chromium-retry1/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/spell-detail-analysis-Spel-5add4-abled-still-returns-results-chromium-retry1/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/spell-detail-analysis-Spel-5add4-abled-still-returns-results-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/spell-detail-analysis-Spel-5add4-abled-still-returns-results-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Retry #2 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Error: expect(locator).toBeVisible() failed
+
+    Locator: getByText(/expected damage/i)
+    Expected: visible
+    Error: strict mode violation: getByText(/expected damage/i) resolved to 4 elements:
+        1) <div class="font-display text-xs text-smoke-400 uppercase tracking-widest mb-1">Expected Damage</div> aka locator('div').filter({ hasText: /^Expected Damage$/ })
+        2) <p class="font-body text-sm text-parchment-500 mb-4">Bars = expected damage at each slot level · Line …</p> aka getByText('Bars = expected damage at')
+        3) <span class="recharts-legend-item-text">Expected Damage</span> aka locator('span').filter({ hasText: 'Expected Damage' })
+        4) <tspan x="15" dy="0.355em">Expected Damage</tspan> aka locator('tspan').filter({ hasText: 'Expected Damage' })
+
+    Call log:
+      - Expect "toBeVisible" with timeout 5000ms
+      - waiting for getByText(/expected damage/i)
+
+
+      159 |
+      160 |     await runAnalysis(page, '3');
+    > 161 |     await expect(page.getByText(/expected damage/i)).toBeVisible();
+          |                                                      ^
+      162 |   });
+      163 | });
+      164 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/spell-detail-analysis.spec.ts:161:54
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/spell-detail-analysis-Spel-5add4-abled-still-returns-results-chromium-retry2/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/spell-detail-analysis-Spel-5add4-abled-still-returns-results-chromium-retry2/error-context.md
+
+  16) [chromium] › e2e/spellbooks.spec.ts:31:3 › My Library › navigates to spellbook detail when a book is clicked 
+
+    Error: expect(page).toHaveURL(expected) failed
+
+    Expected pattern: /\/spellbooks\/[a-zA-Z0-9-]+/
+    Received string:  "http://localhost/spellbooks"
+    Timeout: 5000ms
+
+    Call log:
+      - Expect "toHaveURL" with timeout 5000ms
+        9 × unexpected value "http://localhost/spellbooks"
+
+
+      38 |     }
+      39 |     await bookLinks.first().click();
+    > 40 |     await expect(page).toHaveURL(/\/spellbooks\/[a-zA-Z0-9-]+/);
+         |                        ^
+      41 |   });
+      42 | });
+      43 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/spellbooks.spec.ts:40:24
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/spellbooks-My-Library-navi-8fab5-tail-when-a-book-is-clicked-chromium/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/spellbooks-My-Library-navi-8fab5-tail-when-a-book-is-clicked-chromium/error-context.md
+
+    Retry #1 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Error: expect(page).toHaveURL(expected) failed
+
+    Expected pattern: /\/spellbooks\/[a-zA-Z0-9-]+/
+    Received string:  "http://localhost/spellbooks"
+    Timeout: 5000ms
+
+    Call log:
+      - Expect "toHaveURL" with timeout 5000ms
+        9 × unexpected value "http://localhost/spellbooks"
+
+
+      38 |     }
+      39 |     await bookLinks.first().click();
+    > 40 |     await expect(page).toHaveURL(/\/spellbooks\/[a-zA-Z0-9-]+/);
+         |                        ^
+      41 |   });
+      42 | });
+      43 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/spellbooks.spec.ts:40:24
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/spellbooks-My-Library-navi-8fab5-tail-when-a-book-is-clicked-chromium-retry1/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    attachment #2: video (video/webm) ──────────────────────────────────────────────────────────────
+    test-results/spellbooks-My-Library-navi-8fab5-tail-when-a-book-is-clicked-chromium-retry1/video.webm
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/spellbooks-My-Library-navi-8fab5-tail-when-a-book-is-clicked-chromium-retry1/error-context.md
+
+    attachment #4: trace (application/zip) ─────────────────────────────────────────────────────────
+    test-results/spellbooks-My-Library-navi-8fab5-tail-when-a-book-is-clicked-chromium-retry1/trace.zip
+    Usage:
+
+        npx playwright show-trace test-results/spellbooks-My-Library-navi-8fab5-tail-when-a-book-is-clicked-chromium-retry1/trace.zip
+
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Retry #2 ───────────────────────────────────────────────────────────────────────────────────────
+
+    Error: expect(page).toHaveURL(expected) failed
+
+    Expected pattern: /\/spellbooks\/[a-zA-Z0-9-]+/
+    Received string:  "http://localhost/spellbooks"
+    Timeout: 5000ms
+
+    Call log:
+      - Expect "toHaveURL" with timeout 5000ms
+        9 × unexpected value "http://localhost/spellbooks"
+
+
+      38 |     }
+      39 |     await bookLinks.first().click();
+    > 40 |     await expect(page).toHaveURL(/\/spellbooks\/[a-zA-Z0-9-]+/);
+         |                        ^
+      41 |   });
+      42 | });
+      43 |
+        at /home/runner/work/DndOptimizer/DndOptimizer/frontend/e2e/spellbooks.spec.ts:40:24
+
+    attachment #1: screenshot (image/png) ──────────────────────────────────────────────────────────
+    test-results/spellbooks-My-Library-navi-8fab5-tail-when-a-book-is-clicked-chromium-retry2/test-failed-1.png
+    ────────────────────────────────────────────────────────────────────────────────────────────────
+
+    Error Context: test-results/spellbooks-My-Library-navi-8fab5-tail-when-a-book-is-clicked-chromium-retry2/error-context.md
+
+  16 failed
+    [chromium] › e2e/compare.spec.ts:32:3 › Compare Spells › can select spells and run an analysis ─
+    [chromium] › e2e/compare.spec.ts:53:3 › Compare Spells › Analyze button becomes disabled again after clearing a spell selection 
+    [chromium] › e2e/compare.spec.ts:98:3 › Compare Spells — analysis results › shows Expected Damage labels for both spells 
+    [chromium] › e2e/compare.spec.ts:104:3 › Compare Spells — analysis results › shows Efficiency labels for both spells 
+    [chromium] › e2e/compare.spec.ts:110:3 › Compare Spells — analysis results › shows spell names Fireball and Magic Missile in the results cards 
+    [chromium] › e2e/compare.spec.ts:115:3 › Compare Spells — analysis results › shows the Breakeven Analysis section 
+    [chromium] › e2e/compare.spec.ts:119:3 › Compare Spells — analysis results › shows the Spell Growth Analysis section 
+    [chromium] › e2e/compare.spec.ts:123:3 › Compare Spells — analysis results › renders a growth chart container inside Spell Growth Analysis 
+    [chromium] › e2e/compare.spec.ts:130:3 › Compare Spells — analysis results › shows numeric expected damage values (not zero or placeholder) after analysis 
+    [chromium] › e2e/error-scenarios.spec.ts:80:3 › Error scenarios — form errors › register with mismatched passwords shows a client-side validation error 
+    [chromium] › e2e/error-scenarios.spec.ts:92:3 › Error scenarios — form errors › register with a too-short password shows a client-side validation error 
+    [chromium] › e2e/spell-detail-analysis.spec.ts:79:3 › Spell Detail — Analysis Results › shows Expected Damage stat after analysis 
+    [chromium] › e2e/spell-detail-analysis.spec.ts:96:3 › Spell Detail — Analysis Results › upcasting Fireball to slot 5 still produces results 
+    [chromium] › e2e/spell-detail-analysis.spec.ts:123:3 › Spell Detail — Slot Level Controls › changing slot level after an analysis reruns and refreshes results 
+    [chromium] › e2e/spell-detail-analysis.spec.ts:154:3 › Spell Detail — Advanced Analysis Options › analysis with Half damage on save enabled still returns results 
+    [chromium] › e2e/spellbooks.spec.ts:31:3 › My Library › navigates to spellbook detail when a book is clicked 
+  2 skipped
+  65 passed (16.6m)
+Error: Process completed with exit code 1.
+2s
+Run actions/upload-artifact@v4
+With the provided path, there will be 63 files uploaded
+Artifact name is valid!
+Root directory input is valid!
+Beginning upload of artifact content to blob storage
+Uploaded bytes 8388608
+Uploaded bytes 16777216
+Uploaded bytes 19059911
+Finished uploading artifact content to blob storage!
+SHA256 digest of uploaded artifact zip is 55394fe8673a2e5b6adeada851500cdc886344587da6a4800055f82dbe8f6d94
+Finalizing artifact upload
+Artifact playwright-report-23158804125.zip successfully finalized. Artifact ID 5950342419
+Artifact playwright-report-23158804125 has been successfully uploaded! Final size is 19059911 bytes. Artifact ID is 5950342419
+Artifact download URL: https://github.com/trevor-heilman/DndOptimizer/actions/runs/23158804125/artifacts/5950342419
+0s
+Run docker compose -f compose.yml -f compose.ci.yml logs --tail=100
+time="2026-03-16T18:28:04Z" level=warning msg="/home/runner/work/DndOptimizer/DndOptimizer/compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+db-1  | 2026-03-16 18:11:39.405 UTC [150] FATAL:  database "testuser" does not exist
+db-1  | 2026-03-16 18:11:49.474 UTC [158] FATAL:  database "testuser" does not exist
+db-1  | 2026-03-16 18:11:59.539 UTC [167] FATAL:  database "testuser" does not exist
+db-1  | 2026-03-16 18:12:09.605 UTC [177] FATAL:  database "testuser" does not exist
+db-1  | 2026-03-16 18:12:19.672 UTC [186] FATAL:  database "testuser" does not exist
+db-1  | 2026-03-16 18:12:29.740 UTC [194] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:12:39.817 UTC [203] FATAL:  database "testuser" does not exist
+spellwright_backend_1  | [2026-03-16 18:10:29 +0000] [1] [INFO] Starting gunicorn 25.1.0
+spellwright_backend_1  | [2026-03-16 18:10:29 +0000] [1] [INFO] Listening at: http://0.0.0.0:8000 (1)
+spellwright_backend_1  | [2026-03-16 18:10:29 +0000] [1] [INFO] Using worker: sync
+spellwright_backend_1  | [2026-03-16 18:10:29 +0000] [1] [INFO] Control socket listening at /app/gunicorn.ctl
+spellwright_backend_1  | [2026-03-16 18:10:29 +0000] [8] [INFO] Booting worker with pid: 8
+spellwright_backend_1  | Unauthorized: /api/users/login/
+spellwright_backend_1  | Unauthorized: /api/users/login/
+redis-1                | 1:C 16 Mar 2026 18:10:18.829 # WARNING Memory overcommit must be enabled! Without it, a background save or replication may fail under low memory condition. Being disabled, it can also cause failures without low memory condition, see https://github.com/jemalloc/jemalloc/issues/1328. To fix this issue add 'vm.overcommit_memory = 1' to /etc/sysctl.conf and then reboot or run the command 'sysctl vm.overcommit_memory=1' for this to take effect.
+db-1                   | 2026-03-16 18:12:49.882 UTC [214] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:12:59.946 UTC [222] FATAL:  database "testuser" does not exist
+redis-1                | 1:C 16 Mar 2026 18:10:18.830 * oO0OoO0OoO0Oo Redis is starting oO0OoO0OoO0Oo
+redis-1                | 1:C 16 Mar 2026 18:10:18.830 * Redis version=7.4.8, bits=64, commit=00000000, modified=0, pid=1, just started
+redis-1                | 1:C 16 Mar 2026 18:10:18.830 # Warning: no config file specified, using the default config. In order to specify a config file use redis-server /path/to/redis.conf
+redis-1                | 1:M 16 Mar 2026 18:10:18.830 * monotonic clock: POSIX clock_gettime
+redis-1                | 1:M 16 Mar 2026 18:10:18.831 * Running mode=standalone, port=6379.
+redis-1                | 1:M 16 Mar 2026 18:10:18.831 * Server initialized
+redis-1                | 1:M 16 Mar 2026 18:10:18.831 * Ready to accept connections tcp
+db-1                   | 2026-03-16 18:13:10.011 UTC [231] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:13:20.077 UTC [241] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:13:30.143 UTC [250] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:13:40.209 UTC [259] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:13:50.276 UTC [270] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:14:00.343 UTC [278] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:14:10.408 UTC [287] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:14:20.477 UTC [297] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:14:30.540 UTC [306] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:14:40.604 UTC [314] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:14:50.669 UTC [325] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:15:00.734 UTC [333] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:15:10.802 UTC [342] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:15:19.808 UTC [62] LOG:  checkpoint starting: time
+db-1                   | 2026-03-16 18:15:20.868 UTC [352] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:15:30.934 UTC [361] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:15:41.000 UTC [369] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:15:48.880 UTC [62] LOG:  checkpoint complete: wrote 293 buffers (1.8%); 0 WAL file(s) added, 0 removed, 0 recycled; write=29.066 s, sync=0.002 s, total=29.072 s; sync files=214, longest=0.001 s, average=0.001 s; distance=1479 kB, estimate=1479 kB; lsn=0/1A90D80, redo lsn=0/1A90D48
+db-1                   | 2026-03-16 18:15:51.069 UTC [378] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:16:01.135 UTC [388] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:16:11.204 UTC [397] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:16:21.270 UTC [405] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:16:31.339 UTC [416] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:16:41.403 UTC [424] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:16:51.470 UTC [433] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:17:01.533 UTC [443] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:17:11.608 UTC [452] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:17:21.674 UTC [460] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:17:31.737 UTC [471] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:17:41.804 UTC [479] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:17:51.875 UTC [488] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:18:01.940 UTC [498] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:18:12.008 UTC [507] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:18:22.078 UTC [515] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:18:32.142 UTC [526] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:18:42.214 UTC [534] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:18:52.281 UTC [543] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:19:02.352 UTC [551] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:19:12.418 UTC [562] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:19:22.482 UTC [570] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:19:32.549 UTC [579] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:19:42.616 UTC [589] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:19:52.683 UTC [598] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:20:02.749 UTC [606] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:20:12.815 UTC [617] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:20:22.881 UTC [625] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:20:32.948 UTC [634] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:20:43.014 UTC [644] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:20:53.080 UTC [653] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:21:03.147 UTC [661] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:21:13.216 UTC [672] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:21:23.283 UTC [680] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:21:33.350 UTC [690] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:21:43.415 UTC [700] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:21:53.479 UTC [709] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:22:03.545 UTC [717] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:22:13.636 UTC [726] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:22:23.704 UTC [736] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:22:33.770 UTC [745] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:22:43.839 UTC [753] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:22:53.907 UTC [764] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:23:03.973 UTC [772] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:23:14.036 UTC [781] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:23:24.099 UTC [791] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:23:34.165 UTC [800] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:23:44.231 UTC [808] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:23:54.294 UTC [819] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:24:04.358 UTC [827] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:24:14.423 UTC [836] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:24:24.488 UTC [846] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:24:34.555 UTC [855] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:24:44.621 UTC [863] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:24:54.690 UTC [874] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:25:04.756 UTC [882] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:25:14.823 UTC [891] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:25:24.901 UTC [901] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:25:34.967 UTC [910] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:25:45.031 UTC [918] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:25:55.108 UTC [927] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:26:05.187 UTC [946] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:26:15.271 UTC [966] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:26:25.357 UTC [1038] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:26:35.439 UTC [1088] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:26:45.508 UTC [1132] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:26:55.593 UTC [1165] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:27:05.666 UTC [1199] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:27:15.751 UTC [1233] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:27:25.840 UTC [1278] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:27:35.934 UTC [1354] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:27:46.034 UTC [1390] FATAL:  database "testuser" does not exist
+db-1                   | 2026-03-16 18:27:56.104 UTC [1403] FATAL:  database "testuser" does not exist
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:35 +0000] "GET /assets/index-CgM9iNtY.js HTTP/1.1" 200 324561 "http://localhost/spellbooks" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:35 +0000] "GET /api/users/me/ HTTP/1.1" 200 175 "http://localhost/spellbooks" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:35 +0000] "GET /api/spellbooks/ HTTP/1.1" 200 332 "http://localhost/spellbooks" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:35 +0000] "GET /api/spellbooks/characters/ HTTP/1.1" 200 429 "http://localhost/spellbooks" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:35 +0000] "GET /spellbooks HTTP/1.1" 200 310 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:35 +0000] "GET /assets/index-CgM9iNtY.js HTTP/1.1" 200 324561 "http://localhost/spellbooks" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:35 +0000] "GET /assets/index-Qh1Z2c49.css HTTP/1.1" 200 9688 "http://localhost/spellbooks" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:36 +0000] "GET /api/users/me/ HTTP/1.1" 200 175 "http://localhost/spellbooks" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:36 +0000] "GET /api/spellbooks/ HTTP/1.1" 200 332 "http://localhost/spellbooks" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:36 +0000] "GET /api/spellbooks/characters/ HTTP/1.1" 200 429 "http://localhost/spellbooks" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:36 +0000] "POST /api/spellbooks/characters/ HTTP/1.1" 201 282 "http://localhost/spellbooks" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:36 +0000] "GET /api/spellbooks/characters/ HTTP/1.1" 200 497 "http://localhost/spellbooks" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:36 +0000] "POST /api/spellbooks/ HTTP/1.1" 201 169 "http://localhost/spellbooks" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:36 +0000] "GET /api/spellbooks/ HTTP/1.1" 200 402 "http://localhost/spellbooks" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:36 +0000] "GET /api/spellbooks/05bdf115-5ece-4e41-a90e-c26d257190db/ HTTP/1.1" 200 308 "http://localhost/spellbooks/05bdf115-5ece-4e41-a90e-c26d257190db" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:36 +0000] "GET /api/spells/spells/sources/ HTTP/1.1" 200 7 "http://localhost/spellbooks/05bdf115-5ece-4e41-a90e-c26d257190db" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:36 +0000] "GET /api/spells/spells/?page=1&page_size=1000 HTTP/1.1" 200 2766 "http://localhost/spellbooks/05bdf115-5ece-4e41-a90e-c26d257190db" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:37 +0000] "POST /api/spellbooks/05bdf115-5ece-4e41-a90e-c26d257190db/add_spell/ HTTP/1.1" 201 476 "http://localhost/spellbooks/05bdf115-5ece-4e41-a90e-c26d257190db" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:37 +0000] "GET /api/spellbooks/05bdf115-5ece-4e41-a90e-c26d257190db/ HTTP/1.1" 200 1121 "http://localhost/spellbooks/05bdf115-5ece-4e41-a90e-c26d257190db" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:37 +0000] "GET /api/spellbooks/05bdf115-5ece-4e41-a90e-c26d257190db/copy_cost/ HTTP/1.1" 200 172 "http://localhost/spellbooks/05bdf115-5ece-4e41-a90e-c26d257190db" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:37 +0000] "GET /spellbooks HTTP/1.1" 200 310 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:37 +0000] "GET /assets/index-CgM9iNtY.js HTTP/1.1" 200 324561 "http://localhost/spellbooks" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:37 +0000] "GET /assets/index-Qh1Z2c49.css HTTP/1.1" 200 9688 "http://localhost/spellbooks" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:37 +0000] "GET /api/users/me/ HTTP/1.1" 200 175 "http://localhost/spellbooks" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:37 +0000] "GET /api/spellbooks/characters/ HTTP/1.1" 200 497 "http://localhost/spellbooks" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:37 +0000] "GET /api/spellbooks/ HTTP/1.1" 200 406 "http://localhost/spellbooks" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:37 +0000] "GET /spellbooks HTTP/1.1" 200 310 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:37 +0000] "GET /assets/index-CgM9iNtY.js HTTP/1.1" 200 324561 "http://localhost/spellbooks" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:37 +0000] "GET /assets/index-Qh1Z2c49.css HTTP/1.1" 200 9688 "http://localhost/spellbooks" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:38 +0000] "GET /api/users/me/ HTTP/1.1" 200 175 "http://localhost/spellbooks" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:38 +0000] "GET /api/spellbooks/characters/ HTTP/1.1" 200 497 "http://localhost/spellbooks" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:38 +0000] "GET /api/spellbooks/ HTTP/1.1" 200 406 "http://localhost/spellbooks" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:38 +0000] "GET /spellbooks HTTP/1.1" 200 310 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:38 +0000] "GET /assets/index-Qh1Z2c49.css HTTP/1.1" 200 9688 "http://localhost/spellbooks" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:38 +0000] "GET /assets/index-CgM9iNtY.js HTTP/1.1" 200 324561 "http://localhost/spellbooks" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:38 +0000] "GET /api/users/me/ HTTP/1.1" 200 175 "http://localhost/spellbooks" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:38 +0000] "GET /api/spellbooks/ HTTP/1.1" 200 406 "http://localhost/spellbooks" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:38 +0000] "GET /api/spellbooks/characters/ HTTP/1.1" 200 497 "http://localhost/spellbooks" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:39 +0000] "GET /spellbooks HTTP/1.1" 200 310 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:39 +0000] "GET /assets/index-CgM9iNtY.js HTTP/1.1" 200 324561 "http://localhost/spellbooks" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:39 +0000] "GET /assets/index-Qh1Z2c49.css HTTP/1.1" 200 9688 "http://localhost/spellbooks" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:39 +0000] "GET /api/users/me/ HTTP/1.1" 200 175 "http://localhost/spellbooks" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:39 +0000] "GET /api/spellbooks/ HTTP/1.1" 200 406 "http://localhost/spellbooks" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:39 +0000] "GET /api/spellbooks/characters/ HTTP/1.1" 200 497 "http://localhost/spellbooks" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:45 +0000] "GET /spellbooks HTTP/1.1" 200 310 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:45 +0000] "GET /assets/index-Qh1Z2c49.css HTTP/1.1" 200 9688 "http://localhost/spellbooks" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:45 +0000] "GET /assets/index-CgM9iNtY.js HTTP/1.1" 200 324561 "http://localhost/spellbooks" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:45 +0000] "GET /api/users/me/ HTTP/1.1" 200 175 "http://localhost/spellbooks" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:46 +0000] "GET /api/spellbooks/ HTTP/1.1" 200 406 "http://localhost/spellbooks" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:46 +0000] "GET /api/spellbooks/characters/ HTTP/1.1" 200 497 "http://localhost/spellbooks" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:53 +0000] "GET /spellbooks HTTP/1.1" 200 310 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:53 +0000] "GET /assets/index-CgM9iNtY.js HTTP/1.1" 200 324561 "http://localhost/spellbooks" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:53 +0000] "GET /assets/index-Qh1Z2c49.css HTTP/1.1" 200 9688 "http://localhost/spellbooks" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:53 +0000] "GET /api/users/me/ HTTP/1.1" 200 175 "http://localhost/spellbooks" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:53 +0000] "GET /api/spellbooks/ HTTP/1.1" 200 406 "http://localhost/spellbooks" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:53 +0000] "GET /api/spellbooks/characters/ HTTP/1.1" 200 497 "http://localhost/spellbooks" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:59 +0000] "GET /spells HTTP/1.1" 200 310 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:59 +0000] "GET /assets/index-Qh1Z2c49.css HTTP/1.1" 200 9688 "http://localhost/spells" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:59 +0000] "GET /assets/index-CgM9iNtY.js HTTP/1.1" 200 324561 "http://localhost/spells" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:27:59 +0000] "GET /api/users/me/ HTTP/1.1" 200 175 "http://localhost/spells" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:28:00 +0000] "GET /api/spells/spells/sources/ HTTP/1.1" 200 7 "http://localhost/spells" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:28:00 +0000] "GET /api/spells/spells/spell_counts/ HTTP/1.1" 200 66 "http://localhost/spells" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:28:00 +0000] "GET /api/spellbooks/ HTTP/1.1" 200 406 "http://localhost/spells" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:28:00 +0000] "GET /api/spells/spells/?page=1&page_size=56 HTTP/1.1" 200 2766 "http://localhost/spells" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:28:00 +0000] "GET /spells HTTP/1.1" 200 310 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:28:00 +0000] "GET /assets/index-Qh1Z2c49.css HTTP/1.1" 200 9688 "http://localhost/spells" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:28:00 +0000] "GET /assets/index-CgM9iNtY.js HTTP/1.1" 200 324561 "http://localhost/spells" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:28:00 +0000] "GET /api/users/me/ HTTP/1.1" 200 175 "http://localhost/spells" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:28:00 +0000] "GET /api/spells/spells/sources/ HTTP/1.1" 200 7 "http://localhost/spells" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:28:00 +0000] "GET /api/spells/spells/spell_counts/ HTTP/1.1" 200 66 "http://localhost/spells" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:28:00 +0000] "GET /api/spellbooks/ HTTP/1.1" 200 406 "http://localhost/spells" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:28:00 +0000] "GET /api/spells/spells/?page=1&page_size=56 HTTP/1.1" 200 2766 "http://localhost/spells" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:28:00 +0000] "GET /spells HTTP/1.1" 200 310 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:28:00 +0000] "GET /assets/index-Qh1Z2c49.css HTTP/1.1" 200 9688 "http://localhost/spells" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:28:00 +0000] "GET /assets/index-CgM9iNtY.js HTTP/1.1" 200 324561 "http://localhost/spells" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:28:00 +0000] "GET /api/users/me/ HTTP/1.1" 200 175 "http://localhost/spells" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:28:00 +0000] "GET /api/spells/spells/sources/ HTTP/1.1" 200 7 "http://localhost/spells" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:28:00 +0000] "GET /api/spells/spells/spell_counts/ HTTP/1.1" 200 66 "http://localhost/spells" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:28:00 +0000] "GET /api/spellbooks/ HTTP/1.1" 200 406 "http://localhost/spells" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:28:01 +0000] "GET /api/spells/spells/?page=1&page_size=56 HTTP/1.1" 200 2766 "http://localhost/spells" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:28:01 +0000] "GET /api/spells/spells/?search=Fireball&page=1&page_size=56 HTTP/1.1" 200 875 "http://localhost/spells?search=Fireball" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:28:01 +0000] "GET /spells HTTP/1.1" 200 310 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:28:01 +0000] "GET /assets/index-CgM9iNtY.js HTTP/1.1" 200 324561 "http://localhost/spells" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:28:01 +0000] "GET /assets/index-Qh1Z2c49.css HTTP/1.1" 200 9688 "http://localhost/spells" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:28:01 +0000] "GET /api/users/me/ HTTP/1.1" 200 175 "http://localhost/spells" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:28:01 +0000] "GET /api/spells/spells/sources/ HTTP/1.1" 200 7 "http://localhost/spells" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:28:01 +0000] "GET /api/spells/spells/spell_counts/ HTTP/1.1" 200 66 "http://localhost/spells" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:28:01 +0000] "GET /api/spellbooks/ HTTP/1.1" 200 406 "http://localhost/spells" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:28:01 +0000] "GET /api/spells/spells/?page=1&page_size=56 HTTP/1.1" 200 2766 "http://localhost/spells" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:28:01 +0000] "GET /api/spells/spells/f282cec5-5e3d-459f-8b53-8f4456dbab7c/ HTTP/1.1" 200 1260 "http://localhost/spells/f282cec5-5e3d-459f-8b53-8f4456dbab7c" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:28:01 +0000] "GET /assets/react-plotly-BNE-Ltgr.js HTTP/1.1" 200 1708918 "http://localhost/assets/index-CgM9iNtY.js" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:28:02 +0000] "GET /spells HTTP/1.1" 200 310 "-" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:28:02 +0000] "GET /assets/index-Qh1Z2c49.css HTTP/1.1" 200 9688 "http://localhost/spells" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:28:02 +0000] "GET /assets/index-CgM9iNtY.js HTTP/1.1" 200 324561 "http://localhost/spells" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:28:02 +0000] "GET /api/users/me/ HTTP/1.1" 200 175 "http://localhost/spells" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:28:02 +0000] "GET /api/spells/spells/sources/ HTTP/1.1" 200 7 "http://localhost/spells" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:28:02 +0000] "GET /api/spells/spells/spell_counts/ HTTP/1.1" 200 66 "http://localhost/spells" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:28:02 +0000] "GET /api/spellbooks/ HTTP/1.1" 200 406 "http://localhost/spells" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:28:02 +0000] "GET /api/spells/spells/?page=1&page_size=56 HTTP/1.1" 200 2766 "http://localhost/spells" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+frontend-1             | 172.18.0.1 - - [16/Mar/2026:18:28:02 +0000] "GET /api/spells/spells/?search=zzznomatchzzz&page=1&page_size=56 HTTP/1.1" 200 74 "http://localhost/spells?search=zzznomatchzzz" "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/145.0.7632.6 Safari/537.36" "-"
+1s
+Run docker compose -f compose.yml -f compose.ci.yml down -v
+time="2026-03-16T18:28:05Z" level=warning msg="/home/runner/work/DndOptimizer/DndOptimizer/compose.yml: the attribute `version` is obsolete, it will be ignored, please remove it to avoid potential confusion"
+ Container spellwright-frontend-1  Stopping
+ Container spellwright-frontend-1  Stopped
+ Container spellwright-frontend-1  Removing
+ Container spellwright-frontend-1  Removed
+ Container spellwright_backend_1  Stopping
+ Container spellwright_backend_1  Stopped
+ Container spellwright_backend_1  Removing
+ Container spellwright_backend_1  Removed
+ Container spellwright-redis-1  Stopping
+ Container spellwright-db-1  Stopping
+ Container spellwright-db-1  Stopped
+ Container spellwright-db-1  Removing
+ Container spellwright-db-1  Removed
+ Container spellwright-redis-1  Stopped
+ Container spellwright-redis-1  Removing
+ Container spellwright-redis-1  Removed
+ Network spellwright_default  Removing
+ Network spellwright_default  Removed
+0s
+1s
+Post job cleanup.
+/usr/bin/git version
+git version 2.53.0
+Temporarily overriding HOME='/home/runner/work/_temp/d4245984-2cfa-4ad8-b230-44295fa73a5a' before making global git config changes
+Adding repository directory to the temporary git global config as a safe directory
+/usr/bin/git config --global --add safe.directory /home/runner/work/DndOptimizer/DndOptimizer
+/usr/bin/git config --local --name-only --get-regexp core\.sshCommand
+/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'core\.sshCommand' && git config --local --unset-all 'core.sshCommand' || :"
+/usr/bin/git config --local --name-only --get-regexp http\.https\:\/\/github\.com\/\.extraheader
+http.https://github.com/.extraheader
+/usr/bin/git config --local --unset-all http.https://github.com/.extraheader
+/usr/bin/git submodule foreach --recursive sh -c "git config --local --name-only --get-regexp 'http\.https\:\/\/github\.com\/\.extraheader' && git config --local --unset-all 'http.https://github.com/.extraheader' || :"
+/usr/bin/git config --local --name-only --get-regexp ^includeIf\.gitdir:
+/usr/bin/git submodule foreach --recursive git config --local --show-origin --name-only --get-regexp remote.origin.url
+0s
+Cleaning up orphan processes
+Warning: Node.js 20 actions are deprecated. The following actions are running on Node.js 20 and may not work as expected: actions/checkout@v4, actions/setup-node@v4, actions/upload-artifact@v4. Actions will be forced to run with Node.js 24 by default starting June 2nd, 2026. Please check if updated versions of these actions are available that support Node.js 24. To opt into Node.js 24 now, set the FORCE_JAVASCRIPT_ACTIONS_TO_NODE24=true environment variable on the runner or in your workflow file. Once Node.js 24 becomes the default, you can temporarily opt out by setting ACTIONS_ALLOW_USE_UNSECURE_NODE_VERSION=true. For more information see: https://github.blog/changelog/2025-09-19-deprecation-of-node-20-on-github-actions-runners/

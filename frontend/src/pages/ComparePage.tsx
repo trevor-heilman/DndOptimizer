@@ -4,7 +4,7 @@
 import { useState, useRef, useEffect, useMemo } from 'react';
 import { useSearchParams } from 'react-router-dom';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer, ReferenceLine } from 'recharts';
-import { useSpells } from '../hooks/useSpells';
+import { useSpells, useSpellSources } from '../hooks/useSpells';
 import { useCompareSpells, useBreakevenAnalysis, useCompareGrowth } from '../hooks/useAnalysis';
 import { AnalysisContextForm } from '../components/AnalysisContextForm';
 import { DamageComparisonChart } from '../components/DamageComparisonChart';
@@ -79,6 +79,12 @@ function SpellCombobox({ label, accentClass, value, onChange, spells }: SpellCom
                   style={{ color: SCHOOL_COLORS[selected.school] ?? '#c4a882', background: '#1e1e2e', border: '1px solid #2d3555' }}>
               {selected.school}
             </span>
+            {selected.source && (
+              <span className="font-display text-[10px] px-1.5 py-0.5 rounded shrink-0"
+                    style={{ color: '#a3a3a3', background: '#141424', border: '1px solid #2a2a3e' }}>
+                {selected.source}
+              </span>
+            )}
           </div>
           <button onClick={e => { e.stopPropagation(); handleClear(); }}
                   className="text-smoke-400 hover:text-smoke-200 shrink-0 text-lg leading-none" aria-label="Clear">
@@ -119,6 +125,12 @@ function SpellCombobox({ label, accentClass, value, onChange, spells }: SpellCom
                       style={{ color: SCHOOL_COLORS[spell.school] ?? '#c4a882', background: '#1e1e2e', border: '1px solid #2d3555' }}>
                   {spell.school}
                 </span>
+                {spell.source && (
+                  <span className="font-display text-[10px] px-1.5 py-0.5 rounded shrink-0"
+                        style={{ color: '#a3a3a3', background: '#141424', border: '1px solid #2a2a3e' }}>
+                    {spell.source}
+                  </span>
+                )}
               </button>
             ))
           )}
@@ -134,10 +146,11 @@ interface SpellFilter {
   classes: string[];
   levels: string[];
   damageTypes: string[];
+  sources: string[];
   concentration: boolean;
 }
 
-const EMPTY_FILTER: SpellFilter = { schools: [], classes: [], levels: [], damageTypes: [], concentration: false };
+const EMPTY_FILTER: SpellFilter = { schools: [], classes: [], levels: [], damageTypes: [], sources: [], concentration: false };
 
 function applySpellFilter(spells: Spell[], filter: SpellFilter, query: string): Spell[] {
   const q = query.toLowerCase();
@@ -149,6 +162,7 @@ function applySpellFilter(spells: Spell[], filter: SpellFilter, query: string): 
       const types = s.damage_components?.map((dc) => dc.damage_type) ?? [];
       if (!filter.damageTypes.some((dt) => types.includes(dt))) return false;
     }
+    if (filter.sources.length > 0 && !filter.sources.includes(s.source ?? '')) return false;
     if (filter.concentration && !s.concentration) return false;
     if (q && !s.name.toLowerCase().includes(q)) return false;
     return true;
@@ -158,9 +172,10 @@ function applySpellFilter(spells: Spell[], filter: SpellFilter, query: string): 
 interface SpellFilterBarProps {
   filter: SpellFilter;
   onChange: (f: SpellFilter) => void;
+  availableSources: string[];
 }
 
-function SpellFilterBar({ filter, onChange }: SpellFilterBarProps) {
+function SpellFilterBar({ filter, onChange, availableSources }: SpellFilterBarProps) {
   const set = <K extends keyof SpellFilter>(key: K, val: SpellFilter[K]) =>
     onChange({ ...filter, [key]: val });
 
@@ -180,9 +195,10 @@ function SpellFilterBar({ filter, onChange }: SpellFilterBarProps) {
     value: d,
     label: d.charAt(0).toUpperCase() + d.slice(1),
   }));
+  const sourceOptions = availableSources.map((src) => ({ value: src, label: src }));
 
   const active =
-    filter.schools.length + filter.classes.length + filter.levels.length + filter.damageTypes.length + (filter.concentration ? 1 : 0);
+    filter.schools.length + filter.classes.length + filter.levels.length + filter.damageTypes.length + filter.sources.length + (filter.concentration ? 1 : 0);
 
   return (
     <div className="mt-3 p-3 rounded-lg bg-smoke-800/60 border border-smoke-700 space-y-2">
@@ -207,6 +223,10 @@ function SpellFilterBar({ filter, onChange }: SpellFilterBarProps) {
           onChange={(v) => set('classes', v)} />
         <MultiSelect placeholder="All Damage Types" options={dmgOptions} value={filter.damageTypes}
           onChange={(v) => set('damageTypes', v)} />
+        {sourceOptions.length > 0 && (
+          <MultiSelect placeholder="All Sources" options={sourceOptions} value={filter.sources}
+            onChange={(v) => set('sources', v)} />
+        )}
       </div>
       <label className="flex items-center gap-2 cursor-pointer">
         <input
@@ -249,6 +269,7 @@ export function ComparePage() {
   const [overridesB, setOverridesB] = useState<{ number_of_targets: number; resistance: boolean }>({ number_of_targets: 1, resistance: false });
 
   const { data: allSpellsResponse } = useSpells({ page: 1, page_size: 1000 });
+  const { data: sourcesData } = useSpellSources();
   const compareSpells = useCompareSpells();
   const breakeven = useBreakevenAnalysis();
   const growthAnalysis = useCompareGrowth();
@@ -337,7 +358,7 @@ export function ComparePage() {
               </div>
             </div>
           )}
-          <SpellFilterBar filter={filterA} onChange={setFilterA} />
+          <SpellFilterBar filter={filterA} onChange={setFilterA} availableSources={sourcesData ?? []} />
         </div>
 
         {/* Spell 2 */}
@@ -386,7 +407,7 @@ export function ComparePage() {
               </div>
             </div>
           )}
-          <SpellFilterBar filter={filterB} onChange={setFilterB} />
+          <SpellFilterBar filter={filterB} onChange={setFilterB} availableSources={sourcesData ?? []} />
         </div>
       </div>
 

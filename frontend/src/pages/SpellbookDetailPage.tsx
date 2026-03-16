@@ -341,14 +341,13 @@ function SpellSlotsPanel({
 // ─── CopyCostSection ─────────────────────────────────────────────────────────
 
 function CopyCostSection({ spellbookId, characterId }: { spellbookId: string; characterId?: string }) {
-  const [showBreakdown, setShowBreakdown] = useState(false);
+  const [showModal, setShowModal] = useState(false);
   const { data: cost, isLoading, error } = useSpellbookCopyCost(spellbookId, characterId);
 
   if (isLoading) {
     return (
-      <div className="mt-6 pt-4 border-t border-smoke-800/60">
-        <p className="font-display text-[10px] uppercase tracking-widest text-smoke-500 mb-1">📜 Scribing Cost</p>
-        <div className="h-4 w-32 bg-smoke-800 rounded animate-pulse" />
+      <div className="mt-4">
+        <div className="h-4 w-48 bg-smoke-800 rounded animate-pulse" />
       </div>
     );
   }
@@ -356,9 +355,9 @@ function CopyCostSection({ spellbookId, characterId }: { spellbookId: string; ch
   if (error || !cost) return null;
 
   return (
-    <div className="mt-6 pt-4 border-t border-smoke-800/60">
-      {/* Compact summary row */}
-      <div className="flex items-center gap-3 flex-wrap">
+    <>
+      {/* Compact inline summary — lives in the header below spell slots */}
+      <div className="mt-4 flex items-center gap-3 flex-wrap">
         <span className="font-display text-[10px] uppercase tracking-widest text-smoke-500">📜 Scribing Cost</span>
         <span className="font-display font-semibold text-gold-300">{cost.total_gold} gp</span>
         <span className="font-body text-xs text-smoke-600">·</span>
@@ -382,36 +381,105 @@ function CopyCostSection({ spellbookId, characterId }: { spellbookId: string; ch
         ))}
         {cost.spell_entries.length > 0 && (
           <button
-            onClick={() => setShowBreakdown(v => !v)}
-            className="font-display text-[10px] text-smoke-400 hover:text-parchment-300 transition-colors ml-auto"
+            onClick={() => setShowModal(true)}
+            className="font-display text-[10px] text-arcane-400 hover:text-arcane-300 underline-offset-2 underline transition-colors"
           >
-            {showBreakdown ? '▴ hide' : '▾ breakdown'}
+            view breakdown →
           </button>
         )}
       </div>
 
-      {/* Per-spell breakdown (collapsible) */}
-      {showBreakdown && (
-        <div className="mt-3 border-t border-smoke-800/50 pt-3 space-y-1">
-          {cost.spell_entries.map((entry, i) => (
-            <div key={i} className="flex items-center gap-2 font-body text-sm">
-              <span className="flex-1 text-parchment-300 truncate">{entry.name}</span>
-              <span className="text-smoke-500 capitalize text-xs w-20 shrink-0">{entry.school}</span>
-              <span className="text-gold-400 w-16 text-right shrink-0">{entry.gold_cost} gp</span>
-              <span className="text-smoke-400 w-12 text-right shrink-0">{entry.time_hours} hr</span>
-              {entry.discount_pct > 0 && (
-                <span
-                  className="font-display text-[9px] px-1 rounded shrink-0"
-                  style={{ background: 'rgba(109,40,217,0.2)', color: '#c4b5fd', border: '1px solid rgba(139,92,246,0.3)' }}
-                >
-                  −{entry.discount_pct}%
-                </span>
-              )}
+      {/* Breakdown modal */}
+      {showModal && (
+        <div
+          className="fixed inset-0 z-50 flex items-center justify-center p-4"
+          style={{ background: 'rgba(0,0,0,0.72)' }}
+          onClick={() => setShowModal(false)}
+        >
+          <div
+            className="relative w-full max-w-lg rounded-xl p-6 max-h-[80vh] overflow-y-auto"
+            style={{ background: '#0f0a1e', border: '1px solid rgba(109,40,217,0.45)', boxShadow: '0 24px 64px rgba(0,0,0,0.7)' }}
+            onClick={e => e.stopPropagation()}
+          >
+            {/* Modal header */}
+            <div className="flex items-center justify-between mb-5">
+              <h2 className="font-display text-lg font-semibold text-gold-300">📜 Scribing Cost Breakdown</h2>
+              <button
+                onClick={() => setShowModal(false)}
+                className="font-display text-xl text-smoke-400 hover:text-parchment-200 leading-none transition-colors"
+                aria-label="Close"
+              >
+                ×
+              </button>
             </div>
-          ))}
+
+            {/* Totals summary */}
+            <div className="flex items-start gap-6 mb-5 pb-5 border-b border-smoke-700">
+              <div>
+                <div className="font-display text-[10px] uppercase tracking-widest text-smoke-500 mb-0.5">Total Gold</div>
+                <div className="font-display text-2xl font-bold text-gold-300">{cost.total_gold} gp</div>
+              </div>
+              <div>
+                <div className="font-display text-[10px] uppercase tracking-widest text-smoke-500 mb-0.5">Total Time</div>
+                <div className="font-display text-2xl font-bold text-parchment-300">{cost.total_hours} hr</div>
+              </div>
+              <div className="flex flex-wrap gap-1.5 ml-auto pt-1">
+                {cost.scribes_discount_applied && (
+                  <span
+                    className="font-display text-[10px] px-1.5 py-0.5 rounded"
+                    style={{ background: 'rgba(109,40,217,0.25)', color: '#c4b5fd', border: '1px solid rgba(139,92,246,0.35)' }}
+                  >
+                    Scribes −50%
+                  </span>
+                )}
+                {Object.keys(cost.school_discounts_applied).map(s => (
+                  <span
+                    key={s}
+                    className="font-display text-[10px] px-1.5 py-0.5 rounded capitalize"
+                    style={{ background: 'rgba(6,78,59,0.35)', color: '#6ee7b7', border: '1px solid rgba(52,211,153,0.3)' }}
+                  >
+                    {s} −{cost.school_discounts_applied[s]}%
+                  </span>
+                ))}
+              </div>
+            </div>
+
+            {/* Per-spell table */}
+            <div>
+              <div className="grid grid-cols-[1fr_80px_64px_52px] gap-2 font-display text-[10px] uppercase tracking-widest text-smoke-500 mb-2 px-1">
+                <span>Spell</span>
+                <span>School</span>
+                <span className="text-right">Gold</span>
+                <span className="text-right">Hours</span>
+              </div>
+              <div className="space-y-0.5">
+                {cost.spell_entries.map((entry, i) => (
+                  <div
+                    key={i}
+                    className="grid grid-cols-[1fr_80px_64px_52px] gap-2 items-center font-body text-sm px-1 py-1.5 rounded hover:bg-smoke-800/40 transition-colors"
+                  >
+                    <span className="text-parchment-300 truncate flex items-center gap-1.5">
+                      {entry.name}
+                      {entry.discount_pct > 0 && (
+                        <span
+                          className="font-display text-[9px] px-1 rounded shrink-0"
+                          style={{ background: 'rgba(109,40,217,0.2)', color: '#c4b5fd', border: '1px solid rgba(139,92,246,0.3)' }}
+                        >
+                          −{entry.discount_pct}%
+                        </span>
+                      )}
+                    </span>
+                    <span className="text-smoke-400 text-xs capitalize">{entry.school}</span>
+                    <span className="text-gold-400 text-right">{entry.gold_cost} gp</span>
+                    <span className="text-smoke-300 text-right">{entry.time_hours} hr</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          </div>
         </div>
       )}
-    </div>
+    </>
   );
 }
 
@@ -911,6 +979,11 @@ export function SpellbookDetailPage() {
             />
           );
         })()}
+
+        {/* Scribing cost — compact totals with modal breakdown */}
+        {preparedSpells.length > 0 && (
+          <CopyCostSection spellbookId={id!} characterId={spellbook.character ?? undefined} />
+        )}
       </div>
 
       {/* ── Combat Tracker ───────────────────────────────────────────────── */}
@@ -1580,11 +1653,6 @@ export function SpellbookDetailPage() {
             </div>
           )}
         </div>
-      )}
-
-      {/* ── Copy Cost Calculator ─────────────────────────────────────── */}
-      {preparedSpells.length > 0 && (
-        <CopyCostSection spellbookId={id!} characterId={spellbook.character ?? undefined} />
       )}
 
       {/* ── Add Spell Picker modal ──────────────────────────────────────── */}

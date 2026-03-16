@@ -204,6 +204,3 @@
 | Spellbook label color in create modal | ~~Trivial~~ | ✅ Done — `CreateSpellbookModal.tsx` `<input type="color">` for spine text colour |
 
 
-# Objective Staging
-
-_Drop new unclassified requests here. Items will be classified with a dev note and effort label, then moved to the appropriate section above._
