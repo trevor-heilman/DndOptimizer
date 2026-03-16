@@ -18,6 +18,8 @@
 ### Remove spell JSONs from GitHub commit history
 > **Dev note:** `backend/data/*.json` files (phb2024_spells.json, spells.json, XGtE_Spells_fixed.json, TCoE_spells.json) were once tracked and are still in git history. Git itself still stores all blob history — `git rm` only stops future tracking. To purge blobs from history requires `git filter-repo --path backend/data/ --invert-paths` (or BFG Repo-Cleaner). This rewrites all commits touching those blobs, requiring a force-push to all branches and every contributor to reclone. **Prerequisite:** ensure the files are in `.gitignore` first. Effort: **Small** (well-defined tooling, but it's a rewrite — confirm before running).
 
+✅ Done — 2026-03-16 — `git-filter-repo --path-glob "backend/data/*.json" --invert-paths --force` run; 52 commits rewritten; force-pushed to GitHub
+
 ### Clean up files no longer needed
 > **Dev note:** Look for orphaned scripts, unused fixture files, stale migration backups, or dead code that accumulated from earlier development phases. Candidates: `backend/data/convert_phb2024.py`, `backend/data/convert_xgte.py` (post-import conversion scripts no longer needed), `backend/data/fetch_open5e.py`, `backend/data/fetch_phb2024.py`. Also review `documentation/` for files that can be archived. Do NOT delete any documentation. Effort: **Quick win**.
 
