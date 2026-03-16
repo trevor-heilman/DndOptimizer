@@ -24,9 +24,7 @@ class Command(BaseCommand):
         password = os.environ.get("E2E_PASSWORD", "").strip()
 
         if not email or not password:
-            self.stderr.write(
-                "ERROR: E2E_EMAIL and E2E_PASSWORD environment variables must be set."
-            )
+            self.stderr.write("ERROR: E2E_EMAIL and E2E_PASSWORD environment variables must be set.")
             sys.exit(1)
 
         User = get_user_model()
