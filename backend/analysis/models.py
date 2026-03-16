@@ -93,6 +93,10 @@ class AnalysisContext(models.Model):
         verbose_name_plural = "Analysis Contexts"
         ordering = ["-created_at"]
 
+    # Transient attribute — not a DB field. Set by views/services after construction
+    # to pass the caster level into analysis without a separate model field.
+    character_level: int = 1
+
     def __str__(self):
         return f"Analysis (AC:{self.target_ac}, Save DC:{self.spell_save_dc}, Targets:{self.number_of_targets})"
 

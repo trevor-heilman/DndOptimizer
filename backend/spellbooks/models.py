@@ -1,4 +1,5 @@
 import uuid
+from typing import Any
 
 from django.conf import settings
 from django.db import models
@@ -249,7 +250,7 @@ class Spellbook(models.Model):
         related_name="spellbooks",
     )
 
-    spells = models.ManyToManyField("spells.Spell", through="PreparedSpell", related_name="spellbooks")
+    spells: Any = models.ManyToManyField("spells.Spell", through="PreparedSpell", related_name="spellbooks")
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)

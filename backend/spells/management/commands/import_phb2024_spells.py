@@ -37,7 +37,7 @@ def _fetch_phb2024_spells(slug: str, stdout=None) -> list:
     sys.path.insert(0, str(data_dir))
     from fetch_open5e import _fetch_page, normalize_spell  # noqa: E402
 
-    url = f"https://api.open5e.com/v1/spells/?limit=500&format=json&document__slug={slug}"
+    url: str | None = f"https://api.open5e.com/v1/spells/?limit=500&format=json&document__slug={slug}"
     raw_spells = []
     page = 1
     while url:

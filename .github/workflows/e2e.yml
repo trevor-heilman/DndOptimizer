@@ -71,27 +71,32 @@ jobs:
       - name: Start the full stack
         run: docker compose -f compose.yml -f compose.ci.yml up -d --wait --no-build
 
-      # ── 7. Wait until the Django API is reachable ────────────────────────────
-      # /api/spells/spells/ returns 401 when the backend is up but auth is
-      # required — that's all we need to confirm nginx+backend are responding.
-      - name: Wait for the API to be reachable
-        run: |
-          echo "Waiting for the API..."
-          timeout 90 bash -c \
-            'until curl -s -o /dev/null -w "%{http_code}" http://localhost/api/spells/spells/ \
-              | grep -qE "^(200|401)"; \
-             do echo "  still waiting..."; sleep 4; done'
-          echo "API is responding."
-
-      # ── 8. Migrations ────────────────────────────────────────────────────────
+      # ── 7. Migrations ────────────────────────────────────────────────────────
+      # Run BEFORE the API health check: on a fresh DB, Django returns 500 for
+      # every request because auth tables don't exist yet, so the 200/401 health
+      # check below would time out.  docker compose up --wait (step 6) now blocks
+      # until the backend healthcheck (gunicorn port 8000) reports healthy, so
+      # gunicorn is definitely accepting connections before this exec runs.
       - name: Run database migrations
         run: docker compose exec -T backend python manage.py migrate --no-input
 
-      # ── 9. Seed spell data ───────────────────────────────────────────────────
+      # ── 8. Seed spell data ───────────────────────────────────────────────────
       # Seeds spells.json + TCoE_spells.json from backend/data/ so the spell
       # library tests (search, card navigation, etc.) have real data to work with.
       - name: Seed spell library
         run: docker compose exec -T backend python manage.py seed_spells --all
+
+      # ── 9. Wait until the Django API is reachable ────────────────────────────
+      # /api/spells/spells/ returns 401 when the backend is up, auth is required,
+      # and migrations have run — that's the green light for Playwright.
+      - name: Wait for the API to be reachable
+        run: |
+          echo "Waiting for the API..."
+          timeout 60 bash -c \
+            'until curl -s -o /dev/null -w "%{http_code}" http://localhost/api/spells/spells/ \
+              | grep -qE "^(200|401)"; \
+             do echo "  still waiting..."; sleep 4; done'
+          echo "API is responding."
 
       # ── 10. Create the E2E test user ─────────────────────────────────────────
       # Credentials are read from GitHub Secrets → passed via -e flags → read

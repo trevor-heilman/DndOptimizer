@@ -17,15 +17,13 @@ class SpellbookAdmin(admin.ModelAdmin):
     readonly_fields = ("id", "created_at", "updated_at")
     inlines = [PreparedSpellInline]
 
+    @admin.display(description="Total Spells")
     def spell_count(self, obj):
         return obj.spell_count
 
-    spell_count.short_description = "Total Spells"
-
+    @admin.display(description="Prepared")
     def prepared_spell_count(self, obj):
         return obj.prepared_spell_count
-
-    prepared_spell_count.short_description = "Prepared"
 
 
 @admin.register(PreparedSpell)

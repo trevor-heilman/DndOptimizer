@@ -512,7 +512,7 @@ class SpellAnalysisService:
         bypass_resistance = bool(ctx_elemental_adept and ctx_elemental_adept in spell_damage_types)
 
         if spell.is_attack_roll:
-            total_expected = 0
+            total_expected = 0.0
             math_hit_prob: float | None = None
             math_crit_prob: float | None = None
             for component in components:
@@ -585,7 +585,7 @@ class SpellAnalysisService:
             }
 
         elif spell.is_saving_throw:
-            total_expected = 0
+            total_expected = 0.0
             math_fail_prob: float | None = None
             for component in components:
                 result = SavingThrowCalculator.expected_damage(
@@ -699,7 +699,7 @@ class SpellAnalysisService:
 
         Returns the updated expected_damage (unchanged if no breakpoints apply).
         """
-        breakpoints: dict = getattr(spell, "char_level_breakpoints", None) or {}
+        breakpoints: dict[str, Any] = getattr(spell, "char_level_breakpoints", None) or {}
         if not breakpoints:
             return expected_damage
 
@@ -914,7 +914,7 @@ class SpellAnalysisService:
         is_a_cantrip = spell_a.level == 0
         is_b_cantrip = spell_b.level == 0
 
-        profile = []
+        profile: list[dict[str, Any]] = []
         for char_level in range(1, 21):
             best_slot = cls._CHAR_LEVEL_TO_SLOT[char_level]
 

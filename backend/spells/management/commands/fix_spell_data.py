@@ -246,7 +246,7 @@ class Command(BaseCommand):
                 skip_first = correction.get("skip_first", False)
 
                 matching = list(
-                    spell.damage_components.filter(dice_count=dc, die_size=ds, damage_type=dt).order_by(
+                    spell.damage_components.filter(dice_count=dc, die_size=ds, damage_type=dt).order_by(  # type: ignore[misc]
                         "created_at", "id"
                     )
                 )
@@ -260,20 +260,20 @@ class Command(BaseCommand):
                             f"{comp.timing!r} → {new_timing!r}"
                         )
                         if not dry_run:
-                            comp.timing = new_timing
+                            comp.timing = new_timing  # type: ignore[assignment]
                             comp.save()
 
         # ── Number of attacks corrections ────────────────────────────────
-        for spell_name, correct_val in NUMBER_OF_ATTACKS_CORRECTIONS.items():
+        for spell_name, correct_attacks in NUMBER_OF_ATTACKS_CORRECTIONS.items():
             qs = Spell.objects.filter(name=spell_name)
             for spell in qs:
-                if spell.number_of_attacks != correct_val:
+                if spell.number_of_attacks != correct_attacks:
                     self.stdout.write(
                         f'  {"[would fix]" if dry_run else "fixing"} number_of_attacks: '
-                        f"{spell_name!r} {spell.number_of_attacks!r} → {correct_val!r}"
+                        f"{spell_name!r} {spell.number_of_attacks!r} \u2192 {correct_attacks!r}"
                     )
                     if not dry_run:
-                        spell.number_of_attacks = correct_val
+                        spell.number_of_attacks = correct_attacks
                         spell.save()
                         spells_updated += 1
 
@@ -338,7 +338,7 @@ class Command(BaseCommand):
                             f"{comp.on_crit_extra!r} → {new_val!r}"
                         )
                         if not dry_run:
-                            comp.on_crit_extra = new_val
+                            comp.on_crit_extra = new_val  # type: ignore[assignment]
                             comp.save()
 
         # ── Component upcast_dice_increment corrections ───────────────────
@@ -370,7 +370,7 @@ class Command(BaseCommand):
                             f"{comp.upcast_dice_increment!r} → {new_val!r}"
                         )
                         if not dry_run:
-                            comp.upcast_dice_increment = new_val
+                            comp.upcast_dice_increment = new_val  # type: ignore[assignment]
                             comp.save()
 
         if not dry_run:

@@ -234,7 +234,7 @@ def _fetch_page(url: str) -> dict:
 
 def fetch_srd_spells() -> list:
     """Fetch all SRD spells from Open5e v1 API (paginated)."""
-    url = f"https://api.open5e.com/v1/spells/?limit=500&format=json&document__slug={SRD_SLUG}"
+    url: str | None = f"https://api.open5e.com/v1/spells/?limit=500&format=json&document__slug={SRD_SLUG}"
     spells = []
     page = 1
     while url:
@@ -292,13 +292,13 @@ def compare_spells(srd_spells: list, existing_path: Path, verbose: bool = False)
         e_conc = bool(ex.get("concentration")) or "concentration" in str(ex.get("duration", "")).lower()
         s_conc = bool(srd.get("concentration", False))
         if e_conc != s_conc:
-            field_diffs["concentration"].append((name, e_conc, s_conc))
+            field_diffs["concentration"].append((name, e_conc, s_conc))  # type: ignore[arg-type]
 
         # Ritual bool
         e_ritual = bool(ex.get("ritual", False))
         s_ritual = bool(srd.get("ritual", False))
         if e_ritual != s_ritual:
-            field_diffs["ritual"].append((name, e_ritual, s_ritual))
+            field_diffs["ritual"].append((name, e_ritual, s_ritual))  # type: ignore[arg-type]
 
     return {
         "in_srd_not_existing": in_srd_not_existing,

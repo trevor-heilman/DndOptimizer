@@ -30,7 +30,7 @@ DEFAULT_SLUG = "free-rules-2024"
 
 def fetch_spells_for_slug(slug: str) -> list:
     """Fetch all spells for the given Open5e document slug (paginated)."""
-    url = f"https://api.open5e.com/v1/spells/?limit=500&format=json&document__slug={slug}"
+    url: str | None = f"https://api.open5e.com/v1/spells/?limit=500&format=json&document__slug={slug}"
     spells = []
     page = 1
     while url:

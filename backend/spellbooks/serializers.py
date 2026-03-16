@@ -126,7 +126,7 @@ class SpellbookListSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "owner", "created_at", "updated_at"]
 
     def get_character_name(self, obj: Spellbook) -> str | None:
-        return obj.character.name if obj.character_id else None
+        return obj.character.name if obj.character is not None else None
 
 
 class SpellbookDetailSerializer(serializers.ModelSerializer):
@@ -164,7 +164,7 @@ class SpellbookDetailSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "owner", "created_at", "updated_at"]
 
     def get_character_name(self, obj: Spellbook) -> str | None:
-        return obj.character.name if obj.character_id else None
+        return obj.character.name if obj.character is not None else None
 
 
 class SpellbookCreateUpdateSerializer(serializers.ModelSerializer):

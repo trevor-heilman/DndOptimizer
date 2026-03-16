@@ -719,7 +719,7 @@ class TestSpellImport:
     # ------------------------------------------------------------------
     def test_import_empty_list_rejected(self, authenticated_client):
         """Empty spells list should return 400 (allow_empty=False)."""
-        payload = {"spells": []}
+        payload: dict[str, list] = {"spells": []}
         response = authenticated_client.post(IMPORT_URL, payload, format="json")
 
         assert response.status_code == status.HTTP_400_BAD_REQUEST

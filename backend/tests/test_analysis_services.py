@@ -4,6 +4,7 @@ Unit tests for analysis services (mathematical engine).
 
 import pytest
 
+from analysis.models import AnalysisContext
 from analysis.services import AttackRollCalculator, DiceCalculator, SavingThrowCalculator, SpellAnalysisService
 from spells.models import DamageComponent, Spell
 
@@ -732,7 +733,7 @@ class TestCharLevelBreakpoints:
 
     # ── Fixtures ────────────────────────────────────────────────────────────
 
-    def _ctx(self, char_level: int = 5, **kwargs) -> "AnalysisContext":  # noqa: F821
+    def _ctx(self, char_level: int = 5, **kwargs) -> AnalysisContext:
         from analysis.models import AnalysisContext
 
         defaults = {
@@ -938,7 +939,7 @@ class TestCharLevelBreakpoints:
 
     def test_missing_die_keys_use_defaults(self):
         """A breakpoint missing die_count / die_size falls back to defaults (1d6+0 = 3.5)."""
-        bp = {"1": {}}  # no die_count, no die_size, no flat
+        bp: dict[str, dict] = {"1": {}}  # no die_count, no die_size, no flat
         spell = self._auto_hit_spell("Sparse BP", bp)
         ctx = self._ctx(char_level=1)
         result = SpellAnalysisService._apply_char_level_breakpoints(spell, ctx, 0.0)
