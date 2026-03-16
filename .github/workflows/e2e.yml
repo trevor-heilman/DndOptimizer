@@ -99,9 +99,9 @@ jobs:
           echo "API is responding."
 
       # ── 10. Create the E2E test user ─────────────────────────────────────────
-      # Credentials are read from GitHub Secrets → passed via -e flags → read
-      # inside the Python script via os.environ.  This avoids embedding secret
-      # values in the shell script string while keeping them masked in logs.
+      # Uses a dedicated management command (users/management/commands/create_e2e_user.py)
+      # to avoid fragile multi-line bash heredoc quoting.  Credentials are
+      # injected via -e KEY passthrough from the step's env: block.
       - name: Create E2E test user
         env:
           E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
@@ -110,24 +110,7 @@ jobs:
           docker compose exec -T \
             -e E2E_EMAIL \
             -e E2E_PASSWORD \
-            backend python manage.py shell -c "
-          import os, sys
-          from django.contrib.auth import get_user_model
-          User = get_user_model()
-          email    = os.environ.get('E2E_EMAIL', '').strip()
-          password = os.environ.get('E2E_PASSWORD', '').strip()
-          if not email or not password:
-              print('ERROR: E2E_EMAIL/E2E_PASSWORD secrets are not configured.', file=sys.stderr)
-              print('Add them under repo Settings → Secrets → Actions.', file=sys.stderr)
-              sys.exit(1)
-          user, created = User.objects.get_or_create(
-              email=email,
-              defaults={'username': email},
-          )
-          user.set_password(password)
-          user.save()
-          print('E2E user ready:', email, '(created=' + str(created) + ')')
-          "
+            backend python manage.py create_e2e_user
 
       # ── 11. Install Node 20 ──────────────────────────────────────────────────
       - name: Set up Node.js 20
