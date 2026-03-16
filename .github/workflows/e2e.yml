@@ -29,15 +29,18 @@ jobs:
       # ── 2. Create .env used by docker compose ────────────────────────────────
       # The base compose.yml requires an .env file (env_file: .env).
       # We generate a minimal one here so the backend and db containers start.
+      # printf is used instead of heredoc to avoid whitespace ambiguity.
       - name: Create .env for CI stack
         run: |
-          cat > .env << 'ENVEOF'
-          POSTGRES_DB=spellwright
-          POSTGRES_USER=testuser
-          POSTGRES_PASSWORD=ci_testpass_e2e
-          DJANGO_SECRET_KEY=ci-only-e2e-secret-key-not-for-production
-          CORS_ALLOWED_ORIGINS=http://localhost
-          ENVEOF
+          printf '%s\n' \
+            'POSTGRES_DB=spellwright' \
+            'POSTGRES_USER=testuser' \
+            'POSTGRES_PASSWORD=ci_testpass_e2e' \
+            'DJANGO_SECRET_KEY=ci-only-e2e-secret-key-not-for-production' \
+            'CORS_ALLOWED_ORIGINS=http://localhost' \
+            > .env
+          echo ".env written:"
+          cat .env
 
       # ── 3. Create the external Postgres volume expected by compose.yml ───────
       # compose.yml declares postgres_data as external; we create it upfront so
@@ -45,35 +48,47 @@ jobs:
       - name: Create external Postgres volume
         run: docker volume create dndoptimizer_postgres_data
 
-      # ── 4. Build images and start all services ───────────────────────────────
+      # ── 4. Validate merged compose configuration ─────────────────────────────
+      # Catches YAML parse errors and missing variable substitutions early,
+      # before attempting to pull images or build anything.
+      - name: Validate compose configuration
+        run: docker compose -f compose.yml -f compose.ci.yml config --quiet
+
+      # ── 5. Build images ───────────────────────────────────────────────────────
+      # Build separately so image build errors are distinct from startup errors.
+      - name: Build container images
+        run: docker compose -f compose.yml -f compose.ci.yml build
+
+      # ── 6. Start the full stack ───────────────────────────────────────────────
       # compose.ci.yml adds an explicit container_name to the backend service so
       # that nginx.conf can resolve "spellwright_backend_1" via Docker DNS.
-      - name: Build and start the full stack
-        run: docker compose -f compose.yml -f compose.ci.yml up -d --build
+      # --wait blocks until all services with healthchecks report healthy.
+      - name: Start the full stack
+        run: docker compose -f compose.yml -f compose.ci.yml up -d --wait --no-build
 
-      # ── 5. Wait until the Django API is reachable ────────────────────────────
-      # /api/spells/spells/ returns 401 (not found) when the backend is up but
-      # auth is required — that's all we need to confirm it's responding.
+      # ── 7. Wait until the Django API is reachable ────────────────────────────
+      # /api/spells/spells/ returns 401 when the backend is up but auth is
+      # required — that's all we need to confirm nginx+backend are responding.
       - name: Wait for the API to be reachable
         run: |
-          echo "Waiting for the API…"
+          echo "Waiting for the API..."
           timeout 90 bash -c \
             'until curl -s -o /dev/null -w "%{http_code}" http://localhost/api/spells/spells/ \
               | grep -qE "^(200|401)"; \
-             do echo "  still waiting…"; sleep 4; done'
+             do echo "  still waiting..."; sleep 4; done'
           echo "API is responding."
 
-      # ── 6. Migrations ────────────────────────────────────────────────────────
+      # ── 8. Migrations ────────────────────────────────────────────────────────
       - name: Run database migrations
         run: docker compose exec -T backend python manage.py migrate --no-input
 
-      # ── 7. Seed spell data ───────────────────────────────────────────────────
+      # ── 9. Seed spell data ───────────────────────────────────────────────────
       # Seeds spells.json + TCoE_spells.json from backend/data/ so the spell
       # library tests (search, card navigation, etc.) have real data to work with.
       - name: Seed spell library
         run: docker compose exec -T backend python manage.py seed_spells --all
 
-      # ── 8. Create the E2E test user ──────────────────────────────────────────
+      # ── 10. Create the E2E test user ─────────────────────────────────────────
       # Credentials are read from GitHub Secrets → passed via -e flags → read
       # inside the Python script via os.environ.  This avoids embedding secret
       # values in the shell script string while keeping them masked in logs.
@@ -104,7 +119,7 @@ jobs:
           print('E2E user ready:', email, '(created=' + str(created) + ')')
           "
 
-      # ── 9. Install Node 20 ───────────────────────────────────────────────────
+      # ── 11. Install Node 20 ──────────────────────────────────────────────────
       - name: Set up Node.js 20
         uses: actions/setup-node@v4
         with:
@@ -115,18 +130,18 @@ jobs:
       - name: Install frontend dependencies
         run: cd frontend && npm ci
 
-      # ── 10. Install Playwright + Chromium browser binary ─────────────────────
+      # ── 12. Install Playwright + Chromium browser binary ─────────────────────
       - name: Install Playwright browsers
         run: cd frontend && npx playwright install --with-deps chromium
 
-      # ── 11. Run the E2E test suite ───────────────────────────────────────────
+      # ── 13. Run the E2E test suite ───────────────────────────────────────────
       - name: Run Playwright E2E tests
         env:
           E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
           E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
         run: cd frontend && npx playwright test
 
-      # ── 12. Upload the HTML test report as a workflow artifact ───────────────
+      # ── 14. Upload the HTML test report as a workflow artifact ───────────────
       - name: Upload Playwright report
         if: always()
         uses: actions/upload-artifact@v4
@@ -135,12 +150,12 @@ jobs:
           path: frontend/playwright-report/
           retention-days: 14
 
-      # ── 13. Dump last 100 lines of each container's logs on failure ───────────
+      # ── 15. Dump last 100 lines of each container's logs on failure ───────────
       - name: Dump stack logs on failure
         if: failure()
         run: docker compose -f compose.yml -f compose.ci.yml logs --tail=100
 
-      # ── 14. Always tear down the stack ───────────────────────────────────────
+      # ── 16. Always tear down the stack ───────────────────────────────────────
       - name: Tear down stack
         if: always()
         run: docker compose -f compose.yml -f compose.ci.yml down -v

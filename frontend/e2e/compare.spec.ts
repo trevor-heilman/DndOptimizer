@@ -108,7 +108,6 @@ test.describe('Compare Spells — analysis results', () => {
   });
 
   test('shows spell names Fireball and Magic Missile in the results cards', async ({ page }) => {
-    const resultsSection = page.locator('text=Comparison Results').locator('..');
     await expect(page.getByText('Fireball').first()).toBeVisible();
     await expect(page.getByText('Magic Missile').first()).toBeVisible();
   });

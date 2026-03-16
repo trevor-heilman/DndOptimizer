@@ -147,7 +147,7 @@ test.describe('Spell Detail — Advanced Analysis Options', () => {
     // At least one advanced field (Critical Hit Rule or Re-roll Mechanic) should appear
     // Multiple advanced fields may match — use .first() to avoid strict mode
     await expect(
-      page.getByText(/critical hit rule|re\-roll mechanic|elemental adept/i).first()
+      page.getByText(/critical hit rule|re-roll mechanic|elemental adept/i).first()
     ).toBeVisible({ timeout: 3_000 });
   });
 
