@@ -1,12 +1,11 @@
 """Management command: create_e2e_user
 
-Creates (or updates) a test user from environment variables.
-Intended for CI/CD pipelines where passing credentials via -c "..." shell
-heredocs is fragile.  Reads E2E_EMAIL and E2E_PASSWORD from the environment.
+Creates (or updates) a test user from CLI arguments or environment variables.
+Intended for CI/CD pipelines.
 
 Usage:
-    docker compose exec -T -e E2E_EMAIL -e E2E_PASSWORD backend \\
-        python manage.py create_e2e_user
+    docker compose exec -T backend \\
+        python manage.py create_e2e_user --email E2E@EXAMPLE.COM --password SECRET
 """
 
 import os
@@ -17,14 +16,18 @@ from django.core.management.base import BaseCommand
 
 
 class Command(BaseCommand):
-    help = "Create or update the E2E test user (reads E2E_EMAIL / E2E_PASSWORD from env)"
+    help = "Create or update the E2E test user"
+
+    def add_arguments(self, parser):
+        parser.add_argument("--email", default=os.environ.get("E2E_EMAIL", ""))
+        parser.add_argument("--password", default=os.environ.get("E2E_PASSWORD", ""))
 
     def handle(self, *args, **options):
-        email = os.environ.get("E2E_EMAIL", "").strip()
-        password = os.environ.get("E2E_PASSWORD", "").strip()
+        email = (options["email"] or "").strip()
+        password = (options["password"] or "").strip()
 
         if not email or not password:
-            self.stderr.write("ERROR: E2E_EMAIL and E2E_PASSWORD environment variables must be set.")
+            self.stderr.write("ERROR: --email and --password (or E2E_EMAIL/E2E_PASSWORD env vars) must be set.")
             sys.exit(1)
 
         User = get_user_model()

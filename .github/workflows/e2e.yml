@@ -99,18 +99,19 @@ jobs:
           echo "API is responding."
 
       # ── 10. Create the E2E test user ─────────────────────────────────────────
-      # Uses a dedicated management command (users/management/commands/create_e2e_user.py)
-      # to avoid fragile multi-line bash heredoc quoting.  Credentials are
-      # injected via -e KEY passthrough from the step's env: block.
+      # Uses --email/--password args instead of docker exec -e so the command
+      # works with all Docker Compose versions (the -e KEY passthrough form is
+      # not universally supported).  Double-quoted bash expansion is safe here
+      # because GitHub Actions does not double-expand variable contents.
       - name: Create E2E test user
         env:
           E2E_EMAIL: ${{ secrets.E2E_EMAIL }}
           E2E_PASSWORD: ${{ secrets.E2E_PASSWORD }}
         run: |
-          docker compose exec -T \
-            -e E2E_EMAIL \
-            -e E2E_PASSWORD \
-            backend python manage.py create_e2e_user
+          docker compose exec -T backend \
+            python manage.py create_e2e_user \
+            --email "$E2E_EMAIL" \
+            --password "$E2E_PASSWORD"
 
       # ── 11. Install Node 20 ──────────────────────────────────────────────────
       - name: Set up Node.js 20
