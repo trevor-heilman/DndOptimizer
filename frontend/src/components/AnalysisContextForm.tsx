@@ -19,7 +19,7 @@ interface AnalysisContextFormProps {
 export function AnalysisContextForm({ context, onChange, spells }: AnalysisContextFormProps) {
   const [showAdvanced, setShowAdvanced] = useState(false);
 
-  const handleChange = (field: keyof AnalysisContext, value: any) => {
+  const handleChange = (field: keyof AnalysisContext, value: AnalysisContext[keyof AnalysisContext]) => {
     onChange({ ...context, [field]: value });
   };
 

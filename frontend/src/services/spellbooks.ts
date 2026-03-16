@@ -100,7 +100,7 @@ export async function duplicateSpellbook(id: string): Promise<Spellbook> {
 /**
  * Export spellbook
  */
-export async function exportSpellbook(id: string): Promise<any> {
+export async function exportSpellbook(id: string): Promise<Record<string, unknown>> {
   const response = await apiClient.get(`/spellbooks/${id}/export/`);
   return response.data;
 }

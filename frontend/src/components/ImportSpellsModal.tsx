@@ -13,7 +13,13 @@ interface ImportSpellsModalProps {
 
 type ImportMode = 'file' | 'paste';
 
-function parseSpellsFromJson(raw: unknown): any[] {
+interface SpellImportResult {
+  imported?: number;
+  imported_count?: number;
+  errors?: Array<{ name?: string; error?: string }>;
+}
+
+function parseSpellsFromJson(raw: unknown): unknown[] {
   if (Array.isArray(raw)) return raw;
   if (raw && typeof raw === 'object') {
     const obj = raw as Record<string, unknown>;
@@ -21,8 +27,8 @@ function parseSpellsFromJson(raw: unknown): any[] {
     const spellEntries = Object.entries(obj).filter(([k]) => k.startsWith('Spells.'));
     if (spellEntries.length > 0) return spellEntries.map(([, v]) => v);
     // Standard wrappers
-    if (Array.isArray(obj['spells'])) return obj['spells'] as any[];
-    if (Array.isArray(obj['spell'])) return obj['spell'] as any[];
+    if (Array.isArray(obj['spells'])) return obj['spells'] as unknown[];
+    if (Array.isArray(obj['spell'])) return obj['spell'] as unknown[];
     // Single spell object — only treat as a spell if it looks like one
     if ('name' in obj || 'Name' in obj) return [raw];
   }
@@ -36,7 +42,7 @@ export function ImportSpellsModal({ isOpen, onClose }: ImportSpellsModalProps) {
   const [pasteText, setPasteText] = useState('');
   const [parseError, setParseError] = useState<string | null>(null);
   const [parsedCount, setParsedCount] = useState<number | null>(null);
-  const [parsedSpells, setParsedSpells] = useState<any[]>([]);
+  const [parsedSpells, setParsedSpells] = useState<unknown[]>([]);
   const [isSystem, setIsSystem] = useState(false);
   const [sourceOverride, setSourceOverride] = useState('');
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -71,7 +77,7 @@ export function ImportSpellsModal({ isOpen, onClose }: ImportSpellsModalProps) {
     setParsedSpells([]);
     importSpells.reset();
 
-    const readFile = (file: File): Promise<{ spells: any[]; error?: string }> =>
+    const readFile = (file: File): Promise<{ spells: unknown[]; error?: string }> =>
       new Promise((resolve) => {
         const reader = new FileReader();
         reader.onload = (ev) => {
@@ -219,7 +225,10 @@ export function ImportSpellsModal({ isOpen, onClose }: ImportSpellsModalProps) {
           {parsedCount !== null && parsedCount > 0 && !importSpells.isSuccess && (
             <div className="bg-smoke-800 border border-gold-700/50 rounded-md p-3 font-body text-sm text-gold-300">
               <strong>{parsedCount} spell{parsedCount !== 1 ? 's' : ''}</strong> found and ready to import.{' '}
-              Preview: {parsedSpells.slice(0, 5).map((s) => s.name ?? s.Name ?? '(unnamed)').join(', ')}
+              Preview: {parsedSpells.slice(0, 5).map((s) => {
+                const spell = s as { name?: string; Name?: string };
+                return spell.name ?? spell.Name ?? '(unnamed)';
+              }).join(', ')}
               {parsedCount > 5 ? ` …and ${parsedCount - 5} more.` : ''}
             </div>
           )}
@@ -276,13 +285,13 @@ export function ImportSpellsModal({ isOpen, onClose }: ImportSpellsModalProps) {
             <div className="bg-smoke-800 border border-gold-700/60 rounded-md p-4 space-y-1">
               <p className="font-display font-semibold text-gold-300">
                 ✓ Successfully imported{' '}
-                <span className="font-bold">{(importResult as any).imported_count ?? (importResult as any).imported ?? '?'}</span> spell(s).
+                <span className="font-bold">{(importResult as SpellImportResult).imported_count ?? (importResult as SpellImportResult).imported ?? '?'}</span> spell(s).
               </p>
-              {((importResult as any).errors ?? []).length > 0 && (
+              {((importResult as SpellImportResult).errors ?? []).length > 0 && (
                 <div className="mt-2 font-body text-sm text-gold-500">
-                  <p className="font-medium mb-1">{(importResult as any).errors.length} spell(s) had errors:</p>
+                  <p className="font-medium mb-1">{(importResult as SpellImportResult).errors!.length} spell(s) had errors:</p>
                   <ul className="list-disc list-inside space-y-1">
-                    {(importResult as any).errors.slice(0, 10).map((e: any, i: number) => (
+                    {(importResult as SpellImportResult).errors!.slice(0, 10).map((e, i: number) => (
                       <li key={i}>{e.name ?? `Spell ${i + 1}`}: {e.error ?? JSON.stringify(e)}</li>
                     ))}
                   </ul>

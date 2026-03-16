@@ -84,8 +84,8 @@ export interface SpellParsingMetadata {
   requires_review: boolean;
   reviewed_by?: string;
   reviewed_at?: string;
-  parsing_notes?: Record<string, any>;
-  auto_extracted_components?: Record<string, any>;
+  parsing_notes?: Record<string, unknown>;
+  auto_extracted_components?: Record<string, unknown>;
 }
 
 export interface Spell {
@@ -114,7 +114,7 @@ export interface Spell {
   upcast_die_size?: number;
   upcast_attacks_increment?: number;
   upcast_scale_step?: number;
-  raw_data?: Record<string, any>;
+  raw_data?: Record<string, unknown>;
   damage_components?: DamageComponent[];
   summon_templates?: SummonTemplate[];
   parsing_metadata?: SpellParsingMetadata;
@@ -210,7 +210,7 @@ export interface CharacterCreate {
   prepared_spells_bonus?: number;
 }
 
-export interface CharacterUpdate extends Partial<CharacterCreate> {}
+export type CharacterUpdate = Partial<CharacterCreate>;
 
 export interface SpellbookCopyCostEntry {
   name: string;
@@ -503,5 +503,5 @@ export interface PaginatedResponse<T> {
 // API Error
 export interface APIError {
   detail?: string;
-  [key: string]: any;
+  [key: string]: unknown;
 }

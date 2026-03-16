@@ -341,6 +341,7 @@ export function CreateSpellModal({ isOpen, onClose, spellToEdit }: CreateSpellMo
       range: form.range === 'Other' ? form.range_custom.trim() : form.range,
       save_type: form.is_saving_throw ? form.save_type : undefined,
       material: form.components_m ? form.material.trim() : '',
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
     } as any;
     if (isEditMode && spellToEdit) {
       await updateSpell.mutateAsync({ id: spellToEdit.id, data: payload });

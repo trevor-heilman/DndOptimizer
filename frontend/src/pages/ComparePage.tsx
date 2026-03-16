@@ -263,7 +263,7 @@ export function ComparePage() {
 
   const handleAnalyze = async () => {
     if (!spell1Id || !spell2Id) return;
-    const { spell_slot_level: _omit, ...growthContext } = context;
+    const { spell_slot_level: _, ...growthContext } = context;
     await Promise.all([
       compareSpells.mutateAsync({ spellAId: spell1Id, spellBId: spell2Id, context, overridesA, overridesB }),
       breakeven.mutateAsync({ spell_a_id: spell1Id, spell_b_id: spell2Id, ...context }),

@@ -36,8 +36,8 @@ export function RegisterPage() {
     try {
       await register(email, password, passwordConfirm);
       navigate('/');
-    } catch (err: any) {
-      const errorData = err.response?.data;
+    } catch (err: unknown) {
+      const errorData = (err as { response?: { data?: Record<string, string> } })?.response?.data;
       if (errorData) {
         const errorMessage = Object.entries(errorData)
           .map(([key, value]) => `${key}: ${value}`)

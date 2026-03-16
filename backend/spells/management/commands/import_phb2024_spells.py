@@ -34,7 +34,7 @@ def _fetch_phb2024_spells(slug: str, stdout=None) -> list:
     # Import helpers from the data script (sits in backend/data/ alongside manage.py).
     data_dir = Path(__file__).resolve().parents[4] / 'data'
     sys.path.insert(0, str(data_dir))
-    from fetch_open5e import normalize_spell, _fetch_page  # noqa: E402
+    from fetch_open5e import _fetch_page, normalize_spell  # noqa: E402
 
     url = f'https://api.open5e.com/v1/spells/?limit=500&format=json&document__slug={slug}'
     raw_spells = []

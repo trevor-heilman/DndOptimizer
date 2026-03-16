@@ -179,7 +179,7 @@ export function ClearSpellsModal({ isOpen, onClose }: ClearSpellsModalProps) {
 
             {/* Error */}
             {error && (
-              <AlertMessage variant="error" message={(error as any)?.response?.data?.error ?? 'Failed to purge spells. Please try again.'} />
+              <AlertMessage variant="error" message={(error as { response?: { data?: { error?: string } } })?.response?.data?.error ?? 'Failed to purge spells. Please try again.'} />
             )}
 
             {/* Actions */}

@@ -135,7 +135,9 @@ export function GrowthChart3D({ result }: Props) {
       >
         <LazyPlot
           data={[traceA, traceB]}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           layout={layout as any}
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
           config={config as any}
           style={{ width: '100%', height: '480px' }}
           useResizeHandler

@@ -54,10 +54,10 @@ export const spellService = {
    * Import spells from JSON
    */
   async importSpells(
-    spells: any[],
+    spells: unknown[],
     isSystem = false,
     source = '',
-  ): Promise<{ imported: number; errors: any[] }> {
+  ): Promise<{ imported?: number; imported_count?: number; errors?: Array<{ name?: string; error?: string }> }> {
     const response = await apiClient.post('/spells/spells/import_spells/', {
       spells,
       is_system: isSystem,
@@ -93,7 +93,7 @@ export const spellService = {
   /**
    * Export single spell
    */
-  async exportSpell(id: string): Promise<any> {
+  async exportSpell(id: string): Promise<Record<string, unknown>> {
     const response = await apiClient.get(`/spells/spells/${id}/export/`);
     return response.data;
   },
@@ -109,7 +109,7 @@ export const spellService = {
   /**
    * Export multiple spells
    */
-  async exportSpells(ids: string[]): Promise<any[]> {
+  async exportSpells(ids: string[]): Promise<Record<string, unknown>[]> {
     const response = await apiClient.post('/spells/spells/export_multiple/', {
       spell_ids: ids,
     });

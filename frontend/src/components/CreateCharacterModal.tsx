@@ -138,8 +138,8 @@ export function CreateCharacterModal({ isOpen, onClose, onSave, existing }: Prop
         prepared_spells_bonus: parseInt(prepBonus, 10) || 0,
       });
       onClose();
-    } catch (err: any) {
-      setError(err.response?.data?.detail ?? 'Failed to save character');
+    } catch (err: unknown) {
+      setError((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail ?? 'Failed to save character');
     } finally {
       setSubmitting(false);
     }

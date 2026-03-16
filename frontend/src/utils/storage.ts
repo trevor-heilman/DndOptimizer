@@ -37,7 +37,7 @@ export const storage = {
     return userStr ? JSON.parse(userStr) : null;
   },
 
-  setUser: (user: any): void => {
+  setUser: (user: unknown): void => {
     localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
   },
 

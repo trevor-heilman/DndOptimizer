@@ -56,7 +56,7 @@ export function useDuplicateSpell() {
 export function useImportSpells() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: ({ spells, isSystem, source }: { spells: any[]; isSystem?: boolean; source?: string }) =>
+    mutationFn: ({ spells, isSystem, source }: { spells: unknown[]; isSystem?: boolean; source?: string }) =>
       spellService.importSpells(spells, isSystem, source),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['spells'] });

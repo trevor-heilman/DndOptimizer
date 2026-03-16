@@ -45,8 +45,8 @@ export function CreateSpellbookModal({
       });
       setName(''); setDescription(''); setCharacterId(defaultCharacterId ?? ''); setBookColor('violet'); setLabelColor('');
       onClose();
-    } catch (err: any) {
-      setError(err.response?.data?.detail || 'Failed to create spellbook');
+    } catch (err: unknown) {
+      setError((err as { response?: { data?: { detail?: string } } })?.response?.data?.detail || 'Failed to create spellbook');
     } finally {
       setIsSubmitting(false);
     }

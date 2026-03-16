@@ -1,7 +1,7 @@
 /**
  * Integration tests for SpellDetailPage.
  */
-import { screen, fireEvent } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import { Routes, Route } from 'react-router-dom';
 import { renderWithProviders } from '../utils/render';
 import { SpellDetailPage } from '../../pages/SpellDetailPage';

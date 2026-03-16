@@ -35,7 +35,7 @@ import { AnalysisContextForm } from '../components/AnalysisContextForm';
 import { LoadingSpinner, AlertMessage, EmptyState, ChartCard } from '../components/ui';
 import { BookColorPicker } from '../components/BookColorPicker';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LineChart, Line, Legend } from 'recharts';
-import type { PreparedSpell, AnalysisContext, BookColor } from '../types/api';
+import type { PreparedSpell, AnalysisContext, BookColor, SpellbookUpdate } from '../types/api';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -639,7 +639,7 @@ export function SpellbookDetailPage() {
   };
 
   const handleDoneEdit = async () => {
-    const updates: Record<string, string | number | null> = {};
+    const updates: SpellbookUpdate = {};
     if (editedName.trim() && editedName.trim() !== spellbook.name)
       updates.name = editedName.trim();
     if (editedDescription !== (spellbook.description ?? ''))
@@ -649,7 +649,7 @@ export function SpellbookDetailPage() {
     if (editedLabelColor !== (spellbook.label_color ?? ''))
       updates.label_color = editedLabelColor;
     if (Object.keys(updates).length > 0)
-      await updateSpellbook.mutateAsync(updates as any);
+      await updateSpellbook.mutateAsync(updates);
     setIsEditMode(false);
   };
 

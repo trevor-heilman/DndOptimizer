@@ -54,10 +54,15 @@ jobs:
       - name: Validate compose configuration
         run: docker compose -f compose.yml -f compose.ci.yml config --quiet
 
-      # ── 5. Build images ───────────────────────────────────────────────────────
-      # Build separately so image build errors are distinct from startup errors.
-      - name: Build container images
-        run: docker compose -f compose.yml -f compose.ci.yml build
+      # ── 5a. Build backend image ──────────────────────────────────────────────
+      # Split builds so that a failure is clearly attributed to one service.
+      # --progress=plain emits a full layer-by-layer log (visible in step output).
+      - name: Build backend image
+        run: docker compose -f compose.yml -f compose.ci.yml build --progress=plain backend
+
+      # ── 5b. Build frontend image ─────────────────────────────────────────────
+      - name: Build frontend image
+        run: docker compose -f compose.yml -f compose.ci.yml build --progress=plain frontend
 
       # ── 6. Start the full stack ───────────────────────────────────────────────
       # compose.ci.yml adds an explicit container_name to the backend service so

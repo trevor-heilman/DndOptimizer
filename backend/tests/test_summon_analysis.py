@@ -16,9 +16,8 @@ Verifies the summon branch of SpellAnalysisService.analyze_spell():
 import pytest
 
 from analysis.models import AnalysisContext
-from analysis.services import DiceCalculator, SpellAnalysisService
+from analysis.services import SpellAnalysisService
 from spells.models import Spell, SummonAttack, SummonTemplate
-
 
 # ─────────────────────────────────────────────────────────────────────────────
 # Helpers
@@ -26,20 +25,20 @@ from spells.models import Spell, SummonAttack, SummonTemplate
 
 def _ctx(**overrides) -> AnalysisContext:
     """Return an unsaved AnalysisContext with sensible summon-test defaults."""
-    defaults = dict(
-        target_ac=15,
-        target_save_bonus=0,
-        spell_save_dc=15,
-        caster_attack_bonus=5,
-        number_of_targets=1,
-        advantage=False,
-        disadvantage=False,
-        spell_slot_level=3,
-        crit_enabled=True,
-        half_damage_on_save=True,
-        evasion_enabled=False,
-        resistance=False,
-    )
+    defaults = {
+        'target_ac': 15,
+        'target_save_bonus': 0,
+        'spell_save_dc': 15,
+        'caster_attack_bonus': 5,
+        'number_of_targets': 1,
+        'advantage': False,
+        'disadvantage': False,
+        'spell_slot_level': 3,
+        'crit_enabled': True,
+        'half_damage_on_save': True,
+        'evasion_enabled': False,
+        'resistance': False,
+    }
     defaults.update(overrides)
     return AnalysisContext(**defaults)
 
@@ -59,32 +58,32 @@ def _make_summon_spell(name: str = 'Summon Beast') -> Spell:
 
 def _make_template(spell: Spell, name: str = 'Land Beast', **kwargs) -> SummonTemplate:
     """Create a SummonTemplate with sensible defaults."""
-    defaults = dict(
-        base_hp=30,
-        hp_per_level=10,
-        hp_base_level=2,
-        base_ac=13,
-        ac_per_level=0,
-        num_attacks_formula='floor_half_level',
-        creature_type='Beast',
-    )
+    defaults = {
+        'base_hp': 30,
+        'hp_per_level': 10,
+        'hp_base_level': 2,
+        'base_ac': 13,
+        'ac_per_level': 0,
+        'num_attacks_formula': 'floor_half_level',
+        'creature_type': 'Beast',
+    }
     defaults.update(kwargs)
     return SummonTemplate.objects.create(spell=spell, name=name, **defaults)
 
 
 def _make_attack(template: SummonTemplate, name: str = 'Claws', **kwargs) -> SummonAttack:
     """Create a SummonAttack with sensible defaults (1d6+2, melee)."""
-    defaults = dict(
-        attack_type='melee_weapon',
-        dice_count=1,
-        die_size=6,
-        flat_modifier=2,
-        flat_per_level=0,
-        damage_type='piercing',
-        secondary_dice_count=0,
-        secondary_die_size=0,
-        secondary_flat=0,
-    )
+    defaults = {
+        'attack_type': 'melee_weapon',
+        'dice_count': 1,
+        'die_size': 6,
+        'flat_modifier': 2,
+        'flat_per_level': 0,
+        'damage_type': 'piercing',
+        'secondary_dice_count': 0,
+        'secondary_die_size': 0,
+        'secondary_flat': 0,
+    }
     defaults.update(kwargs)
     return SummonAttack.objects.create(summon=template, name=name, **defaults)
 

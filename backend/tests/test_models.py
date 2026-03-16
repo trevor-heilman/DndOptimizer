@@ -539,15 +539,15 @@ class TestCharacterMaxPreparedSpells:
 
     def _char(self, owner, **kwargs) -> Character:
         """Instantiate an *unsaved* Character; max_prepared_spells is a pure property."""
-        defaults = dict(
-            name='Test Hero',
-            owner=owner,
-            character_class='wizard',
-            character_level=5,
-            spellcasting_ability_modifier=3,
-            ruleset='2014',
-            prepared_spells_bonus=0,
-        )
+        defaults = {
+            'name': 'Test Hero',
+            'owner': owner,
+            'character_class': 'wizard',
+            'character_level': 5,
+            'spellcasting_ability_modifier': 3,
+            'ruleset': '2014',
+            'prepared_spells_bonus': 0,
+        }
         defaults.update(kwargs)
         return Character(**defaults)
 

@@ -446,24 +446,23 @@ class TestSpellAnalysisService:
             spell=spell, dice_count=1, die_size=6, damage_type='necrotic', timing='on_hit'
         )
 
-        from analysis.models import AnalysisContext
         # Cast at level 3 (base) → 0 extra dice
-        ctx3 = AnalysisContext(
+        AnalysisContext(
             target_ac=14, caster_attack_bonus=5, spell_save_dc=13,
             target_save_bonus=0, number_of_targets=1, spell_slot_level=3,
         )
         # Cast at level 4 (3 base + 1 level above, step=2 → 1//2=0) → still 0 extra
-        ctx4 = AnalysisContext(
+        AnalysisContext(
             target_ac=14, caster_attack_bonus=5, spell_save_dc=13,
             target_save_bonus=0, number_of_targets=1, spell_slot_level=4,
         )
         # Cast at level 5 (3 base + 2 levels above, step=2 → 2//2=1) → +1d6
-        ctx5 = AnalysisContext(
+        AnalysisContext(
             target_ac=14, caster_attack_bonus=5, spell_save_dc=13,
             target_save_bonus=0, number_of_targets=1, spell_slot_level=5,
         )
         # Cast at level 7 (3 base + 4 levels above, step=2 → 4//2=2) → +2d6
-        ctx7 = AnalysisContext(
+        AnalysisContext(
             target_ac=14, caster_attack_bonus=5, spell_save_dc=13,
             target_save_bonus=0, number_of_targets=1, spell_slot_level=7,
         )
@@ -711,15 +710,15 @@ class TestCharLevelBreakpoints:
 
     # ── Fixtures ────────────────────────────────────────────────────────────
 
-    def _ctx(self, char_level: int = 5, **kwargs) -> 'AnalysisContext':
+    def _ctx(self, char_level: int = 5, **kwargs) -> 'AnalysisContext':  # noqa: F821
         from analysis.models import AnalysisContext
-        defaults = dict(
-            target_ac=15, caster_attack_bonus=5,
-            spell_save_dc=15, target_save_bonus=0,
-            number_of_targets=1, spell_slot_level=1,
-            advantage=False, disadvantage=False,
-            resistance=False,
-        )
+        defaults = {
+            'target_ac': 15, 'caster_attack_bonus': 5,
+            'spell_save_dc': 15, 'target_save_bonus': 0,
+            'number_of_targets': 1, 'spell_slot_level': 1,
+            'advantage': False, 'disadvantage': False,
+            'resistance': False,
+        }
         defaults.update(kwargs)
         ctx = AnalysisContext(**defaults)
         ctx.character_level = char_level

@@ -18,12 +18,11 @@ Usage:
 import json
 import sys
 import time
-import urllib.request
 from pathlib import Path
 
 # Reuse the normaliser from the existing SRD fetch script.
 sys.path.insert(0, str(Path(__file__).parent))
-from fetch_open5e import normalize_spell, _fetch_page  # noqa: E402
+from fetch_open5e import _fetch_page, normalize_spell  # noqa: E402
 
 SOURCE_LABEL = "Player's Handbook (2024)"
 DEFAULT_SLUG = 'free-rules-2024'
