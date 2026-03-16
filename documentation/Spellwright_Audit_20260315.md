@@ -146,7 +146,7 @@ A D&D 5e spell optimization platform: browse the PHB 2014/XGtE/TCoE/PHB 2024 spe
 
 ## 6. E2E Test Coverage
 
-**Current:** 7 spec files · ~59 tests  
+**Current:** 8 spec files · ~65 tests  
 **Config:** `playwright.config.ts` — baseURL `http://localhost`, workers: 1 (sequential), retries: 2 CI, auth setup shares session  
 **Added:** commit `054a664` (2026-03-15) — original 5 specs + E2E infrastructure; Priority 1 session — `spellbook-creation.spec.ts` + expanded `compare.spec.ts`  
 **Note:** ❌ E2E not in CI pipeline — must run locally against running stack
@@ -224,7 +224,7 @@ A D&D 5e spell optimization platform: browse the PHB 2014/XGtE/TCoE/PHB 2024 spe
 | F12 | Frontend unit | `EfficiencyChart.test.tsx` | Renders line chart, handles empty data | Small | ✅ Done — 11 tests |
 | F13 | Frontend unit | Error/loading states | All pages: loading spinner, error alert, empty state | Medium | ✅ Done — SpellbookDetailPage (+4), CharacterSpellsPage (+3), AdminReviewPage (new, 13 tests) |
 | E5 | E2E | `mobile.spec.ts` | Key flows on 375px viewport (auth, spells list, spellbook page) | Medium | ✅ Done — 19 tests (unauthenticated auth flows, layout nav-hidden check, spell library, spellbooks, compare; horizontal overflow assertions) |
-| E6 | E2E | `error-scenarios.spec.ts` | Network timeout handling, empty search result, invalid form submission | Medium | ⏳ Not started |
+| E6 | E2E | `error-scenarios.spec.ts` | Network timeout handling, empty search result, invalid form submission | Medium | ✅ Done — 6 tests (spells API failure, spellbooks API failure, empty search empty-state, invalid login, register mismatched passwords, register short password) |
 | E7 | E2E | Add E2E job to CI | Configure GitHub Actions to run Playwright against deployed stack | Large | ⏳ Not started |
 
 **Subtotal: ~42 new tests**
@@ -255,7 +255,8 @@ Phase 4 — Polish + CI
 - **Priority 3 small items complete** — B7/F11/F12 ✅ done; **368 backend tests, 320 frontend unit tests**
 - **F13 complete** — error/loading/empty states: SpellbookDetailPage (+4), CharacterSpellsPage (+3), AdminReviewPage (new, 13) → **340 frontend unit tests**
 - **E5 complete** — `mobile.spec.ts` added: 19 tests covering 375px viewport (auth, layout, spells, spellbooks, compare, overflow checks)
-- Next up: E6/E7
+- **E6 complete** — `error-scenarios.spec.ts` added: 6 tests (API failure alerts via `page.route()`, empty-search empty-state, login/register form validation errors)
+- Next up: E7 (CI job)
 
 ---
 
