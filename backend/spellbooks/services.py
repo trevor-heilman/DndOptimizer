@@ -1,6 +1,7 @@
 """
 Spellbooks service layer — business logic for spellbook operations.
 """
+
 from __future__ import annotations
 
 from dataclasses import dataclass, field
@@ -11,22 +12,22 @@ if TYPE_CHECKING:
 
 
 # Copy cost constants (D&D 5e PHB)
-_GOLD_PER_LEVEL = 50   # gp per spell level
-_HOURS_PER_LEVEL = 2   # hours per spell level
+_GOLD_PER_LEVEL = 50  # gp per spell level
+_HOURS_PER_LEVEL = 2  # hours per spell level
 
 # Order of Scribes reduces all copy costs by 50%
 _SCRIBES_DISCOUNT = 0.50
 
 # School-specialist subclasses get 50% off spells of their school
 _SCHOOL_SUBCLASS_MAP: dict[str, str] = {
-    'school_of_abjuration':    'abjuration',
-    'school_of_conjuration':   'conjuration',
-    'school_of_divination':    'divination',
-    'school_of_enchantment':   'enchantment',
-    'school_of_evocation':     'evocation',
-    'school_of_illusion':      'illusion',
-    'school_of_necromancy':    'necromancy',
-    'school_of_transmutation': 'transmutation',
+    "school_of_abjuration": "abjuration",
+    "school_of_conjuration": "conjuration",
+    "school_of_divination": "divination",
+    "school_of_enchantment": "enchantment",
+    "school_of_evocation": "evocation",
+    "school_of_illusion": "illusion",
+    "school_of_necromancy": "necromancy",
+    "school_of_transmutation": "transmutation",
 }
 
 
@@ -76,17 +77,14 @@ def calculate_copy_cost(
     school_discounts: dict[str, int] = {}
 
     if character is not None:
-        if character.subclass == 'order_of_scribes':
+        if character.subclass == "order_of_scribes":
             scribes_discount = True
         if isinstance(character.school_copy_discounts, dict):
-            school_discounts = {
-                k: max(0, min(100, int(v)))
-                for k, v in character.school_copy_discounts.items()
-            }
+            school_discounts = {k: max(0, min(100, int(v))) for k, v in character.school_copy_discounts.items()}
         if character.subclass in _SCHOOL_SUBCLASS_MAP:
             school_discounts.setdefault(_SCHOOL_SUBCLASS_MAP[character.subclass], 50)
 
-    for ps in spellbook.prepared_spells.select_related('spell').all():
+    for ps in spellbook.prepared_spells.select_related("spell").all():
         spell = ps.spell
         if spell.level == 0:
             # Cantrips are not copied into a wizard's spellbook
@@ -106,14 +104,16 @@ def calculate_copy_cost(
         gold = round(base_gold * multiplier, 2)
         hours = round(base_hours * multiplier, 2)
 
-        entries.append(SpellCopyEntry(
-            name=spell.name,
-            level=spell.level,
-            school=spell.school,
-            gold_cost=gold,
-            time_hours=hours,
-            discount_pct=discount_pct,
-        ))
+        entries.append(
+            SpellCopyEntry(
+                name=spell.name,
+                level=spell.level,
+                school=spell.school,
+                gold_cost=gold,
+                time_hours=hours,
+                discount_pct=discount_pct,
+            )
+        )
 
     total_gold = round(sum(e.gold_cost for e in entries), 2)
     total_hours = round(sum(e.time_hours for e in entries), 2)

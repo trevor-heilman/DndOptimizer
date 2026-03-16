@@ -2,6 +2,7 @@
 Sample tests to verify the setup is working.
 These are basic smoke tests - comprehensive tests should be added.
 """
+
 import pytest
 from django.urls import reverse
 from rest_framework import status
@@ -19,11 +20,7 @@ def api_client():
 @pytest.fixture
 def test_user(db):
     """Fixture for creating a test user."""
-    return User.objects.create_user(
-        username='testuser',
-        email='test@example.com',
-        password='testpass123'
-    )
+    return User.objects.create_user(username="testuser", email="test@example.com", password="testpass123")
 
 
 @pytest.mark.django_db
@@ -32,11 +29,11 @@ class TestAPIRoot:
 
     def test_api_root(self, api_client):
         """Test that API root is accessible."""
-        response = api_client.get('/api/')
+        response = api_client.get("/api/")
 
         assert response.status_code == status.HTTP_200_OK
-        assert 'message' in response.data
-        assert 'endpoints' in response.data
+        assert "message" in response.data
+        assert "endpoints" in response.data
 
 
 @pytest.mark.django_db
@@ -45,43 +42,40 @@ class TestUserAuthentication:
 
     def test_user_registration(self, api_client):
         """Test user registration."""
-        url = reverse('user-register')
+        url = reverse("user-register")
         data = {
-            'username': 'newuser',
-            'email': 'newuser@example.com',
-            'password': 'SecurePass123!',
-            'password_confirm': 'SecurePass123!'
+            "username": "newuser",
+            "email": "newuser@example.com",
+            "password": "SecurePass123!",
+            "password_confirm": "SecurePass123!",
         }
-        response = api_client.post(url, data, format='json')
+        response = api_client.post(url, data, format="json")
 
         assert response.status_code == status.HTTP_201_CREATED
-        assert 'user' in response.data
-        assert 'access' in response.data
-        assert 'refresh' in response.data
-        assert response.data['user']['email'] == 'newuser@example.com'
+        assert "user" in response.data
+        assert "access" in response.data
+        assert "refresh" in response.data
+        assert response.data["user"]["email"] == "newuser@example.com"
 
     def test_user_login(self, api_client, test_user):
         """Test user login."""
-        url = reverse('user-login')
-        data = {
-            'email': 'test@example.com',
-            'password': 'testpass123'
-        }
-        response = api_client.post(url, data, format='json')
+        url = reverse("user-login")
+        data = {"email": "test@example.com", "password": "testpass123"}
+        response = api_client.post(url, data, format="json")
 
         assert response.status_code == status.HTTP_200_OK
-        assert 'user' in response.data
-        assert 'access' in response.data
-        assert 'refresh' in response.data
+        assert "user" in response.data
+        assert "access" in response.data
+        assert "refresh" in response.data
 
     def test_get_current_user(self, api_client, test_user):
         """Test getting current user profile."""
         api_client.force_authenticate(user=test_user)
-        url = reverse('user-me')
+        url = reverse("user-me")
         response = api_client.get(url)
 
         assert response.status_code == status.HTTP_200_OK
-        assert response.data['email'] == test_user.email
+        assert response.data["email"] == test_user.email
 
 
 @pytest.mark.django_db
@@ -183,11 +177,11 @@ class TestRateLimiting:
     """
 
     TINY_RATES = {
-        'login': '3/min',
-        'register': '3/min',
-        'password_change': '3/min',
-        'analysis': '3/min',
-        'spell_import': '3/min',
+        "login": "3/min",
+        "register": "3/min",
+        "password_change": "3/min",
+        "analysis": "3/min",
+        "spell_import": "3/min",
     }
 
     def test_login_rate_limit_enforced(self, api_client, db):
@@ -198,13 +192,13 @@ class TestRateLimiting:
         from rest_framework.throttling import SimpleRateThrottle
 
         cache.clear()
-        url = '/api/users/login/'
-        payload = {'email': 'noexist@example.com', 'password': 'wrong'}
+        url = "/api/users/login/"
+        payload = {"email": "noexist@example.com", "password": "wrong"}
 
-        with patch.object(SimpleRateThrottle, 'THROTTLE_RATES', self.TINY_RATES):
+        with patch.object(SimpleRateThrottle, "THROTTLE_RATES", self.TINY_RATES):
             for _ in range(3):
-                api_client.post(url, payload, format='json')
-            response = api_client.post(url, payload, format='json')
+                api_client.post(url, payload, format="json")
+            response = api_client.post(url, payload, format="json")
 
         assert response.status_code == status.HTTP_429_TOO_MANY_REQUESTS
         cache.clear()
@@ -217,23 +211,23 @@ class TestRateLimiting:
         from rest_framework.throttling import SimpleRateThrottle
 
         cache.clear()
-        url = '/api/users/register/'
+        url = "/api/users/register/"
         base_payload = {
-            'password': 'SecurePass123!',
-            'password_confirm': 'SecurePass123!',
+            "password": "SecurePass123!",
+            "password_confirm": "SecurePass123!",
         }
 
-        with patch.object(SimpleRateThrottle, 'THROTTLE_RATES', self.TINY_RATES):
+        with patch.object(SimpleRateThrottle, "THROTTLE_RATES", self.TINY_RATES):
             for i in range(3):
                 api_client.post(
                     url,
-                    {**base_payload, 'username': f'u{i}', 'email': f'u{i}@example.com'},
-                    format='json',
+                    {**base_payload, "username": f"u{i}", "email": f"u{i}@example.com"},
+                    format="json",
                 )
             response = api_client.post(
                 url,
-                {**base_payload, 'username': 'u99', 'email': 'u99@example.com'},
-                format='json',
+                {**base_payload, "username": "u99", "email": "u99@example.com"},
+                format="json",
             )
 
         assert response.status_code == status.HTTP_429_TOO_MANY_REQUESTS
@@ -241,7 +235,7 @@ class TestRateLimiting:
 
     def test_unauthenticated_analysis_blocked(self, api_client, db):
         """Analysis endpoint rejects unauthenticated requests with 401."""
-        response = api_client.post('/api/analysis/analyze/', {}, format='json')
+        response = api_client.post("/api/analysis/analyze/", {}, format="json")
         assert response.status_code == status.HTTP_401_UNAUTHORIZED
 
     def test_throttle_headers_present_on_429(self, api_client, db):
@@ -252,16 +246,16 @@ class TestRateLimiting:
         from rest_framework.throttling import SimpleRateThrottle
 
         cache.clear()
-        url = '/api/users/login/'
-        payload = {'email': 'x@example.com', 'password': 'wrong'}
+        url = "/api/users/login/"
+        payload = {"email": "x@example.com", "password": "wrong"}
 
-        with patch.object(SimpleRateThrottle, 'THROTTLE_RATES', self.TINY_RATES):
+        with patch.object(SimpleRateThrottle, "THROTTLE_RATES", self.TINY_RATES):
             for _ in range(3):
-                api_client.post(url, payload, format='json')
-            response = api_client.post(url, payload, format='json')
+                api_client.post(url, payload, format="json")
+            response = api_client.post(url, payload, format="json")
 
         assert response.status_code == status.HTTP_429_TOO_MANY_REQUESTS
-        assert 'Retry-After' in response
+        assert "Retry-After" in response
         cache.clear()
 
     def test_throttle_classes_registered_on_login(self):
@@ -269,7 +263,7 @@ class TestRateLimiting:
         from core.throttles import LoginRateThrottle
         from users.views import UserViewSet
 
-        throttle_classes = getattr(UserViewSet.login, 'kwargs', {}).get('throttle_classes')
+        throttle_classes = getattr(UserViewSet.login, "kwargs", {}).get("throttle_classes")
         assert throttle_classes is not None
         assert LoginRateThrottle in throttle_classes
 
@@ -278,6 +272,6 @@ class TestRateLimiting:
         from core.throttles import RegisterRateThrottle
         from users.views import UserViewSet
 
-        throttle_classes = getattr(UserViewSet.register, 'kwargs', {}).get('throttle_classes')
+        throttle_classes = getattr(UserViewSet.register, "kwargs", {}).get("throttle_classes")
         assert throttle_classes is not None
         assert RegisterRateThrottle in throttle_classes

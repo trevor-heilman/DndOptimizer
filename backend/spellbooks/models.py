@@ -4,47 +4,64 @@ from django.conf import settings
 from django.db import models
 
 CLASS_CHOICES = [
-    ('artificer', 'Artificer'),
-    ('bard',      'Bard'),
-    ('cleric',    'Cleric'),
-    ('druid',     'Druid'),
-    ('paladin',   'Paladin'),
-    ('ranger',    'Ranger'),
-    ('sorcerer',  'Sorcerer'),
-    ('warlock',   'Warlock'),
-    ('wizard',    'Wizard'),
+    ("artificer", "Artificer"),
+    ("bard", "Bard"),
+    ("cleric", "Cleric"),
+    ("druid", "Druid"),
+    ("paladin", "Paladin"),
+    ("ranger", "Ranger"),
+    ("sorcerer", "Sorcerer"),
+    ("warlock", "Warlock"),
+    ("wizard", "Wizard"),
 ]
 
 RULESET_CHOICES = [
-    ('2014', 'D&D 5e 2014'),
-    ('2024', 'D&D 5e 2024'),
+    ("2014", "D&D 5e 2014"),
+    ("2024", "D&D 5e 2024"),
 ]
 
 # 2024 Wizard prepared spells lookup (fixed per level, no modifier involved)
 WIZARD_2024_PREPARED = {
-    1: 4, 2: 5, 3: 6, 4: 7, 5: 9, 6: 10, 7: 11, 8: 12,
-    9: 14, 10: 15, 11: 16, 12: 16, 13: 17, 14: 18, 15: 19,
-    16: 21, 17: 22, 18: 23, 19: 24, 20: 25,
+    1: 4,
+    2: 5,
+    3: 6,
+    4: 7,
+    5: 9,
+    6: 10,
+    7: 11,
+    8: 12,
+    9: 14,
+    10: 15,
+    11: 16,
+    12: 16,
+    13: 17,
+    14: 18,
+    15: 19,
+    16: 21,
+    17: 22,
+    18: 23,
+    19: 24,
+    20: 25,
 }
 
 BOOK_COLOR_CHOICES = [
-    ('violet',   'Violet'),
-    ('crimson',  'Crimson'),
-    ('emerald',  'Emerald'),
-    ('sapphire', 'Sapphire'),
-    ('amber',    'Amber'),
-    ('teal',     'Teal'),
-    ('indigo',   'Indigo'),
-    ('gold',     'Gold'),
-    ('ruby',     'Ruby'),
-    ('forest',   'Forest'),
-    ('slate',    'Slate'),
-    ('rose',     'Rose'),
-    ('copper',   'Copper'),
-    ('midnight', 'Midnight'),
-    ('ivory',    'Ivory'),
-    ('obsidian', 'Obsidian'),
-    ('white',    'White'),
+    ("violet", "Violet"),
+    ("crimson", "Crimson"),
+    ("emerald", "Emerald"),
+    ("sapphire", "Sapphire"),
+    ("amber", "Amber"),
+    ("teal", "Teal"),
+    ("indigo", "Indigo"),
+    ("gold", "Gold"),
+    ("ruby", "Ruby"),
+    ("forest", "Forest"),
+    ("slate", "Slate"),
+    ("rose", "Rose"),
+    ("copper", "Copper"),
+    ("midnight", "Midnight"),
+    ("ivory", "Ivory"),
+    ("obsidian", "Obsidian"),
+    ("white", "White"),
 ]
 
 
@@ -53,18 +70,19 @@ class Character(models.Model):
     A player character who owns one or more spellbooks.
     Tracks spellcasting stats, spell slot usage, and spellbook copy costs.
     """
+
     WIZARD_SUBCLASS_CHOICES = [
-        ('',                         '— None / Not a Wizard —'),
-        ('order_of_scribes',         'Order of Scribes'),
-        ('bladesinging',             'Bladesinging'),
-        ('school_of_abjuration',     'School of Abjuration'),
-        ('school_of_conjuration',    'School of Conjuration'),
-        ('school_of_divination',     'School of Divination'),
-        ('school_of_enchantment',    'School of Enchantment'),
-        ('school_of_evocation',      'School of Evocation'),
-        ('school_of_illusion',       'School of Illusion'),
-        ('school_of_necromancy',     'School of Necromancy'),
-        ('school_of_transmutation',  'School of Transmutation'),
+        ("", "— None / Not a Wizard —"),
+        ("order_of_scribes", "Order of Scribes"),
+        ("bladesinging", "Bladesinging"),
+        ("school_of_abjuration", "School of Abjuration"),
+        ("school_of_conjuration", "School of Conjuration"),
+        ("school_of_divination", "School of Divination"),
+        ("school_of_enchantment", "School of Enchantment"),
+        ("school_of_evocation", "School of Evocation"),
+        ("school_of_illusion", "School of Illusion"),
+        ("school_of_necromancy", "School of Necromancy"),
+        ("school_of_transmutation", "School of Transmutation"),
     ]
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -72,11 +90,14 @@ class Character(models.Model):
     character_class = models.CharField(max_length=50, choices=CLASS_CHOICES, blank=True)
     character_level = models.IntegerField(default=1)
     subclass = models.CharField(
-        max_length=100, blank=True,
+        max_length=100,
+        blank=True,
         help_text="Subclass (wizard subclass affects spellbook copy costs).",
     )
     portrait_color = models.CharField(
-        max_length=30, choices=BOOK_COLOR_CHOICES, default='violet',
+        max_length=30,
+        choices=BOOK_COLOR_CHOICES,
+        default="violet",
         help_text="Accent color for this character's shelf.",
     )
 
@@ -112,23 +133,25 @@ class Character(models.Model):
     )
 
     ruleset = models.CharField(
-        max_length=10, choices=RULESET_CHOICES, default='2014',
+        max_length=10,
+        choices=RULESET_CHOICES,
+        default="2014",
         help_text="Rules edition this character uses (2014 or 2024).",
     )
 
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='characters',
+        related_name="characters",
     )
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = 'characters'
-        verbose_name = 'Character'
-        verbose_name_plural = 'Characters'
-        ordering = ['-updated_at']
+        db_table = "characters"
+        verbose_name = "Character"
+        verbose_name_plural = "Characters"
+        ordering = ["-updated_at"]
 
     def __str__(self) -> str:
         return f"{self.name} ({self.owner.username})"
@@ -157,22 +180,22 @@ class Character(models.Model):
         mod = self.spellcasting_ability_modifier
         level = max(1, self.character_level or 1)
         cls = self.character_class
-        is_2024 = self.ruleset == '2024'
+        is_2024 = self.ruleset == "2024"
         bonus = self.prepared_spells_bonus
 
-        if cls == 'wizard':
+        if cls == "wizard":
             base = WIZARD_2024_PREPARED.get(level, max(1, mod + level)) if is_2024 else max(1, mod + level)
             return base + bonus
-        if cls in ('cleric', 'druid'):
+        if cls in ("cleric", "druid"):
             return max(1, mod + level) + bonus
-        if cls == 'paladin':
+        if cls == "paladin":
             base = max(1, mod + level) if is_2024 else max(1, mod + level // 2)
             return base + bonus
-        if cls == 'artificer':
+        if cls == "artificer":
             return max(1, mod + level // 2) + bonus
-        if cls == 'bard' and is_2024:
+        if cls == "bard" and is_2024:
             return max(1, mod + level) + bonus
-        if cls == 'ranger' and is_2024:
+        if cls == "ranger" and is_2024:
             return max(1, mod + level // 2) + bonus
         return None  # spells-known model
 
@@ -201,7 +224,8 @@ class Spellbook(models.Model):
         help_text="Display position within a character's shelf (lower = further left).",
     )
     label_color = models.CharField(
-        max_length=20, blank=True,
+        max_length=20,
+        blank=True,
         help_text="Optional spine text color override (empty = use palette default).",
     )
     character = models.ForeignKey(
@@ -209,39 +233,35 @@ class Spellbook(models.Model):
         null=True,
         blank=True,
         on_delete=models.SET_NULL,
-        related_name='spellbooks',
+        related_name="spellbooks",
         help_text="Character this spellbook belongs to (optional).",
     )
     book_color = models.CharField(
         max_length=30,
         choices=BOOK_COLOR_CHOICES,
-        default='violet',
+        default="violet",
         help_text="Spine color displayed on the library shelf.",
     )
 
     owner = models.ForeignKey(
         settings.AUTH_USER_MODEL,
         on_delete=models.CASCADE,
-        related_name='spellbooks',
+        related_name="spellbooks",
     )
 
-    spells = models.ManyToManyField(
-        'spells.Spell',
-        through='PreparedSpell',
-        related_name='spellbooks'
-    )
+    spells = models.ManyToManyField("spells.Spell", through="PreparedSpell", related_name="spellbooks")
 
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = 'spellbooks'
-        verbose_name = 'Spellbook'
-        verbose_name_plural = 'Spellbooks'
-        ordering = ['sort_order', '-updated_at']
+        db_table = "spellbooks"
+        verbose_name = "Spellbook"
+        verbose_name_plural = "Spellbooks"
+        ordering = ["sort_order", "-updated_at"]
         indexes = [
-            models.Index(fields=['owner', 'sort_order']),
-            models.Index(fields=['owner', '-updated_at']),
+            models.Index(fields=["owner", "sort_order"]),
+            models.Index(fields=["owner", "-updated_at"]),
         ]
 
     def __str__(self):
@@ -253,17 +273,10 @@ class PreparedSpell(models.Model):
     Through model for Spellbook-Spell relationship.
     Tracks whether a spell is prepared.
     """
+
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
-    spellbook = models.ForeignKey(
-        Spellbook,
-        on_delete=models.CASCADE,
-        related_name='prepared_spells'
-    )
-    spell = models.ForeignKey(
-        'spells.Spell',
-        on_delete=models.CASCADE,
-        related_name='prepared_in'
-    )
+    spellbook = models.ForeignKey(Spellbook, on_delete=models.CASCADE, related_name="prepared_spells")
+    spell = models.ForeignKey("spells.Spell", on_delete=models.CASCADE, related_name="prepared_in")
     prepared = models.BooleanField(default=False)
     notes = models.TextField(blank=True)
 
@@ -271,11 +284,11 @@ class PreparedSpell(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     class Meta:
-        db_table = 'prepared_spells'
-        verbose_name = 'Prepared Spell'
-        verbose_name_plural = 'Prepared Spells'
-        unique_together = [['spellbook', 'spell']]
-        ordering = ['spell__level', 'spell__name']
+        db_table = "prepared_spells"
+        verbose_name = "Prepared Spell"
+        verbose_name_plural = "Prepared Spells"
+        unique_together = [["spellbook", "spell"]]
+        ordering = ["spell__level", "spell__name"]
 
     def __str__(self):
         status = "Prepared" if self.prepared else "Not Prepared"

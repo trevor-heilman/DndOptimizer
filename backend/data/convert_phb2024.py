@@ -106,7 +106,7 @@ def _higher_levels(raw: dict) -> str:
 def convert_spell(raw: dict) -> dict:
     return {
         "name": raw["name"],
-        "level": raw.get("level", 0),        # keep as int; SpellParsingService handles both
+        "level": raw.get("level", 0),  # keep as int; SpellParsingService handles both
         "school": raw.get("school", "evocation").lower(),
         "casting_time": _casting_time(raw),
         "range": raw.get("range", ""),

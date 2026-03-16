@@ -14,6 +14,7 @@ class UserViewSet(viewsets.ModelViewSet):
     """
     ViewSet for user management.
     """
+
     queryset = User.objects.all()
     serializer_class = UserSerializer
     permission_classes = [permissions.IsAuthenticated]
@@ -24,8 +25,12 @@ class UserViewSet(viewsets.ModelViewSet):
             return User.objects.all()
         return User.objects.filter(id=self.request.user.id)
 
-    @action(detail=False, methods=['post'], permission_classes=[permissions.AllowAny],
-            throttle_classes=[RegisterRateThrottle])
+    @action(
+        detail=False,
+        methods=["post"],
+        permission_classes=[permissions.AllowAny],
+        throttle_classes=[RegisterRateThrottle],
+    )
     def register(self, request):
         """
         Register a new user.
@@ -38,14 +43,18 @@ class UserViewSet(viewsets.ModelViewSet):
         # Generate tokens
         refresh = RefreshToken.for_user(user)
 
-        return Response({
-            'user': UserSerializer(user).data,
-            'access': str(refresh.access_token),
-            'refresh': str(refresh),
-        }, status=status.HTTP_201_CREATED)
+        return Response(
+            {
+                "user": UserSerializer(user).data,
+                "access": str(refresh.access_token),
+                "refresh": str(refresh),
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
-    @action(detail=False, methods=['post'], permission_classes=[permissions.AllowAny],
-            throttle_classes=[LoginRateThrottle])
+    @action(
+        detail=False, methods=["post"], permission_classes=[permissions.AllowAny], throttle_classes=[LoginRateThrottle]
+    )
     def login(self, request):
         """
         Login user and return tokens.
@@ -54,27 +63,23 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = UserLoginSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
 
-        user = authenticate(
-            username=serializer.validated_data['email'],
-            password=serializer.validated_data['password']
-        )
+        user = authenticate(username=serializer.validated_data["email"], password=serializer.validated_data["password"])
 
         if not user:
-            return Response(
-                {'error': 'Invalid credentials'},
-                status=status.HTTP_401_UNAUTHORIZED
-            )
+            return Response({"error": "Invalid credentials"}, status=status.HTTP_401_UNAUTHORIZED)
 
         # Generate tokens
         refresh = RefreshToken.for_user(user)
 
-        return Response({
-            'user': UserSerializer(user).data,
-            'access': str(refresh.access_token),
-            'refresh': str(refresh),
-        })
+        return Response(
+            {
+                "user": UserSerializer(user).data,
+                "access": str(refresh.access_token),
+                "refresh": str(refresh),
+            }
+        )
 
-    @action(detail=False, methods=['get'])
+    @action(detail=False, methods=["get"])
     def me(self, request):
         """
         Get current user profile.
@@ -83,7 +88,7 @@ class UserViewSet(viewsets.ModelViewSet):
         serializer = UserSerializer(request.user)
         return Response(serializer.data)
 
-    @action(detail=False, methods=['post'], throttle_classes=[PasswordChangeRateThrottle])
+    @action(detail=False, methods=["post"], throttle_classes=[PasswordChangeRateThrottle])
     def change_password(self, request):
         """
         Change user password.
@@ -95,14 +100,11 @@ class UserViewSet(viewsets.ModelViewSet):
         user = request.user
 
         # Check old password
-        if not user.check_password(serializer.validated_data['old_password']):
-            return Response(
-                {'error': 'Old password is incorrect'},
-                status=status.HTTP_400_BAD_REQUEST
-            )
+        if not user.check_password(serializer.validated_data["old_password"]):
+            return Response({"error": "Old password is incorrect"}, status=status.HTTP_400_BAD_REQUEST)
 
         # Set new password
-        user.set_password(serializer.validated_data['new_password'])
+        user.set_password(serializer.validated_data["new_password"])
         user.save()
 
-        return Response({'message': 'Password changed successfully'})
+        return Response({"message": "Password changed successfully"})

@@ -2,6 +2,7 @@
 Spell Parsing Service
 Extracts damage information, spell type, and scaling from spell descriptions.
 """
+
 import re
 from typing import Any
 
@@ -15,47 +16,41 @@ class DamageExtractionService:
     """
 
     # Regex patterns
-    DICE_PATTERN = re.compile(r'(\d+)d(\d+)', re.IGNORECASE)
+    DICE_PATTERN = re.compile(r"(\d+)d(\d+)", re.IGNORECASE)
     DAMAGE_TYPE_PATTERN = re.compile(
-        r'\b(acid|bludgeoning|cold|fire|force|lightning|necrotic|piercing|poison|'
-        r'psychic|radiant|slashing|thunder)\s+damage\b',
-        re.IGNORECASE
+        r"\b(acid|bludgeoning|cold|fire|force|lightning|necrotic|piercing|poison|"
+        r"psychic|radiant|slashing|thunder)\s+damage\b",
+        re.IGNORECASE,
     )
-    ATTACK_KEYWORDS = [
-        'make a ranged spell attack',
-        'make a melee spell attack',
-        'spell attack',
-        'on a hit'
-    ]
+    ATTACK_KEYWORDS = ["make a ranged spell attack", "make a melee spell attack", "spell attack", "on a hit"]
     SAVE_KEYWORDS = [
-        'saving throw',
-        'must succeed on a',
-        'make a dexterity save',
-        'make a constitution save',
-        'make a wisdom save'
+        "saving throw",
+        "must succeed on a",
+        "make a dexterity save",
+        "make a constitution save",
+        "make a wisdom save",
     ]
     SAVE_TYPE_PATTERN = re.compile(
-        r'\b(strength|dexterity|constitution|intelligence|wisdom|charisma)\s+saving\s+throw\b',
-        re.IGNORECASE
+        r"\b(strength|dexterity|constitution|intelligence|wisdom|charisma)\s+saving\s+throw\b", re.IGNORECASE
     )
     HALF_DAMAGE_KEYWORDS = [
-        'half as much damage on a success',
-        'half damage on a successful save',
-        'takes half damage on a success'
+        "half as much damage on a success",
+        "half damage on a successful save",
+        "takes half damage on a success",
     ]
     UPCAST_PATTERN = re.compile(
-        r'(?:for each|when you cast this spell using a spell slot of).*?'
-        r'(?:(\d+)d(\d+)|(\d+)\s+(?:additional|extra))',
-        re.IGNORECASE
+        r"(?:for each|when you cast this spell using a spell slot of).*?"
+        r"(?:(\d+)d(\d+)|(\d+)\s+(?:additional|extra))",
+        re.IGNORECASE,
     )
 
     # Phrases that indicate damage happens at the end/start of a turn (delayed or periodic)
     _END_OF_TURN_PATTERN = re.compile(
-        r'\b(?:at\s+the\s+end\s+of\s+(?:its|the\s+target\'?s?|your)\s+next\s+turn'
-        r'|at\s+the\s+end\s+of\s+each\s+of\s+(?:its|the\s+target\'?s?|your)\s+turns?'
-        r'|at\s+the\s+start\s+of\s+each\s+of\s+(?:its|the\s+target\'?s?|your)\s+turns?'
-        r'|at\s+the\s+(?:start|end)\s+of\s+(?:its|your)\s+(?:next\s+)?turns?)\b',
-        re.IGNORECASE
+        r"\b(?:at\s+the\s+end\s+of\s+(?:its|the\s+target\'?s?|your)\s+next\s+turn"
+        r"|at\s+the\s+end\s+of\s+each\s+of\s+(?:its|the\s+target\'?s?|your)\s+turns?"
+        r"|at\s+the\s+start\s+of\s+each\s+of\s+(?:its|the\s+target\'?s?|your)\s+turns?"
+        r"|at\s+the\s+(?:start|end)\s+of\s+(?:its|your)\s+(?:next\s+)?turns?)\b",
+        re.IGNORECASE,
     )
 
     @classmethod
@@ -80,7 +75,7 @@ class DamageExtractionService:
         after the match position. If a turn-end/start phrase appears in that
         window, tag the component as end_of_turn; otherwise use on_hit / on_fail.
         """
-        base_timing = 'on_hit' if is_attack_roll else 'on_fail'
+        base_timing = "on_hit" if is_attack_roll else "on_fail"
         results: list[tuple[int, int, str]] = []
 
         for m in cls.DICE_PATTERN.finditer(description):
@@ -93,7 +88,7 @@ class DamageExtractionService:
             context = description[window_start:window_end]
 
             if cls._END_OF_TURN_PATTERN.search(context):
-                timing = 'end_of_turn'
+                timing = "end_of_turn"
             else:
                 timing = base_timing
 
@@ -127,12 +122,12 @@ class DamageExtractionService:
             save_type = match.group(1).upper()
             # Map to 3-letter code
             mappings = {
-                'STRENGTH': 'STR',
-                'DEXTERITY': 'DEX',
-                'CONSTITUTION': 'CON',
-                'INTELLIGENCE': 'INT',
-                'WISDOM': 'WIS',
-                'CHARISMA': 'CHA'
+                "STRENGTH": "STR",
+                "DEXTERITY": "DEX",
+                "CONSTITUTION": "CON",
+                "INTELLIGENCE": "INT",
+                "WISDOM": "WIS",
+                "CHARISMA": "CHA",
             }
             return mappings.get(save_type, save_type[:3])
         return None
@@ -169,20 +164,20 @@ class ConfidenceScoringService:
         """
         score = 0.0
 
-        if parsing_data.get('dice_expressions'):
+        if parsing_data.get("dice_expressions"):
             score += 0.3
 
-        if parsing_data.get('damage_types'):
+        if parsing_data.get("damage_types"):
             score += 0.2
 
-        if parsing_data.get('is_attack_roll') or parsing_data.get('is_saving_throw'):
+        if parsing_data.get("is_attack_roll") or parsing_data.get("is_saving_throw"):
             score += 0.2
 
         # Save-specific criteria: award full weight when not applicable (non-save spells)
-        if parsing_data.get('is_saving_throw'):
-            if parsing_data.get('save_type'):
+        if parsing_data.get("is_saving_throw"):
+            if parsing_data.get("save_type"):
                 score += 0.15
-            if 'half_damage_on_save' in parsing_data:
+            if "half_damage_on_save" in parsing_data:
                 score += 0.15
         else:
             score += 0.30  # both save-specific checks are not applicable
@@ -203,40 +198,98 @@ class SpellParsingService:
     # Keyword lists for tag inference
     # ------------------------------------------------------------------ #
     _HEALING_KEYWORDS = [
-        'regain hit points', 'restore hit points', 'healing',
-        'regains hit points', 'restores hit points', 'gain hit points',
-        'hit points equal', 'cure wounds', 'heal the creature',
+        "regain hit points",
+        "restore hit points",
+        "healing",
+        "regains hit points",
+        "restores hit points",
+        "gain hit points",
+        "hit points equal",
+        "cure wounds",
+        "heal the creature",
     ]
     _AOE_KEYWORDS = [
-        'each creature', 'all creatures', 'cylinder', 'cube', 'sphere',
-        'cone', 'in a line', 'within range of', 'point you choose',
-        'radius', 'emanates', 'burst',
+        "each creature",
+        "all creatures",
+        "cylinder",
+        "cube",
+        "sphere",
+        "cone",
+        "in a line",
+        "within range of",
+        "point you choose",
+        "radius",
+        "emanates",
+        "burst",
     ]
     _CROWD_CONTROL_KEYWORDS = [
-        'charmed', 'frightened', 'stunned', 'paralyzed', 'restrained',
-        'incapacitated', 'becomes prone', 'knocked prone', 'falls prone',
-        'grappled', 'petrified', 'blinded', 'deafened', 'poisoned',
-        'falls unconscious', 'falls asleep',
+        "charmed",
+        "frightened",
+        "stunned",
+        "paralyzed",
+        "restrained",
+        "incapacitated",
+        "becomes prone",
+        "knocked prone",
+        "falls prone",
+        "grappled",
+        "petrified",
+        "blinded",
+        "deafened",
+        "poisoned",
+        "falls unconscious",
+        "falls asleep",
     ]
     _SUMMON_KEYWORDS = [
-        'summon ', 'conjure ', 'you create ', 'animate dead',
-        'create undead', 'familiar appears', 'elemental appears',
-        'creates a construct', 'raises the corpse',
+        "summon ",
+        "conjure ",
+        "you create ",
+        "animate dead",
+        "create undead",
+        "familiar appears",
+        "elemental appears",
+        "creates a construct",
+        "raises the corpse",
     ]
     _BUFF_KEYWORDS = [
-        'advantage on', 'add your', 'add a d', 'bonus to attack',
-        'resistance to', 'immune to damage', 'gain a bonus',
-        'double the', 'gain advantage', "can't be hit",
-        'protected from', 'grant a bonus', 'increase its',
+        "advantage on",
+        "add your",
+        "add a d",
+        "bonus to attack",
+        "resistance to",
+        "immune to damage",
+        "gain a bonus",
+        "double the",
+        "gain advantage",
+        "can't be hit",
+        "protected from",
+        "grant a bonus",
+        "increase its",
     ]
     _DEBUFF_KEYWORDS = [
-        'disadvantage on', 'reduces the target', 'penalty to',
-        'vulnerability to', 'reduces its speed', 'subtract',
+        "disadvantage on",
+        "reduces the target",
+        "penalty to",
+        "vulnerability to",
+        "reduces its speed",
+        "subtract",
     ]
     _UTILITY_KEYWORDS = [
-        'teleport', 'detect', 'reveal', 'find', 'communicate',
-        'understand', 'speak with', 'read', 'transmit', 'transport',
-        'fly', 'levitate', 'invisible', 'disguise', 'transform',
+        "teleport",
+        "detect",
+        "reveal",
+        "find",
+        "communicate",
+        "understand",
+        "speak with",
+        "read",
+        "transmit",
+        "transport",
+        "fly",
+        "levitate",
+        "invisible",
+        "disguise",
+        "transform",
     ]
 
     @classmethod
@@ -252,62 +305,62 @@ class SpellParsingService:
         A spell can receive multiple tags (e.g. damage + aoe).
         Every spell gets at least one tag: 'utility' is the fallback.
         """
-        text = (description + ' ' + higher_level).lower()
+        text = (description + " " + higher_level).lower()
         tags: set = set()
 
         # Damage: needs dice AND a named damage type
         if dice_expressions and damage_types:
-            tags.add('damage')
+            tags.add("damage")
 
         # Healing
         if any(kw in text for kw in cls._HEALING_KEYWORDS):
-            tags.add('healing')
+            tags.add("healing")
 
         # AoE
         if any(kw in text for kw in cls._AOE_KEYWORDS):
-            tags.add('aoe')
+            tags.add("aoe")
 
         # Crowd control
         if any(kw in text for kw in cls._CROWD_CONTROL_KEYWORDS):
-            tags.add('crowd_control')
+            tags.add("crowd_control")
 
         # Summoning / conjuration
         if any(kw in text for kw in cls._SUMMON_KEYWORDS):
-            tags.add('summoning')
+            tags.add("summoning")
 
         # Buff (allow alongside damage/healing/cc — spells like Faerie Fire are both)
         if any(kw in text for kw in cls._BUFF_KEYWORDS):
-            tags.add('buff')
+            tags.add("buff")
 
         # Debuff
         if any(kw in text for kw in cls._DEBUFF_KEYWORDS):
-            tags.add('debuff')
+            tags.add("debuff")
 
         # Utility keywords give a utility tag even alongside other tags
         if any(kw in text for kw in cls._UTILITY_KEYWORDS):
-            tags.add('utility')
+            tags.add("utility")
 
         # Fallback: every spell must have at least one tag
         if not tags:
-            tags.add('utility')
+            tags.add("utility")
 
         return sorted(tags)
 
     # Maps PascalCase TCoE/D&DBeyond field names to our internal snake_case names
     _PASCAL_FIELD_MAP = {
-        'Name': 'name',
-        'Level': 'level',
-        'School': 'school',
-        'CastingTime': 'casting_time',
-        'Range': 'range',
-        'Duration': 'duration',
-        'Ritual': 'ritual',
-        'Description': 'description',
-        'Source': 'source',
-        'Components': 'components_raw',
-        'Classes': 'classes',
-        'HigherLevel': 'higher_level',
-        'AtHigherLevels': 'higher_level',
+        "Name": "name",
+        "Level": "level",
+        "School": "school",
+        "CastingTime": "casting_time",
+        "Range": "range",
+        "Duration": "duration",
+        "Ritual": "ritual",
+        "Description": "description",
+        "Source": "source",
+        "Components": "components_raw",
+        "Classes": "classes",
+        "HigherLevel": "higher_level",
+        "AtHigherLevels": "higher_level",
     }
 
     @classmethod
@@ -317,7 +370,7 @@ class SpellParsingService:
         internal snake_case representation before further parsing.
         """
         # Detect PascalCase schema by presence of 'Name' (capital N)
-        if 'Name' in raw_data and 'name' not in raw_data:
+        if "Name" in raw_data and "name" not in raw_data:
             normalized: dict[str, Any] = {}
             for pascal, snake in cls._PASCAL_FIELD_MAP.items():
                 if pascal in raw_data:
@@ -342,14 +395,14 @@ class SpellParsingService:
         raw_data = cls._normalize_raw(raw_data)
 
         # Extract description — try multiple field names used by different schemas
-        description = raw_data.get('description') or raw_data.get('desc', '')
+        description = raw_data.get("description") or raw_data.get("desc", "")
         if isinstance(description, list):
-            description = ' '.join(description)
+            description = " ".join(description)
 
         # Extract higher-level text — multiple field names
-        higher_level = raw_data.get('higher_level') or raw_data.get('higher_levels', '')
+        higher_level = raw_data.get("higher_level") or raw_data.get("higher_levels", "")
         if isinstance(higher_level, list):
-            higher_level = ' '.join(higher_level)
+            higher_level = " ".join(higher_level)
 
         full_text = f"{description} {higher_level}"
 
@@ -375,9 +428,9 @@ class SpellParsingService:
             half_damage_on_save = DamageExtractionService.detect_half_damage_on_save(full_text)
 
         # Extract spell level early (needed for cantrip detection below)
-        raw_level = raw_data.get('level', 0)
+        raw_level = raw_data.get("level", 0)
         if isinstance(raw_level, str):
-            raw_level = 0 if raw_level.lower() == 'cantrip' else int(raw_level)
+            raw_level = 0 if raw_level.lower() == "cantrip" else int(raw_level)
 
         # Extract upcast information
         upcast_scaling = DamageExtractionService.extract_upcast_scaling(higher_level)
@@ -385,11 +438,11 @@ class SpellParsingService:
         # Detect cantrip character-level scaling (e.g. Fire Bolt: 1d10 → 2d10 → 3d10 → 4d10
         # at character levels 1, 5, 11, 17).  When found, trim dice_expressions to the base
         # die only — avoids creating one DamageComponent per scaling tier.
-        _CANTRIP_TIER_KW = ('5th level', '11th level', '17th level')
+        _CANTRIP_TIER_KW = ("5th level", "11th level", "17th level")
         if (
             raw_level == 0
             and len(dice_expressions) >= 2
-            and len({d[1] for d in dice_expressions}) == 1   # all same die size
+            and len({d[1] for d in dice_expressions}) == 1  # all same die size
             and any(kw in full_text.lower() for kw in _CANTRIP_TIER_KW)
         ):
             _ct_die_size = dice_expressions[0][1]
@@ -400,14 +453,14 @@ class SpellParsingService:
 
         # Build parsing data
         parsing_data = {
-            'dice_expressions': dice_expressions,
-            'dice_with_timing': dice_with_timing,
-            'damage_types': damage_types,
-            'is_attack_roll': is_attack_roll,
-            'is_saving_throw': is_saving_throw,
-            'save_type': save_type,
-            'half_damage_on_save': half_damage_on_save,
-            'upcast_scaling': upcast_scaling,
+            "dice_expressions": dice_expressions,
+            "dice_with_timing": dice_with_timing,
+            "damage_types": damage_types,
+            "is_attack_roll": is_attack_roll,
+            "is_saving_throw": is_saving_throw,
+            "save_type": save_type,
+            "half_damage_on_save": half_damage_on_save,
+            "upcast_scaling": upcast_scaling,
         }
 
         # Calculate confidence
@@ -415,63 +468,58 @@ class SpellParsingService:
 
         # Build normalized spell data
         # casting_time: accept both 'casting_time' and 'castingTime'
-        casting_time = raw_data.get('casting_time') or raw_data.get('castingTime', '')
+        casting_time = raw_data.get("casting_time") or raw_data.get("castingTime", "")
 
         # Extract classes — may be a list of names or a list of {name: str} objects
-        raw_classes = raw_data.get('classes', [])
+        raw_classes = raw_data.get("classes", [])
         if isinstance(raw_classes, list):
-            classes = [
-                (c['name'].lower() if isinstance(c, dict) else str(c).lower())
-                for c in raw_classes
-            ]
+            classes = [(c["name"].lower() if isinstance(c, dict) else str(c).lower()) for c in raw_classes]
         else:
             classes = []
 
         normalized_data = {
-            'name': raw_data.get('name', 'Unnamed Spell'),
-            'level': raw_level,
-            'school': cls._extract_school(raw_data),
-            'casting_time': casting_time,
-            'range': raw_data.get('range', ''),
-            'duration': raw_data.get('duration', ''),
-            'concentration': cls._detect_concentration(raw_data),
-            'ritual': raw_data.get('ritual', False),
-            'source': raw_data.get('source', ''),
-            'is_attack_roll': is_attack_roll,
-            'is_saving_throw': is_saving_throw,
-            'save_type': save_type,
-            'half_damage_on_save': half_damage_on_save,
-            'description': description,
-            'higher_level': higher_level,
-            'raw_data': raw_data,
-            'classes': classes,
+            "name": raw_data.get("name", "Unnamed Spell"),
+            "level": raw_level,
+            "school": cls._extract_school(raw_data),
+            "casting_time": casting_time,
+            "range": raw_data.get("range", ""),
+            "duration": raw_data.get("duration", ""),
+            "concentration": cls._detect_concentration(raw_data),
+            "ritual": raw_data.get("ritual", False),
+            "source": raw_data.get("source", ""),
+            "is_attack_roll": is_attack_roll,
+            "is_saving_throw": is_saving_throw,
+            "save_type": save_type,
+            "half_damage_on_save": half_damage_on_save,
+            "description": description,
+            "higher_level": higher_level,
+            "raw_data": raw_data,
+            "classes": classes,
         }
 
         # Add upcast data if found
         if upcast_scaling:
-            normalized_data['upcast_dice_increment'] = upcast_scaling[0]
-            normalized_data['upcast_die_size'] = upcast_scaling[1]
+            normalized_data["upcast_dice_increment"] = upcast_scaling[0]
+            normalized_data["upcast_die_size"] = upcast_scaling[1]
 
         # Infer gameplay tags (always at least one)
-        normalized_data['tags'] = cls._infer_tags(
-            description, higher_level, dice_expressions, damage_types
-        )
+        normalized_data["tags"] = cls._infer_tags(description, higher_level, dice_expressions, damage_types)
 
         return {
-            'normalized_data': normalized_data,
-            'parsing_data': parsing_data,
-            'confidence': confidence,
-            'requires_review': confidence < 0.7
+            "normalized_data": normalized_data,
+            "parsing_data": parsing_data,
+            "confidence": confidence,
+            "requires_review": confidence < 0.7,
         }
 
     @staticmethod
     def _extract_school(raw_data: dict[str, Any]) -> str:
         """Extract school from various schema formats."""
-        school = raw_data.get('school', '')
+        school = raw_data.get("school", "")
 
         # Handle nested school object
         if isinstance(school, dict):
-            school = school.get('name', '')
+            school = school.get("name", "")
 
         # Normalize to lowercase
         if isinstance(school, str):
@@ -479,26 +527,32 @@ class SpellParsingService:
 
         # Validate against known schools
         valid_schools = [
-            'abjuration', 'conjuration', 'divination', 'enchantment',
-            'evocation', 'illusion', 'necromancy', 'transmutation'
+            "abjuration",
+            "conjuration",
+            "divination",
+            "enchantment",
+            "evocation",
+            "illusion",
+            "necromancy",
+            "transmutation",
         ]
 
         if school in valid_schools:
             return school
 
-        return 'evocation'  # Default
+        return "evocation"  # Default
 
     @staticmethod
     def _detect_concentration(raw_data: dict[str, Any]) -> bool:
         """Detect if spell requires concentration."""
         # Check direct field
-        if 'concentration' in raw_data:
-            return bool(raw_data['concentration'])
+        if "concentration" in raw_data:
+            return bool(raw_data["concentration"])
 
         # Check in duration
-        duration = raw_data.get('duration', '')
+        duration = raw_data.get("duration", "")
         if isinstance(duration, str):
-            return 'concentration' in duration.lower()
+            return "concentration" in duration.lower()
 
         return False
 
@@ -510,28 +564,25 @@ class SpellParsingService:
         """
         from spells.models import DamageComponent, Spell, SpellParsingMetadata
 
-        normalized = parsed_result['normalized_data']
-        parsing_data = parsed_result['parsing_data']
+        normalized = parsed_result["normalized_data"]
+        parsing_data = parsed_result["parsing_data"]
 
         # Create spell
-        spell = Spell.objects.create(
-            created_by=created_by,
-            **normalized
-        )
+        spell = Spell.objects.create(created_by=created_by, **normalized)
 
         # Create damage components
-        dice_expressions = parsing_data.get('dice_expressions', [])
-        dice_with_timing = parsing_data.get('dice_with_timing', [])
-        damage_types = parsing_data.get('damage_types', ['force'])  # default
+        dice_expressions = parsing_data.get("dice_expressions", [])
+        dice_with_timing = parsing_data.get("dice_with_timing", [])
+        damage_types = parsing_data.get("damage_types", ["force"])  # default
 
         for i, (dice_count, die_size) in enumerate(dice_expressions):
-            damage_type = damage_types[i] if i < len(damage_types) else damage_types[0] if damage_types else 'force'
+            damage_type = damage_types[i] if i < len(damage_types) else damage_types[0] if damage_types else "force"
 
             # Use timing-aware data when available, otherwise fall back
             if i < len(dice_with_timing):
                 timing = dice_with_timing[i][2]
             else:
-                timing = 'on_hit' if normalized['is_attack_roll'] else 'on_fail'
+                timing = "on_hit" if normalized["is_attack_roll"] else "on_fail"
 
             DamageComponent.objects.create(
                 spell=spell,
@@ -539,19 +590,16 @@ class SpellParsingService:
                 die_size=die_size,
                 damage_type=damage_type,
                 timing=timing,
-                is_verified=False
+                is_verified=False,
             )
 
         # Create parsing metadata
         SpellParsingMetadata.objects.create(
             spell=spell,
-            parsing_confidence=parsed_result['confidence'],
-            requires_review=parsed_result['requires_review'],
+            parsing_confidence=parsed_result["confidence"],
+            requires_review=parsed_result["requires_review"],
             parsing_notes=parsing_data,
-            auto_extracted_components={
-                'dice_expressions': dice_expressions,
-                'damage_types': damage_types
-            }
+            auto_extracted_components={"dice_expressions": dice_expressions, "damage_types": damage_types},
         )
 
         return spell

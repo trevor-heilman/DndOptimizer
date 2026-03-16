@@ -4,6 +4,7 @@ Cache key builders and helpers for Spellwright.
 All TTLs are in seconds.  Keys are kept intentionally readable so they can be
 inspected in Redis with KEYS or SCAN.
 """
+
 import hashlib
 import json
 
@@ -12,14 +13,15 @@ from django.core.cache import cache
 # ---------------------------------------------------------------------------
 # TTLs
 # ---------------------------------------------------------------------------
-SPELL_DETAIL_TTL = 300      # 5 min  — individual spell with damage components
-SPELL_COUNTS_TTL = 60       # 1 min  — per-user spell category counts
-ANALYSIS_TTL = 600          # 10 min — deterministic analysis results
+SPELL_DETAIL_TTL = 300  # 5 min  — individual spell with damage components
+SPELL_COUNTS_TTL = 60  # 1 min  — per-user spell category counts
+ANALYSIS_TTL = 600  # 10 min — deterministic analysis results
 
 
 # ---------------------------------------------------------------------------
 # Key builders
 # ---------------------------------------------------------------------------
+
 
 def _hash(data: dict) -> str:
     """Deterministic MD5 of a sorted-key JSON dict (hex, 16 chars)."""
@@ -46,6 +48,7 @@ def analysis_key(action: str, spell_ids: list, context_data: dict) -> str:
 # ---------------------------------------------------------------------------
 # Invalidation helpers
 # ---------------------------------------------------------------------------
+
 
 def invalidate_spell_counts(user_id) -> None:
     cache.delete(spell_counts_key(user_id))
