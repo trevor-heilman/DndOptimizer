@@ -40,8 +40,6 @@ export default defineConfig({
     trace: 'on-first-retry',
     screenshot: 'only-on-failure',
     video: 'on-first-retry',
-    // All authenticated tests use this saved session
-    storageState: 'playwright/.auth/user.json',
     // Suppress Chrome's password manager save/update/leak popups during tests
     launchOptions: {
       args: [
@@ -63,7 +61,7 @@ export default defineConfig({
     // ── Main test suite — reuses saved auth state ──────────────────────
     {
       name: 'chromium',
-      use: { ...devices['Desktop Chrome'] },
+      use: { ...devices['Desktop Chrome'], storageState: 'playwright/.auth/user.json' },
       dependencies: ['setup'],
     },
   ],
