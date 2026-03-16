@@ -81,6 +81,29 @@ export function Layout() {
       <main className="mx-auto px-4 sm:px-6 lg:px-8 py-8">
         <Outlet />
       </main>
+
+      {/* Footer */}
+      <footer className="border-t border-gold-900/30 bg-smoke-950 mt-8 py-4">
+        <div className="mx-auto px-4 sm:px-6 lg:px-8 flex flex-col sm:flex-row items-center justify-between gap-2 text-xs text-smoke-500">
+          <span>Spellwright — an independent D&amp;D 5e spell analysis tool</span>
+          <span className="flex items-center gap-3">
+            <span>
+              Content from SRD 5.1 &amp; SRD 5.2 &copy; Wizards of the Coast LLC,{' '}
+              <a
+                href="https://creativecommons.org/licenses/by/4.0/"
+                target="_blank"
+                rel="noopener noreferrer"
+                className="text-gold-600 hover:text-gold-400 underline"
+              >
+                CC BY 4.0
+              </a>
+            </span>
+            <Link to="/terms" className="text-gold-600 hover:text-gold-400 underline">
+              Terms of Use
+            </Link>
+          </span>
+        </div>
+      </footer>
     </div>
   );
 }

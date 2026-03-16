@@ -16,6 +16,7 @@ import { SpellbookDetailPage } from './pages/SpellbookDetailPage';
 import { CharacterSpellsPage } from './pages/CharacterSpellsPage';
 import { ComparePage } from './pages/ComparePage';
 import { AdminReviewPage } from './pages/AdminReviewPage';
+import { TermsOfUsePage } from './pages/TermsOfUsePage';
 
 // Create React Query client
 const queryClient = new QueryClient({
@@ -37,6 +38,7 @@ function App() {
             {/* Public routes */}
             <Route path="/login" element={<LoginPage />} />
             <Route path="/register" element={<RegisterPage />} />
+            <Route path="/terms" element={<TermsOfUsePage />} />
 
             {/* Protected routes */}
             <Route element={<ProtectedRoute />}>

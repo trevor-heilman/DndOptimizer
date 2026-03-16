@@ -35,10 +35,20 @@ class Command(BaseCommand):
         if options["file"]:
             files_to_import.append(options["file"])
         elif options["all"]:
-            # Default spell files bundled with the backend at <BASE_DIR>/data/
+            # Spell JSON files are NOT bundled in the repository (SRD compliance).
+            # Place SRD-sourced spell JSON files into <BASE_DIR>/data/ locally.
+            # Only files that actually exist are imported; missing files produce a
+            # warning rather than an error.
+            #
+            # SRD-compliant sources:
+            #   • spells.json         — fetched via `python data/fetch_open5e.py`
+            #   • phb2024_spells.json — fetched via `python manage.py import_phb2024_spells`
+            #
+            # DO NOT place TCoE_spells.json or XGtE_Spells_fixed.json here;
+            # those books are not covered by the SRD / CC BY 4.0 license.
             data_dir = os.path.join(settings.BASE_DIR, "data")
 
-            default_files = ["spells.json", "TCoE_spells.json"]
+            default_files = ["spells.json"]
             for filename in default_files:
                 filepath = os.path.join(data_dir, filename)
                 if os.path.exists(filepath):

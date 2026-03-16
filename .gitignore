@@ -65,6 +65,11 @@ Thumbs.db
 # Container / Podman
 *.env.docker
 
+# Spell JSON data files — not stored in the repo (SRD compliance)
+# Place these in backend/data/ locally; they are never committed.
+backend/data/*.json
+documentation/data/*.json
+
 # Project specific
 documentation/move_instructions.txt
 
