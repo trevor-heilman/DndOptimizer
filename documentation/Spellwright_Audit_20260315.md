@@ -149,7 +149,7 @@ A D&D 5e spell optimization platform: browse the PHB 2014/XGtE/TCoE/PHB 2024 spe
 **Current:** 8 spec files · ~65 tests  
 **Config:** `playwright.config.ts` — baseURL `http://localhost`, workers: 1 (sequential), retries: 2 CI, auth setup shares session  
 **Added:** commit `054a664` (2026-03-15) — original 5 specs + E2E infrastructure; Priority 1 session — `spellbook-creation.spec.ts` + expanded `compare.spec.ts`  
-**Note:** ❌ E2E not in CI pipeline — must run locally against running stack
+**Note:** ✅ E2E CI pipeline added — `.github/workflows/e2e.yml` boots full Docker Compose stack and runs all specs on push/PR
 
 | Spec | Tests | What it covers |
 |------|-------|----------------|
@@ -225,7 +225,7 @@ A D&D 5e spell optimization platform: browse the PHB 2014/XGtE/TCoE/PHB 2024 spe
 | F13 | Frontend unit | Error/loading states | All pages: loading spinner, error alert, empty state | Medium | ✅ Done — SpellbookDetailPage (+4), CharacterSpellsPage (+3), AdminReviewPage (new, 13 tests) |
 | E5 | E2E | `mobile.spec.ts` | Key flows on 375px viewport (auth, spells list, spellbook page) | Medium | ✅ Done — 19 tests (unauthenticated auth flows, layout nav-hidden check, spell library, spellbooks, compare; horizontal overflow assertions) |
 | E6 | E2E | `error-scenarios.spec.ts` | Network timeout handling, empty search result, invalid form submission | Medium | ✅ Done — 6 tests (spells API failure, spellbooks API failure, empty search empty-state, invalid login, register mismatched passwords, register short password) |
-| E7 | E2E | Add E2E job to CI | Configure GitHub Actions to run Playwright against deployed stack | Large | ⏳ Not started |
+| E7 | E2E | Add E2E job to CI | Configure GitHub Actions to run Playwright against deployed stack | Large | ✅ Done — `.github/workflows/e2e.yml` + `compose.ci.yml`; builds full Docker Compose stack, seeds DB, creates test user via secrets, runs all Playwright specs, uploads HTML report artifact |
 
 **Subtotal: ~42 new tests**
 
@@ -256,7 +256,8 @@ Phase 4 — Polish + CI
 - **F13 complete** — error/loading/empty states: SpellbookDetailPage (+4), CharacterSpellsPage (+3), AdminReviewPage (new, 13) → **340 frontend unit tests**
 - **E5 complete** — `mobile.spec.ts` added: 19 tests covering 375px viewport (auth, layout, spells, spellbooks, compare, overflow checks)
 - **E6 complete** — `error-scenarios.spec.ts` added: 6 tests (API failure alerts via `page.route()`, empty-search empty-state, login/register form validation errors)
-- Next up: E7 (CI job)
+- **E7 complete** — `.github/workflows/e2e.yml` + `compose.ci.yml`; full Docker Compose stack in CI with secret-based test user, spell seeding, Playwright report artifact
+- **Priority 3 complete** — all items done
 
 ---
 
@@ -267,7 +268,7 @@ Phase 4 — Polish + CI
 | Backend | 349 tests · ~92% | 350+ tests · 95%+ |
 | Frontend unit | 295 tests · ~85% (estimated) | 300+ tests · 85%+ |
 | E2E | 5 specs · ~22 tests | 12 specs · 50+ tests |
-| CI pipeline | Backend CI only; no E2E job | E2E job in GitHub Actions |
+| CI pipeline | Backend CI only; no E2E job | ✅ E2E job in GitHub Actions (`e2e.yml`) |
 
 ---
 

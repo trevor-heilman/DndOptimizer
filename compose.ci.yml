@@ -1,0 +1,12 @@
+# compose.ci.yml — Docker Compose overrides for CI (GitHub Actions)
+# Usage: docker compose -f compose.yml -f compose.ci.yml up -d --build
+#
+# Changes from the base compose.yml:
+#   backend — explicit container_name to match the nginx.conf proxy target.
+#             Docker Compose v2 auto-generates "spellwright-backend-1" (hyphen);
+#             nginx.conf does a DNS lookup for "spellwright_backend_1" (underscore).
+#             Setting an explicit name ensures both tools produce the same hostname.
+
+services:
+  backend:
+    container_name: spellwright_backend_1
