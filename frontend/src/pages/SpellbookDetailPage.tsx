@@ -25,6 +25,8 @@ import {
 import { useSpellSources } from '../hooks/useSpells';
 import { useBatchAnalyzeSpells, useGetSpellEfficiency } from '../hooks/useAnalysis';
 import { useCharacter } from '../hooks/useCharacters';
+import { exportSpellbook } from '../services/spellbooks';
+import { downloadJson } from '../utils/download';
 import { useUpdateSpellSlots, useResetSpellSlots } from '../hooks/useCharacters';
 import { SPELL_SCHOOLS, DND_CLASSES, DAMAGE_TYPES, SPELL_TAGS } from '../constants/spellColors';
 import { getSpellSlots } from '../constants/spellSlots';
@@ -35,7 +37,6 @@ import { AnalysisContextForm } from '../components/AnalysisContextForm';
 import { LoadingSpinner, AlertMessage, EmptyState, ChartCard } from '../components/ui';
 import { BookColorPicker } from '../components/BookColorPicker';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, Cell, LineChart, Line, Legend } from 'recharts';
-import type { PreparedSpell, AnalysisContext, BookColor, SpellbookUpdate } from '../types/api';
 
 // ─── Constants ──────────────────────────────────────────────────────────────
 
@@ -706,6 +707,17 @@ export function SpellbookDetailPage() {
     setIsEditMode(true);
   };
 
+  const [isExporting, setIsExporting] = useState(false);
+  const handleExport = async () => {
+    setIsExporting(true);
+    try {
+      const data = await exportSpellbook(spellbook.id);
+      downloadJson(data, `${spellbook.name.replace(/[^a-zA-Z0-9]/g, '_')}.json`);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   const handleDoneEdit = async () => {
     const updates: SpellbookUpdate = {};
     if (editedName.trim() && editedName.trim() !== spellbook.name)
@@ -848,14 +860,26 @@ export function SpellbookDetailPage() {
             )}
           </div>
 
-          {/* Edit / Done */}
-          <button
-            onClick={isEditMode ? handleDoneEdit : handleEnterEditMode}
-            className={`shrink-0 text-sm ${isEditMode ? 'btn-gold' : 'btn-secondary'}`}
-            disabled={updateSpellbook.isPending}
-          >
-            {isEditMode ? '✓ Done' : '✎ Edit'}
-          </button>
+          {/* Export / Edit / Done */}
+          <div className="flex gap-2 shrink-0">
+            {!isEditMode && (
+              <button
+                onClick={handleExport}
+                disabled={isExporting}
+                className="text-sm btn-secondary disabled:opacity-50"
+                title="Export spellbook as JSON"
+              >
+                {isExporting ? '…' : '↓ Export'}
+              </button>
+            )}
+            <button
+              onClick={isEditMode ? handleDoneEdit : handleEnterEditMode}
+              className={`shrink-0 text-sm ${isEditMode ? 'btn-gold' : 'btn-secondary'}`}
+              disabled={updateSpellbook.isPending}
+            >
+              {isEditMode ? '✓ Done' : '✎ Edit'}
+            </button>
+          </div>
         </div>
 
         {/* Description */}

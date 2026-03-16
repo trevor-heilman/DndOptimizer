@@ -105,6 +105,32 @@ export async function exportSpellbook(id: string): Promise<Record<string, unknow
   return response.data;
 }
 
+export interface SpellbookImportEntry {
+  spell: Record<string, unknown>;
+  prepared: boolean;
+  notes: string;
+}
+
+export interface SpellbookImportPayload {
+  name: string;
+  description?: string;
+  spells: SpellbookImportEntry[];
+}
+
+export interface SpellbookImportResult {
+  spellbook: Spellbook;
+  imported: number;
+  skipped: string[];
+}
+
+/**
+ * Import a spellbook from exported JSON
+ */
+export async function importSpellbook(data: SpellbookImportPayload): Promise<SpellbookImportResult> {
+  const response = await apiClient.post<SpellbookImportResult>('/spellbooks/import/', data);
+  return response.data;
+}
+
 /**
  * Reorder spellbooks by updating sort_order in bulk.
  */

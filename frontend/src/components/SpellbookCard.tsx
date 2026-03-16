@@ -5,6 +5,8 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import type { Spellbook } from '../types/api';
 import { getBookPalette } from '../constants/bookColors';
+import { exportSpellbook } from '../services/spellbooks';
+import { downloadJson } from '../utils/download';
 
 interface SpellbookCardProps {
   spellbook: Spellbook;
@@ -21,10 +23,22 @@ const LEGACY_PALETTE_KEYS = [
 
 export function SpellbookCard({ spellbook, colorIndex = 0, onDelete, onDuplicate }: SpellbookCardProps) {
   const [hovered, setHovered] = useState(false);
+  const [exporting, setExporting] = useState(false);
   const colorKey = spellbook.book_color ?? LEGACY_PALETTE_KEYS[colorIndex % LEGACY_PALETTE_KEYS.length];
   const palette = getBookPalette(colorKey);
   const preparedCount = spellbook.prepared_spell_count ?? spellbook.prepared_spells?.length ?? 0;
   const totalSpells = spellbook.spell_count ?? 0;
+
+  const handleExport = async (e: React.MouseEvent) => {
+    e.preventDefault();
+    setExporting(true);
+    try {
+      const data = await exportSpellbook(spellbook.id);
+      downloadJson(data, `${spellbook.name.replace(/[^a-zA-Z0-9]/g, '_')}.json`);
+    } finally {
+      setExporting(false);
+    }
+  };
 
   return (
     <div
@@ -88,6 +102,15 @@ export function SpellbookCard({ spellbook, colorIndex = 0, onDelete, onDuplicate
               ⧉
             </button>
           )}
+          <button
+            onClick={handleExport}
+            disabled={exporting}
+            className="font-display text-xs py-1.5 px-2 rounded text-parchment-400 hover:text-parchment-200 transition-colors disabled:opacity-50"
+            style={{ background: 'rgba(255,255,255,0.05)', border: '1px solid rgba(255,255,255,0.1)' }}
+            title="Export JSON"
+          >
+            ↓
+          </button>
           {onDelete && (
             <button
               onClick={(e) => {

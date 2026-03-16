@@ -1,3 +1,4 @@
+from django.db import transaction
 from django.db.models import Count, Q
 from django_filters.rest_framework import DjangoFilterBackend
 from rest_framework import permissions, status, viewsets
@@ -12,7 +13,9 @@ from .serializers import (
     ReorderSpellbooksSerializer,
     SpellbookCreateUpdateSerializer,
     SpellbookDetailSerializer,
+    CharacterExportSerializer,
     SpellbookExportSerializer,
+    SpellbookImportSerializer,
     SpellbookListSerializer,
     UpdatePreparedSpellSerializer,
     UpdateSpellSlotsSerializer,
@@ -68,6 +71,16 @@ class CharacterViewSet(viewsets.ModelViewSet):
         character.save(update_fields=["spell_slots_used", "updated_at"])
         return Response(CharacterSerializer(character).data)
 
+    @action(detail=True, methods=["get"])
+    def export(self, request, pk=None):
+        """
+        Export a character with all linked spellbooks and their spells.
+        GET /api/spellbooks/characters/{id}/export/
+        """
+        character = self.get_object()
+        serializer = CharacterExportSerializer(character)
+        return Response(serializer.data)
+
     @action(detail=True, methods=["get"], url_path="spells")
     def all_spells(self, request, pk=None):
         """
@@ -109,6 +122,8 @@ class SpellbookViewSet(viewsets.ModelViewSet):
             return SpellbookCreateUpdateSerializer
         elif self.action == "export":
             return SpellbookExportSerializer
+        elif self.action == "import_spellbook":
+            return SpellbookImportSerializer
         return SpellbookDetailSerializer
 
     def get_queryset(self):
@@ -205,6 +220,58 @@ class SpellbookViewSet(viewsets.ModelViewSet):
         spellbook = self.get_object()
         serializer = SpellbookExportSerializer(spellbook)
         return Response(serializer.data)
+
+    @action(detail=False, methods=["post"], url_path="import")
+    def import_spellbook(self, request):
+        """
+        Create a new spellbook from exported JSON.
+        POST /api/spellbooks/import/
+        Body mirrors the SpellbookExportSerializer shape:
+          { name, description, spells: [{spell: {...}, prepared, notes}] }
+        Spells are matched by name+source; unmatched spells are skipped.
+        """
+        from spells.models import Spell
+
+        serializer = SpellbookImportSerializer(data=request.data)
+        serializer.is_valid(raise_exception=True)
+        data = serializer.validated_data
+
+        with transaction.atomic():
+            spellbook = Spellbook.objects.create(
+                name=data["name"],
+                description=data.get("description", ""),
+                owner=request.user,
+            )
+            imported_count = 0
+            skipped: list[str] = []
+            for entry in data.get("spells", []):
+                spell_data = entry.get("spell", {})
+                spell_name = spell_data.get("name", "")
+                spell_source = spell_data.get("source", "")
+                # Try exact name+source match first, fall back to name-only
+                spell = (
+                    Spell.objects.filter(name=spell_name, source=spell_source).first()
+                    or Spell.objects.filter(name=spell_name).first()
+                )
+                if spell is None:
+                    skipped.append(spell_name)
+                    continue
+                PreparedSpell.objects.create(
+                    spellbook=spellbook,
+                    spell=spell,
+                    prepared=bool(entry.get("prepared", False)),
+                    notes=entry.get("notes", "") or "",
+                )
+                imported_count += 1
+
+        return Response(
+            {
+                "spellbook": SpellbookDetailSerializer(spellbook).data,
+                "imported": imported_count,
+                "skipped": skipped,
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
     @action(detail=True, methods=["post"])
     def duplicate(self, request, pk=None):

@@ -116,6 +116,16 @@ export const spellService = {
     return response.data;
   },
 
+  /**
+   * Export all custom and user-imported spells for the current user.
+   */
+  async exportCustomSpells(): Promise<{ spells: Record<string, unknown>[]; count: number }> {
+    const response = await apiClient.get<{ spells: Record<string, unknown>[]; count: number }>(
+      '/spells/spells/export_custom/',
+    );
+    return response.data;
+  },
+
   /** Admin: list spells that require a confidence review. */
   async getNeedsReview(): Promise<Spell[]> {
     const response = await apiClient.get<Spell[]>('/spells/spells/needs_review/');

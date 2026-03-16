@@ -6,6 +6,8 @@ import { useSpells, useSpellSources } from '../hooks/useSpells';
 import { useSpellbooks } from '../hooks/useSpellbooks';
 import { SpellCard, SpellCardGrid } from '../components/SpellCard';
 import { ImportSpellsModal } from '../components/ImportSpellsModal';
+import { spellService } from '../services/spells';
+import { downloadJson } from '../utils/download';
 import { CreateSpellModal } from '../components/CreateSpellModal';
 import { ClearSpellsModal } from '../components/ClearSpellsModal';
 import { LoadingSpinner, AlertMessage, EmptyState } from '../components/ui';
@@ -22,6 +24,7 @@ export function SpellsPage() {
   const [showImport, setShowImport] = useState(false);
   const [showCreate, setShowCreate] = useState(false);
   const [showClear, setShowClear] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
 
   const [effSlot, setEffSlot] = useState(3);
   const [effAC, setEffAC] = useState(15);
@@ -147,6 +150,20 @@ export function SpellsPage() {
     setPage(1); // Reset to page 1 on new search
   };
 
+  const handleExportCustom = async () => {
+    setIsExporting(true);
+    try {
+      const result = await spellService.exportCustomSpells();
+      if (result.count === 0) {
+        alert('No custom or imported spells to export.');
+        return;
+      }
+      downloadJson(result, `my_spells_${new Date().toISOString().slice(0, 10)}.json`);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   return (
     <div>
       {/* Page Header */}
@@ -163,6 +180,13 @@ export function SpellsPage() {
           <div className="flex gap-2 shrink-0">
             <button onClick={() => setShowImport(true)} className="btn-secondary text-sm">
               Import JSON
+            </button>
+            <button
+              onClick={handleExportCustom}
+              disabled={isExporting}
+              className="btn-secondary text-sm disabled:opacity-50"
+            >
+              {isExporting ? '…' : '↓ Export Custom'}
             </button>
             <button
               onClick={() => setShowClear(true)}

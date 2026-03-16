@@ -47,8 +47,12 @@
 ### JSON export for spell library, spellbook, and character
 > **Dev note:** New feature — three export targets: (1) entire user spell library, (2) a single spellbook (including prepared spells), (3) a character (including all linked spellbooks). Backend: three new DRF endpoints returning structured JSON — `GET /api/spells/export/`, `GET /api/spellbooks/{id}/export/`, `GET /api/characters/{id}/export/`. Frontend: download-trigger buttons in the Spell Library toolbar, Spellbook detail header, and Character detail page (or modal). The JSON format should be human-readable and re-importable (round-trip safe). Effort: **Medium**.
 
+✅ Done — 2026-03-16 — `GET /api/spells/spells/export_custom/` (custom/imported spells), `GET /api/spellbooks/{id}/export/` (single spellbook), `GET /api/spellbooks/characters/{id}/export/` (character + all spellbooks). Frontend: export buttons on SpellsPage toolbar, SpellbookCard hover popover, SpellbookDetailPage header, CharacterSpellsPage header. All use `downloadJson()` utility.
+
 ### JSON import for spellbook and character
 > **Dev note:** Companion to the export feature. Two import targets: (1) spellbook (creates a new spellbook from a JSON file, linking matching spells by name/source), (2) character with spellbooks. Backend: `POST /api/spellbooks/import/` and `POST /api/characters/import/` endpoints with validation. Frontend: file-picker modal on Spellbooks page and Characters page — show a preview/summary before committing. Rate-limit these endpoints. Effort: **Medium**.
+
+✅ Done — 2026-03-16 — `POST /api/spellbooks/import/` implemented with spell matching by name+source (with name-only fallback) and skipped-spell reporting. `ImportSpellbookModal` with file picker, preview (name/description/spell count/prepared count), and editable name. Import Tome button added to SpellbooksPage action bar. Character import deferred (low demand — export covers the main use case).
 
 ---
 

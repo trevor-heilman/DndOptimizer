@@ -20,6 +20,7 @@ import {
 import { SpellbookCard } from '../components/SpellbookCard';
 import { CreateSpellbookModal } from '../components/CreateSpellbookModal';
 import { CreateCharacterModal } from '../components/CreateCharacterModal';
+import { ImportSpellbookModal } from '../components/ImportSpellbookModal';
 import { LoadingSpinner, AlertMessage } from '../components/ui';
 import type {
   Character, Spellbook, SpellbookCreate, CharacterCreate, CharacterUpdate,
@@ -426,6 +427,7 @@ function UnassignedShelf({
 export function SpellbooksPage() {
   const [isCreateBookOpen,  setCreateBookOpen]  = useState(false);
   const [isCreateCharOpen,  setCreateCharOpen]  = useState(false);
+  const [isImportOpen,      setIsImportOpen]    = useState(false);
   const [editingCharacter,  setEditingCharacter] = useState<Character | undefined>();
   const [addBookForChar,    setAddBookForChar]   = useState<string | undefined>();
 
@@ -510,6 +512,12 @@ export function SpellbooksPage() {
         </p>
         <div className="flex gap-2">
           <button
+            onClick={() => setIsImportOpen(true)}
+            className="btn-secondary font-display text-sm tracking-wide px-4 py-2"
+          >
+            ↓ Import Tome
+          </button>
+          <button
             onClick={() => { setEditingCharacter(undefined); setCreateCharOpen(true); }}
             className="btn-secondary font-display text-sm tracking-wide px-4 py-2"
           >
@@ -593,6 +601,11 @@ export function SpellbooksPage() {
         onClose={() => { setCreateCharOpen(false); setEditingCharacter(undefined); }}
         onSave={handleSaveCharacter}
         existing={editingCharacter}
+      />
+
+      <ImportSpellbookModal
+        isOpen={isImportOpen}
+        onClose={() => setIsImportOpen(false)}
       />
     </div>
   );

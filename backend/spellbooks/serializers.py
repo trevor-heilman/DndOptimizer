@@ -246,3 +246,46 @@ class SpellbookExportSerializer(serializers.ModelSerializer):
             {"spell": SpellExportSerializer(ps.spell).data, "prepared": ps.prepared, "notes": ps.notes}
             for ps in prepared_spells
         ]
+
+
+class SpellbookImportSerializer(serializers.Serializer):
+    """
+    Deserializer for creating a new spellbook from export JSON.
+    Mirrors the shape produced by SpellbookExportSerializer.
+    """
+
+    name = serializers.CharField(max_length=200)
+    description = serializers.CharField(allow_blank=True, default="")
+    spells = serializers.ListField(
+        child=serializers.DictField(),
+        allow_empty=True,
+        default=list,
+    )
+
+
+class CharacterExportSerializer(serializers.ModelSerializer):
+    """
+    Serializer for exporting a character together with all linked spellbooks.
+    """
+
+    spellbooks = serializers.SerializerMethodField()
+    owner_username = serializers.CharField(source="owner.username", read_only=True)
+
+    class Meta:
+        model = Character
+        fields = [
+            "name",
+            "character_class",
+            "character_level",
+            "subclass",
+            "ruleset",
+            "owner_username",
+            "spellbooks",
+            "created_at",
+        ]
+
+    def get_spellbooks(self, obj: Character):  # type: ignore[override]
+        return SpellbookExportSerializer(
+            obj.spellbooks.prefetch_related("prepared_spells__spell").all(),
+            many=True,
+        ).data

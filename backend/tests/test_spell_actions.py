@@ -496,3 +496,36 @@ class TestCharLevelBreakpointsRoundTrip:
         assert resp.status_code == status.HTTP_201_CREATED
         assert resp.data["imported"] == 1
         assert resp.data["failed"] == 0
+
+
+# ── SpellViewSet.export_custom ─────────────────────────────────────────────────
+
+
+@pytest.mark.django_db
+class TestExportCustomSpells:
+    """Tests for GET /api/spells/spells/export_custom/."""
+
+    def test_export_custom_returns_own_spells(self, client, custom_spell):
+        response = client.get("/api/spells/spells/export_custom/")
+        assert response.status_code == status.HTTP_200_OK
+        assert "spells" in response.data
+        assert "count" in response.data
+        names = [s["name"] for s in response.data["spells"]]
+        assert custom_spell.name in names
+
+    def test_export_custom_excludes_system_spells(self, client, system_spell):
+        response = client.get("/api/spells/spells/export_custom/")
+        assert response.status_code == status.HTTP_200_OK
+        names = [s["name"] for s in response.data["spells"]]
+        assert system_spell.name not in names
+
+    def test_export_custom_empty_when_no_custom_spells(self, client):
+        response = client.get("/api/spells/spells/export_custom/")
+        assert response.status_code == status.HTTP_200_OK
+        assert response.data["count"] == 0
+        assert response.data["spells"] == []
+
+    def test_export_custom_unauthenticated(self, db):
+        anon = APIClient()
+        response = anon.get("/api/spells/spells/export_custom/")
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED

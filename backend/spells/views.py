@@ -384,6 +384,20 @@ class SpellViewSet(viewsets.ModelViewSet):
 
         return Response({"spells": serializer.data, "count": len(serializer.data)})
 
+    @action(detail=False, methods=["get"])
+    def export_custom(self, request):
+        """
+        Export all spells owned by the current user (custom + user-imported).
+        GET /api/spells/spells/export_custom/
+        """
+        qs = (
+            Spell.objects.filter(created_by=request.user)
+            .prefetch_related("damage_components")
+            .order_by("level", "name")
+        )
+        serializer = SpellExportSerializer(qs, many=True)
+        return Response({"spells": serializer.data, "count": qs.count()})
+
     @action(detail=False, methods=["get"], permission_classes=[permissions.IsAdminUser])
     def needs_review(self, request):
         """

@@ -3,6 +3,7 @@
  */
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import * as spellbookService from '../services/spellbooks';
+import type { SpellbookImportPayload } from '../services/spellbooks';
 import type { SpellbookCreate, SpellbookUpdate } from '../types/api';
 
 export function useSpellbooks() {
@@ -116,6 +117,17 @@ export function useReorderSpellbooks() {
   return useMutation({
     mutationFn: (items: { id: string; sort_order: number }[]) =>
       spellbookService.reorderSpellbooks(items),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['spellbooks'] });
+    },
+  });
+}
+
+export function useImportSpellbook() {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: (data: SpellbookImportPayload) => spellbookService.importSpellbook(data),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['spellbooks'] });
     },

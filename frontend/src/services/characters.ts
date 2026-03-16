@@ -56,3 +56,11 @@ export async function getCharacterSpells(id: string): Promise<CharacterSpell[]> 
   const response = await apiClient.get<CharacterSpell[]>(`/spellbooks/characters/${id}/spells/`);
   return response.data;
 }
+
+/**
+ * Export a character with all linked spellbooks and their spells.
+ */
+export async function exportCharacter(id: string): Promise<Record<string, unknown>> {
+  const response = await apiClient.get(`/spellbooks/characters/${id}/export/`);
+  return response.data;
+}

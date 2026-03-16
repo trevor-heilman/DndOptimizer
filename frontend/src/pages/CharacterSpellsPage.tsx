@@ -12,6 +12,8 @@ import { CreateCharacterModal } from '../components/CreateCharacterModal';
 import { getBookPalette } from '../constants/bookColors';
 import type { CharacterSpell } from '../services/characters';
 import type { CharacterCreate } from '../types/api';
+import { exportCharacter } from '../services/characters';
+import { downloadJson } from '../utils/download';
 
 const SCHOOL_ABBR: Record<string, string> = {
   abjuration: 'Abj', conjuration: 'Con', divination: 'Div',
@@ -99,6 +101,18 @@ export function CharacterSpellsPage() {
 
   const updateCharacter = useUpdateCharacter(id ?? '');
   const [editOpen, setEditOpen] = useState(false);
+  const [isExporting, setIsExporting] = useState(false);
+
+  const handleExport = async () => {
+    if (!id || !character) return;
+    setIsExporting(true);
+    try {
+      const data = await exportCharacter(id);
+      downloadJson(data, `${character.name.replace(/[^a-zA-Z0-9]/g, '_')}_character.json`);
+    } finally {
+      setIsExporting(false);
+    }
+  };
 
   const handleSaveEdit = async (data: CharacterCreate) => {
     await updateCharacter.mutateAsync(data);
@@ -201,6 +215,15 @@ export function CharacterSpellsPage() {
                 style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)' }}
               >
                 ✎ Edit
+              </button>
+              <button
+                onClick={handleExport}
+                disabled={isExporting}
+                className="font-display text-xs px-3 py-1.5 rounded transition-colors text-smoke-300 hover:text-parchment-100 disabled:opacity-50"
+                style={{ background: 'rgba(255,255,255,0.06)', border: '1px solid rgba(255,255,255,0.12)' }}
+                title="Export character + spellbooks as JSON"
+              >
+                {isExporting ? '…' : '↓ Export'}
               </button>
             </div>
           </div>

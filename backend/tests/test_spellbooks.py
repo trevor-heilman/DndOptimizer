@@ -615,3 +615,90 @@ class TestCalculateCopyCost:
         assert result.total_gold == 300.0
         assert result.total_hours == 12.0
         assert len(result.spell_entries) == 3
+
+
+# ── Import / Export ────────────────────────────────────────────────────────────
+
+
+@pytest.mark.django_db
+class TestSpellbookImport:
+    """Tests for POST /api/spellbooks/import/ (spellbook JSON round-trip)."""
+
+    def test_import_empty_spellbook(self, client):
+        payload = {
+            "name": "Imported Tome",
+            "description": "A tome brought from afar.",
+            "spells": [],
+        }
+        response = client.post("/api/spellbooks/import/", payload, format="json")
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.data["spellbook"]["name"] == "Imported Tome"
+        assert response.data["imported"] == 0
+        assert response.data["skipped"] == []
+
+    def test_import_matches_spell_by_name(self, client, spell_fireball):
+        payload = {
+            "name": "Firey Tome",
+            "spells": [{"name": "Fireball", "source": "phb", "prepared": True}],
+        }
+        response = client.post("/api/spellbooks/import/", payload, format="json")
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.data["imported"] == 1
+        assert response.data["skipped"] == []
+
+    def test_import_skips_unknown_spells(self, client):
+        payload = {
+            "name": "Mystery Tome",
+            "spells": [{"name": "Nonexistent Spell", "prepared": False}],
+        }
+        response = client.post("/api/spellbooks/import/", payload, format="json")
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.data["imported"] == 0
+        assert "Nonexistent Spell" in response.data["skipped"]
+
+    def test_import_unauthenticated_blocked(self, db):
+        anon = APIClient()
+        response = anon.post(
+            "/api/spellbooks/import/",
+            {"name": "Tome", "spells": []},
+            format="json",
+        )
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
+
+    def test_export_then_import_round_trip(self, client, spellbook, spell_fireball):
+        """Export a spellbook, then import it back; imported count should match."""
+        PreparedSpell.objects.create(spellbook=spellbook, spell=spell_fireball)
+        export_data = client.get(f"/api/spellbooks/{spellbook.id}/export/").data
+
+        payload = {
+            "name": "Round-trip Tome",
+            "spells": export_data["spells"],
+        }
+        response = client.post("/api/spellbooks/import/", payload, format="json")
+        assert response.status_code == status.HTTP_201_CREATED
+        assert response.data["imported"] == 1
+
+
+@pytest.mark.django_db
+class TestCharacterExport:
+    """Tests for GET /api/spellbooks/characters/{id}/export/."""
+
+    def test_export_character_structure(self, client, character, spellbook, spell_fireball):
+        PreparedSpell.objects.create(spellbook=spellbook, spell=spell_fireball)
+        response = client.get(f"/api/spellbooks/characters/{character.id}/export/")
+        assert response.status_code == status.HTTP_200_OK
+        data = response.data
+        assert data["name"] == character.name
+        assert "spellbooks" in data
+        assert len(data["spellbooks"]) == 1
+        assert data["spellbooks"][0]["name"] == spellbook.name
+        assert len(data["spellbooks"][0]["spells"]) == 1
+
+    def test_export_character_not_owned(self, other_client, character):
+        response = other_client.get(f"/api/spellbooks/characters/{character.id}/export/")
+        assert response.status_code == status.HTTP_404_NOT_FOUND
+
+    def test_export_character_unauthenticated(self, db, character):
+        anon = APIClient()
+        response = anon.get(f"/api/spellbooks/characters/{character.id}/export/")
+        assert response.status_code == status.HTTP_401_UNAUTHORIZED
