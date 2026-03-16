@@ -93,10 +93,16 @@ export function SpellDetailPage() {
   const schoolText = spell.school.charAt(0).toUpperCase() + spell.school.slice(1);
 
   // True if the spell gains any benefit from being cast at a higher slot level.
+  // Structured fields (upcast_dice_increment etc.) are the primary signal.
+  // higher_level text is a fallback for spells whose upcast data hasn't been
+  // parsed into structured fields yet (e.g. newly imported spells).
   const scalesWithSlot =
-    !!(spell.upcast_dice_increment && spell.upcast_die_size) ||
-    !!spell.upcast_attacks_increment ||
-    (spell.damage_components ?? []).some((dc) => dc.scales_with_slot);
+    spell.level > 0 && (
+      !!(spell.upcast_dice_increment && spell.upcast_die_size) ||
+      !!spell.upcast_attacks_increment ||
+      (spell.damage_components ?? []).some((dc) => dc.scales_with_slot) ||
+      !!(spell.higher_level && spell.higher_level.trim().length > 0)
+    );
 
   const TIMING_LABEL: Record<string, string> = {
     on_hit: 'on hit',
