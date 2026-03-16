@@ -19,7 +19,7 @@ from django.core.management.base import BaseCommand
 class Command(BaseCommand):
     help = "Create or update the E2E test user (reads E2E_EMAIL / E2E_PASSWORD from env)"
 
-    def handle(self, *args, **options):  # type: ignore[override]
+    def handle(self, *args, **options):
         email = os.environ.get("E2E_EMAIL", "").strip()
         password = os.environ.get("E2E_PASSWORD", "").strip()
 
