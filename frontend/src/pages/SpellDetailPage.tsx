@@ -507,9 +507,9 @@ export function SpellDetailPage() {
                 onClick={() => {
                   const ctx = { ...analysisContext, spell_slot_level: analysisContext.spell_slot_level ?? spell.level };
                   analyzeSpell.mutate({ spellId: spell.id, context: ctx });
-                  if (scalesWithSlot) {
-                    getEfficiency.mutate({ spellId: spell.id, context: ctx, minLevel: spell.level, maxLevel: 9 });
-                  }
+                  // Summon spells always scale with slot (stat blocks change per level),
+                  // so always fetch the efficiency chart regardless of scalesWithSlot.
+                  getEfficiency.mutate({ spellId: spell.id, context: ctx, minLevel: spell.level, maxLevel: 9 });
                 }}
                 disabled={analyzeSpell.isPending || getEfficiency.isPending}
                 className="btn-primary text-sm disabled:opacity-50"
