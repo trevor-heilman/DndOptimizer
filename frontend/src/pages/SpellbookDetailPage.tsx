@@ -678,6 +678,9 @@ export function SpellbookDetailPage() {
     });
   }, [preparedSpells]);
 
+  // Export state — must live before early returns (rules of hooks)
+  const [isExporting, setIsExporting] = useState(false);
+
   // ── Early returns ────────────────────────────────────────────────────────
 
   if (isLoading) return <LoadingSpinner />;
@@ -708,7 +711,6 @@ export function SpellbookDetailPage() {
     setIsEditMode(true);
   };
 
-  const [isExporting, setIsExporting] = useState(false);
   const handleExport = async () => {
     setIsExporting(true);
     try {
