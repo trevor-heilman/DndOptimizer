@@ -646,7 +646,7 @@ export function SpellDetailPage() {
                         const perHitBase = `${atk.dice_count}d${atk.die_size}`;
                         const flatParts: string[] = [];
                         if (atk.flat_modifier > 0) flatParts.push(`+${atk.flat_modifier}`);
-                        if (atk.flat_per_level > 0) flatParts.push('+lvl');
+                        if (atk.flat_per_level > 0) flatParts.push(`+${atk.flat_per_level * slotForCard}`);
                         const secondaryPart = atk.secondary_dice_count > 0
                           ? ` + ${atk.secondary_dice_count}d${atk.secondary_die_size} ${atk.secondary_damage_type}`
                           : '';
